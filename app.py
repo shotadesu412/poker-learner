@@ -20,7 +20,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def serve_index():
-    return FileResponse("index.html")
+    return FileResponse("static/index.html")
 
 # We'll use a single global engine instance for this MVP demo
 engine = PokerEngine()
