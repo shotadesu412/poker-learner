@@ -127,10 +127,23 @@ def take_action(req: ActionRequest):
     cpu_facing = engine.current_bet - engine.cpu_invested
     
     # Check if Hero's action just closed the street
-    street_closed_by_hero = (action in ["CALL", "CHECK"] and engine.hero_invested == engine.cpu_invested)
-    if action == "CALL" and engine.street == "PREFLOP" and engine.cpu_position == "BB" and engine.current_bet == 1.0:
-        # Exception: SB limps, BB has option to check/raise
-        street_closed_by_hero = False
+    street_closed_by_hero = False
+    
+    if action == "CALL":
+        if engine.street == "PREFLOP" and engine.cpu_position == "BB" and engine.current_bet == 1.0:
+            # Exception: SB (Hero) limps, BB (CPU) has option to check/raise
+            street_closed_by_hero = False
+        else:
+            # Normal call matches invested and closes street
+            street_closed_by_hero = (engine.hero_invested == engine.cpu_invested)
+            
+    elif action == "CHECK":
+        # If hero checks, it only closes the street if they are IN POSITION (acting last)
+        # Exception: Preflop BB checking their option closes the action
+        if engine.is_hero_ip or (engine.street == "PREFLOP" and engine.hero_position == "BB" and engine.current_bet == 1.0):
+            street_closed_by_hero = True
+        else:
+            street_closed_by_hero = False
         
     cpu_msg = ""
     if street_closed_by_hero:
