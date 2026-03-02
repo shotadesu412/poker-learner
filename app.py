@@ -110,7 +110,7 @@ def take_action(req: ActionRequest):
             engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
             eval_result, eval_reason = Evaluator.evaluate_call(
                 hero_eq, call_amount, engine.pot_size,
-                hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv
+                hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=engine.hero_range_dict
             )
             engine.place_bet("HERO", call_amount)
             
@@ -120,7 +120,7 @@ def take_action(req: ActionRequest):
             if action == "RAISE":
                 eval_result, eval_reason = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, engine.pot_size,
-                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
+                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv, hero_range_dict=engine.hero_range_dict
                 )
             else:
                 eval_result, eval_reason = Evaluator.evaluate_bet(
@@ -293,7 +293,7 @@ def ai_coach(req: AICoachRequest):
 
 以下のルールを厳守してください：
 1. 長文を避け、箇条書きを活用して初心者〜中級者にも分かりやすく簡潔に回答する。
-2. データ（ログ）に記載されている「勝率」や「POTサイズ」だけを根拠にして良い点と悪い点をロジカルに評価する。
+2. データ（ログ)に記載されているを根拠にして良い点と悪い点をロジカルに評価する。
 3. ポーカー用語（MDF, GTO, ポラライズ, ドンクベットなど）は積極的に用いて良い。
 4. 相手（CPU）を批判するのではなく、Hero（あなた）のアクションをどう改善すべきかにフォーカスする。
 

@@ -241,9 +241,30 @@ class Evaluator:
         return pot_size / (pot_size + bet_amount)
 
     @staticmethod
-    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5):
+    def get_combo_str(cards):
+        from treys import Card
+        if not cards or len(cards) != 2: return ""
+        r1 = Card.get_rank_int(cards[0])
+        r2 = Card.get_rank_int(cards[1])
+        s1 = Card.get_suit_int(cards[0])
+        s2 = Card.get_suit_int(cards[1])
+        ranks = "23456789TJQKA"
+        char1 = ranks[r1]
+        char2 = ranks[r2]
+        if r1 == r2: return char1 + char2
+        if r1 < r2: char1, char2 = char2, char1 # High rank first
+        suffix = "s" if s1 == s2 else "o"
+        return char1 + char2 + suffix
+
+    @staticmethod
+    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None):
         if call_amount == 0:
             return EVAL_OPTIMAL, "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。" # Free card is always optimal if checking
+            
+        if not board and hero_range_dict is not None:
+            combo_str = Evaluator.get_combo_str(cards)
+            if combo_str not in hero_range_dict or hero_range_dict[combo_str] == 0.0:
+                return EVAL_BAD, "GTO理論上、このポジションと状況では参加すべきではないハンドです。フォールドを推奨します。"
             
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
                 
@@ -308,7 +329,12 @@ class Evaluator:
             return EVAL_BAD, f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5):
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):
+        if not board and hero_range_dict is not None:
+            combo_str = Evaluator.get_combo_str(cards)
+            if combo_str not in hero_range_dict or hero_range_dict[combo_str] == 0.0:
+                return EVAL_BAD, "GTO理論上、このポジションと状況では参加すべきではないハンドです。フォールドを推奨します。"
+                
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
@@ -466,17 +492,22 @@ class PokerEngine:
         self.deal()
         
         # Reset ranges based on new randomized positions
-        self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action="open").copy()
-        
         if self.is_hero_turn():
-             # Hero acts first (IP), CPU depends on Hero's open
+             # Hero acts first
+             self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action="open").copy()
              if self.cpu_position == "BB":
                  action_str = f"vs_{self.hero_position}"
              else:
                  action_str = "vs_open_call"
              self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action=action_str).copy()
         else:
+             # CPU acts first
              self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action="open").copy()
+             if self.hero_position == "BB":
+                 action_str = f"vs_{self.cpu_position}"
+             else:
+                 action_str = "vs_open_call"
+             self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action=action_str).copy()
         
         # Deduct from stacks if they are actually the blinds
         if self.hero_position == "SB":
