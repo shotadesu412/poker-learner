@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<string>", line 15, in <module>
+    cpu_action, cpu_amount = engine.cpu_decide(cpu_eq, action, hero_facing)
+                             ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\roker learner\poker_engine.py", line 814, in cpu_decide
+    ev_bet = self.evaluator.ev_bet(cpu_equity, self.pot_size, ideal_bet_size, fold_equity=0.3)
+                                   ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'cpu_equity' where it is not associated with a value

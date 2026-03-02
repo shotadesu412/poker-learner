@@ -1,0 +1,714 @@
+/* style.css */
+:root {
+    --bg-color: #1a1e1b;
+    /* Dark green-grey */
+    --surface-color: #262c28;
+    --text-main: #e2e8e4;
+    --text-muted: #8c9b91;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-orange: #f59e0b;
+    --border-color: #3b423f;
+    --eval-good: #3b82f6;
+    /* ◯ */
+    --eval-optimal: #10b981;
+    /* ◎ */
+    --eval-marginal: #f59e0b;
+    /* △ */
+    --eval-bad: #ef4444;
+    /* × */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    /* Prevent bouncing on mobile */
+}
+
+/* Base Layouts */
+.board-area {
+    flex: 0 0 25%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+}
+
+.info-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 15px;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.action-area {
+    flex: 0 0 auto;
+    background-color: var(--surface-color);
+    padding: 15px 10px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Cards UI */
+.card-container {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.card {
+    background: white;
+    color: black;
+    border-radius: 6px;
+    width: 60px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid #ccc;
+    position: relative;
+}
+
+.card.red {
+    color: #e53e3e;
+    /* Hearts/Diamonds */
+}
+
+.card.black {
+    color: #1a202c;
+    /* Spades/Clubs */
+}
+
+.empty-card {
+    width: 60px;
+    height: 90px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px dashed var(--border-color);
+}
+
+.card .suit {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 0.9rem;
+}
+
+.card .rank {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 0.9rem;
+}
+
+.card .main-val {
+    font-size: 1.5rem;
+}
+
+/* Info Elements */
+.street-display {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--accent-blue);
+    margin-bottom: 5px;
+}
+
+.pot-display {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 8px 16px;
+    background-color: rgba(59, 130, 246, 0.1);
+    border-radius: 20px;
+    color: var(--text-main);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stacks-container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.hero-info {
+    margin-top: auto;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 15px 30px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.hero-cards-container {
+    margin-bottom: 15px;
+}
+
+.equity-display {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--accent-green);
+}
+
+/* Action Buttons */
+.action-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background-color: #3b423f;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--accent-blue);
+}
+
+.btn-primary:active {
+    background-color: #2563eb;
+}
+
+.btn-raise {
+    background-color: var(--accent-orange);
+    color: white;
+    /* Important to enforce base contrast */
+}
+
+.btn-raise:active {
+    background-color: #d97706;
+}
+
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.2);
+    border: 1px solid var(--accent-red);
+    color: var(--accent-red);
+}
+
+.full-width {
+    width: 100%;
+}
+
+/* Bet Sizing Panel (Modal) */
+.bet-panel {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--surface-color);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 20px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    z-index: 100;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    transition: bottom 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bet-panel.active {
+    bottom: 0;
+}
+
+.bet-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.bet-panel-content {
+    display: flex;
+    gap: 15px;
+}
+
+.bet-left {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bet-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-left: 1px solid var(--border-color);
+    padding-left: 15px;
+}
+
+.bet-main-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bet-preset-btn,
+.quick-fraction-btn {
+    background-color: #2c332e;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.bet-preset-btn.active {
+    background-color: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.bet-finetune {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2c332e;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.adjust-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    border: none;
+    background-color: var(--border-color);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.current-bet-display {
+    text-align: center;
+    font-weight: bold;
+}
+
+#bet-percent-display {
+    font-size: 1.2rem;
+    color: var(--accent-blue);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 99;
+    display: none;
+}
+
+.modal-overlay.active {
+    display: block;
+}
+
+/* Evaluation Popup */
+.eval-popup {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-size: 8rem;
+    font-weight: bold;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.eval-popup.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.eval-history {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+}
+
+.history-item {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Colors for Evaluation symbols */
+.eval-O {
+    color: var(--eval-good);
+}
+
+.eval-OO {
+    color: var(--eval-optimal);
+}
+
+/* ◎ */
+.eval-T {
+    color: var(--eval-marginal);
+}
+
+/* △ */
+.eval-X {
+    color: var(--eval-bad);
+}
+
+.message-area {
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+}
+
+/* Range Visualizations */
+.ranges-container {
+    margin: 6px 0;
+    padding: 8px;
+    background: #1e2320;
+    border-radius: var(--radius);
+    text-align: left;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+}
+
+.range-box {
+    margin-bottom: 6px;
+}
+
+.range-label {
+    margin-bottom: 2px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.range-bar {
+    display: flex;
+    height: 16px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #111;
+}
+
+.range-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.65rem;
+    font-weight: bold;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.range-segment.strong {
+    background: var(--accent-red);
+}
+
+.range-segment.mid {
+    background: var(--accent-orange);
+}
+
+.range-segment.weak {
+    background: var(--accent-blue);
+}
+
+.bluff-ratio {
+    text-align: right;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+/* Reason Area UI */
+.reason-area {
+    background-color: #2c332e;
+    margin: 10px 15px;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 5px solid var(--border-color);
+    /* Updated dynamically via JS */
+    color: var(--text-main);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+
+    /* Animation definition */
+    transform: translateY(10px);
+    opacity: 0;
+    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+.reason-area.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.reason-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+.reason-symbol {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.reason-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.reason-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* --- AI Coach Chat UI --- */
+
+.ai-coach-area {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--surface-color);
+    border-top: 1px solid var(--border-color);
+    padding: 15px;
+    gap: 10px;
+    flex: 1;
+    /* Take up remaining space if needed */
+    max-height: 40vh;
+    /* Don't let it consume the screen */
+}
+
+.coach-header {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    text-align: center;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.coach-chat-history {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 5px;
+}
+
+.chat-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    word-break: break-word;
+    /* Handle long text */
+}
+
+.chat-bubble.assistant {
+    background-color: var(--bg-color);
+    /* Darker contrast */
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    align-self: flex-start;
+    border-top-left-radius: 2px;
+}
+
+.chat-bubble.user {
+    background-color: var(--accent-blue);
+    color: white;
+    align-self: flex-end;
+    border-top-right-radius: 2px;
+}
+
+/* Spinner inside bubble */
+.chat-loading {
+    display: inline-block;
+    width: 20px;
+    text-align: left;
+}
+
+.coach-input-area {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.coach-input-area input {
+    flex: 1;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.coach-input-area input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.coach-input-area button {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.coach-input-area button:disabled {
+    background-color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.coach-input-area button:active:not(:disabled) {
+    background-color: #2563eb;
+}
+
+/* --- Glossary Tooltip System --- */
+.glossary-term {
+    color: var(--accent-green);
+    border-bottom: 1px dashed var(--accent-green);
+    cursor: help;
+    position: relative;
+    font-weight: bold;
+}
+
+/* Tooltip container structure leveraging data-attr */
+.glossary-term::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 120%;
+    /* Position above */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #111;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    width: 250px;
+    max-width: 80vw;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--accent-green);
+    z-index: 1000;
+
+    /* Default Hidden */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+    /* Don't interrupt flow */
+}
+
+/* Tooltip Arrow */
+.glossary-term::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #111 transparent transparent transparent;
+    z-index: 1001;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Show on hover / active (mobile tap) */
+.glossary-term:hover::after,
+.glossary-term:hover::before,
+.glossary-term:active::after,
+.glossary-term:active::before {
+    opacity: 1;
+    visibility: visible;
+}

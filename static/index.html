@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poker Evaluator</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+
+<body>
+
+    <!-- Top Area: Board Cards -->
+    <div class="board-area">
+        <div id="board-container" class="card-container">
+            <!-- Cards will be injected here -->
+            <div class="empty-card"></div>
+            <div class="empty-card"></div>
+            <div class="empty-card"></div>
+            <div class="empty-card"></div>
+            <div class="empty-card"></div>
+        </div>
+    </div>
+
+    <!-- Middle Area: Info -->
+    <div class="info-area">
+        <div class="street-display" id="street-display">WAITING</div>
+        <div class="pot-display">Pot: <span id="pot-size">0</span> bb</div>
+
+        <div class="stacks-container">
+            <div class="stack">Hero <span id="hero-pos" style="color:var(--accent-blue);font-weight:bold;">(BTN)</span>:
+                <span id="hero-stack">100</span>bb
+            </div>
+            <div class="stack">CPU <span id="cpu-pos" style="color:var(--accent-orange);font-weight:bold;">(BB)</span>:
+                <span id="cpu-stack">100</span>bb
+            </div>
+        </div>
+
+        <div class="cpu-info" style="display: flex; justify-content: center; margin-bottom: 10px; min-height: 60px;">
+            <div id="cpu-cards" class="card-container hero-cards-container">
+                <!-- CPU Cards visible only at Showdown -->
+            </div>
+        </div>
+
+        <!-- Range Visualizations -->
+        <div class="ranges-container">
+            <div class="range-box">
+                <div class="range-label">Hero Range</div>
+                <div class="range-bar">
+                    <div id="hero-range-strong" class="range-segment strong" style="width: 15%">15%</div>
+                    <div id="hero-range-mid" class="range-segment mid" style="width: 35%">35%</div>
+                    <div id="hero-range-weak" class="range-segment weak" style="width: 50%">50%</div>
+                </div>
+            </div>
+            <div class="range-box">
+                <div class="range-label">CPU Range</div>
+                <div class="range-bar">
+                    <div id="cpu-range-strong" class="range-segment strong" style="width: 15%">15%</div>
+                    <div id="cpu-range-mid" class="range-segment mid" style="width: 35%">35%</div>
+                    <div id="cpu-range-weak" class="range-segment weak" style="width: 50%">50%</div>
+                </div>
+            </div>
+            <div class="bluff-ratio">理論ブラフ上限: <span id="bluff-ratio-val">--</span>%</div>
+        </div>
+
+        <div class="hero-info">
+            <div id="hero-cards" class="card-container hero-cards-container">
+                <!-- Hero Cards -->
+                <div class="empty-card"></div>
+                <div class="empty-card"></div>
+            </div>
+            <div class="equity-display">Equity: <span id="equity-val">--</span>%</div>
+        </div>
+    </div>
+
+    <!-- Notification / message area -->
+    <div id="message-area" class="message-area hidden"></div>
+
+    <!-- Action History (Top Right) -->
+    <div id="eval-history" class="eval-history"></div>
+
+    <!-- Central Evaluation Popup -->
+    <div id="eval-popup" class="eval-popup hidden">◎</div>
+
+    <!-- Action Reason Feedback -->
+    <div id="reason-area" class="reason-area hidden">
+        <div class="reason-header">
+            <span id="reason-symbol" class="reason-symbol"></span>
+            <span class="reason-title">アクション解説</span>
+        </div>
+        <div id="reason-text" class="reason-text"></div>
+    </div>
+
+    <!-- Bottom Area: Actions -->
+    <div class="action-area" id="action-area">
+        <div class="action-row">
+            <button class="action-btn btn-danger" id="btn-fold" onclick="takeAction('FOLD')">フォールド</button>
+            <button class="action-btn" id="btn-check" onclick="takeAction('CHECK')">チェック</button>
+            <button class="action-btn" id="btn-call" onclick="takeAction('CALL')">コール</button>
+        </div>
+        <div class="action-row">
+            <button class="action-btn btn-primary" id="btn-bet" onclick="openBetPanel('BET')">ベット</button>
+            <button class="action-btn btn-raise" id="btn-raise" onclick="openBetPanel('RAISE')">レイズ</button>
+        </div>
+    </div>
+
+    <!-- Bottom Action (Finished State) -->
+    <div class="action-area hidden" id="restart-area">
+        <button class="action-btn btn-primary full-width" onclick="startHand()">次のハンドへ (Next Hand)</button>
+        <button class="action-btn btn-secondary full-width" id="btn-ai-coach" onclick="requestCoachExplanation()"
+            style="margin-top: 10px;">🤖 AIコーチに相談する</button>
+    </div>
+
+    <!-- AI Coach Chat Area -->
+    <div id="ai-coach-area" class="ai-coach-area hidden">
+        <div class="coach-header">AI ポーカーコーチ</div>
+        <div id="coach-chat-history" class="coach-chat-history"></div>
+
+        <div class="coach-input-area">
+            <input type="text" id="coach-input" placeholder="質問を入力... (例: リバーでコールすべきだった？)"
+                onkeypress="handleCoachInputKeyPress(event)">
+            <button id="btn-coach-send" onclick="sendCoachMessage()">送信</button>
+        </div>
+    </div>
+
+    <!-- Bet Sizing Modal (Slide Up) -->
+    <div id="bet-panel" class="bet-panel">
+        <div class="bet-panel-header">
+            <h3>ベットサイズ選択</h3>
+            <button class="close-btn" onclick="closeBetPanel()">✕</button>
+        </div>
+
+        <div class="bet-panel-content flex-column" id="dynamic-bet-options"
+            style="flex-direction: column; width: 100%; gap: 10px;">
+            <!-- Javascript injects buttons here -->
+        </div>
+
+        <!-- Submit button removed as buttons themselves submit the action -->
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeBetPanel()"></div>
+
+    <script src="/static/script.js?v=5"></script>
+</body>
+
+</html>
