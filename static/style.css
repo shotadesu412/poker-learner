@@ -161,20 +161,34 @@ body {
     font-size: 0.95rem;
 }
 
-.hero-info {
-    margin-top: auto;
-    margin-bottom: 10px;
+.hands-info {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
+    gap: 40px;
     background-color: rgba(0, 0, 0, 0.2);
     padding: 15px 30px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    margin-bottom: 10px;
 }
 
-.hero-cards-container {
-    margin-bottom: 15px;
+.hand-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.face-down-card {
+    width: 60px;
+    height: 90px;
+    border-radius: 6px;
+    background: repeating-linear-gradient(45deg,
+            #b22222,
+            #b22222 5px,
+            #8b0000 5px,
+            #8b0000 10px);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .equity-display {
@@ -496,21 +510,33 @@ body {
     margin-top: 4px;
 }
 
-/* Reason Area UI */
+/* Reason Area UI (Mobile Overlay Redesign) */
 .reason-area {
-    background-color: #2c332e;
-    margin: 10px 15px;
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 5px solid var(--border-color);
-    /* Updated dynamically via JS */
+    position: fixed;
+    top: 120px;
+    /* ボードと履歴だけを残して覆いかぶさる位置 */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(38, 44, 40, 0.98);
+    /* 背景を少し暗く透過 */
+    backdrop-filter: blur(5px);
+    margin: 0;
+    padding: 20px;
+    border-radius: 20px 20px 0 0;
+    border: none;
+    border-top: 5px solid var(--border-color);
+    /* 左線から上線に変更 */
     color: var(--text-main);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.6);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
 
     /* Animation definition */
-    transform: translateY(10px);
+    transform: translateY(100%);
     opacity: 0;
-    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.3s ease-out;
 }
 
 .reason-area.show {
@@ -521,26 +547,71 @@ body {
 .reason-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 5px;
+    padding-bottom: 10px;
 }
 
 .reason-symbol {
-    font-size: 1.4rem;
+    font-size: 2.2rem;
+    /* スマホで見やすく巨大化 */
     font-weight: bold;
 }
 
 .reason-title {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
+    /* タイトルも大きく */
     font-weight: bold;
     color: var(--text-muted);
 }
 
 .reason-text {
+    font-size: 1.15rem;
+    /* 本文の可読性を大幅アップ */
+    line-height: 1.7;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 10px;
+}
+
+/* Reason Footer Buttons */
+.reason-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-reason-next {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-reason-next:active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-reason-coach {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+    border: 1px solid var(--accent-blue);
+    padding: 10px 15px;
+    border-radius: 20px;
     font-size: 0.95rem;
-    line-height: 1.5;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: auto;
+    /* 左側に押しやる */
 }
 
 /* --- AI Coach Chat UI --- */

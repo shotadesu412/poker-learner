@@ -77,6 +77,14 @@ function renderCards(containerId, cardsArray, maxCards) {
     }
 }
 
+function renderFaceDownCards(containerId, count) {
+    const container = el(containerId);
+    container.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+        container.innerHTML += `<div class="face-down-card"></div>`;
+    }
+}
+
 function updateUI() {
     if (!currentState) return;
 
@@ -122,7 +130,7 @@ function updateUI() {
     if (currentState.cpuHand && currentState.cpuHand.length > 0) {
         renderCards('cpu-cards', currentState.cpuHand, 2);
     } else {
-        renderCards('cpu-cards', [], 2); // default hidden empty slots
+        renderFaceDownCards('cpu-cards', 2);
     }
 
     // Toggle actions based on game finish state
@@ -372,11 +380,12 @@ function showReason(symbol, text) {
     const reasonArea = el('reason-area');
     const symbolSpn = el('reason-symbol');
     const textDiv = el('reason-text');
+    const footer = el('reason-footer'); // 追加
 
     if (!reasonArea) return;
 
     symbolSpn.innerText = symbol;
-    textDiv.innerText = text;
+    textDiv.innerHTML = linkifyGlossary(text); // 用語ツールチップもここで適用！
 
     // Colorize based on eval mapping
     let colorVar = "var(--border-color)";
@@ -387,8 +396,23 @@ function showReason(symbol, text) {
     else if (symbol === "△") { colorVar = "var(--eval-marginal)"; textVar = "var(--eval-marginal)"; }
     else if (symbol === "×") { colorVar = "var(--eval-bad)"; textVar = "var(--eval-bad)"; }
 
-    reasonArea.style.borderLeftColor = colorVar;
+    reasonArea.style.borderTopColor = colorVar; // LeftColorからTopColorに変更
     symbolSpn.style.color = textVar;
+
+    // 状況に応じてフッターのボタンを動的に生成
+    footer.innerHTML = "";
+    if (currentState && currentState.finished) {
+        // ハンド終了時：左にAIコーチ、右にNext Hand
+        footer.innerHTML = `
+            <button class="btn-reason-coach" onclick="dismissReasonAndCoach()">🤖 AIコーチに相談</button>
+            <button class="btn-reason-next" onclick="startHand()">Next Hand ➔</button>
+        `;
+    } else {
+        // ハンド継続中：右に次へボタンのみ
+        footer.innerHTML = `
+            <button class="btn-reason-next" onclick="dismissReason()">次へ (Continue) ➔</button>
+        `;
+    }
 
     // Unhide and trigger animation
     reasonArea.classList.remove('hidden');
@@ -396,6 +420,24 @@ function showReason(symbol, text) {
     setTimeout(() => {
         reasonArea.classList.add('show');
     }, 10);
+}
+
+// 解説画面を閉じる
+function dismissReason() {
+    const reasonArea = el('reason-area');
+    if (reasonArea) {
+        reasonArea.classList.remove('show');
+        setTimeout(() => reasonArea.classList.add('hidden'), 300);
+    }
+}
+
+// 解説を閉じてAIコーチを開く
+function dismissReasonAndCoach() {
+    dismissReason();
+    requestCoachExplanation();
+    setTimeout(() => {
+        el('ai-coach-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
 }
 
 // Evaluation UI Feedback

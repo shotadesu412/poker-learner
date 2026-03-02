@@ -36,9 +36,26 @@
             </div>
         </div>
 
-        <div class="cpu-info" style="display: flex; justify-content: center; margin-bottom: 10px; min-height: 60px;">
-            <div id="cpu-cards" class="card-container hero-cards-container">
-                <!-- CPU Cards visible only at Showdown -->
+        <div class="hands-info">
+            <div class="hand-col">
+                <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">Hero
+                </div>
+                <div id="hero-cards" class="card-container">
+                    <div class="empty-card"></div>
+                    <div class="empty-card"></div>
+                </div>
+                <div class="equity-display" style="margin-top: 5px;">Equity: <span id="equity-val">--</span>%</div>
+            </div>
+
+            <div class="hand-col">
+                <div style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">CPU
+                </div>
+                <div id="cpu-cards" class="card-container">
+                    <div class="face-down-card"></div>
+                    <div class="face-down-card"></div>
+                </div>
+                <!-- Placeholder for alignment -->
+                <div class="equity-display" style="margin-top: 5px; visibility: hidden;">Equity: --%</div>
             </div>
         </div>
 
@@ -62,15 +79,6 @@
             </div>
             <div class="bluff-ratio">理論ブラフ上限: <span id="bluff-ratio-val">--</span>%</div>
         </div>
-
-        <div class="hero-info">
-            <div id="hero-cards" class="card-container hero-cards-container">
-                <!-- Hero Cards -->
-                <div class="empty-card"></div>
-                <div class="empty-card"></div>
-            </div>
-            <div class="equity-display">Equity: <span id="equity-val">--</span>%</div>
-        </div>
     </div>
 
     <!-- Notification / message area -->
@@ -89,6 +97,8 @@
             <span class="reason-title">アクション解説</span>
         </div>
         <div id="reason-text" class="reason-text"></div>
+        <div class="reason-footer" id="reason-footer">
+        </div>
     </div>
 
     <!-- Bottom Area: Actions -->
@@ -108,7 +118,7 @@
     <div class="action-area hidden" id="restart-area">
         <button class="action-btn btn-primary full-width" onclick="startHand()">次のハンドへ (Next Hand)</button>
         <button class="action-btn btn-secondary full-width" id="btn-ai-coach" onclick="requestCoachExplanation()"
-            style="margin-top: 10px;">🤖 AIコーチに相談する</button>
+            style="margin-top: 10px;"> AIコーチに相談する</button>
     </div>
 
     <!-- AI Coach Chat Area -->
