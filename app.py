@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from poker_engine import PokerEngine, Evaluator
 from treys import Card
@@ -16,6 +17,10 @@ openai_client = OpenAI(api_key=openai_api_key)
 # Make static dir
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def serve_index():
+    return FileResponse("index.html")
 
 # We'll use a single global engine instance for this MVP demo
 engine = PokerEngine()
