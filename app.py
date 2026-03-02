@@ -71,155 +71,162 @@ def start_hand():
         
     return state
 
+import traceback
 @app.post("/api/action")
 def take_action(req: ActionRequest):
-    action = req.action.upper()
-    amount = req.amount
-    
-    # 1. Calc Equity
-    # Determine if 3bet pot (heuristic based on standard sizings)
-    is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 12.0)
-    effective_stack = min(engine.hero_stack, engine.cpu_stack)
+    try:
+        action = req.action.upper()
+        amount = req.amount
+        
+        # 1. Calc Equity
+        # Determine if 3bet pot (heuristic based on standard sizings)
+        is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 12.0)
+        effective_stack = min(engine.hero_stack, engine.cpu_stack)
 
-    hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
-    hero_range_adv = engine.calc_range_advantage(engine.hero_hand, engine.board, iterations=100)
-    
-    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
-    realized_equity = hero_eq * eqr
-    
-    eval_result = "N/A"
-    eval_reason = ""
-    
-    # 2. Evaluate Hero Action
-    hero_facing = engine.current_bet - engine.hero_invested
-    
-    if action == "FOLD":
-        engine.update_range_dict("HERO", "FOLD", 0)
-        engine.record_action("HERO", "FOLD", 0, realized_equity, engine.pot_size)
-        eval_result, eval_reason = Evaluator.evaluate_fold(
-            hero_eq, hero_facing, engine.pot_size, 
-            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, range_adv=hero_range_adv
-        )
-        return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "You Folded"}
+        hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
+        hero_range_adv = engine.calc_range_advantage(engine.hero_hand, engine.board, iterations=100)
         
-    elif action == "CALL":
-        call_amount = hero_facing
-        engine.update_range_dict("HERO", "CALL", call_amount)
-        engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
-        eval_result, eval_reason = Evaluator.evaluate_call(
-            hero_eq, call_amount, engine.pot_size,
-            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv
-        )
-        engine.place_bet("HERO", call_amount)
+        eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
+        realized_equity = hero_eq * eqr
         
-    elif action in ["BET", "RAISE"]:
-        engine.update_range_dict("HERO", action, amount)
-        engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
-        if action == "RAISE":
-            eval_result, eval_reason = Evaluator.evaluate_raise(
-                hero_eq, amount, hero_facing, engine.pot_size,
-                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
+        eval_result = "N/A"
+        eval_reason = ""
+        
+        # 2. Evaluate Hero Action
+        hero_facing = engine.current_bet - engine.hero_invested
+        
+        if action == "FOLD":
+            engine.update_range_dict("HERO", "FOLD", 0)
+            engine.record_action("HERO", "FOLD", 0, realized_equity, engine.pot_size)
+            eval_result, eval_reason = Evaluator.evaluate_fold(
+                hero_eq, hero_facing, engine.pot_size, 
+                hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, range_adv=hero_range_adv
             )
+            return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "You Folded"}
+            
+        elif action == "CALL":
+            call_amount = hero_facing
+            engine.update_range_dict("HERO", "CALL", call_amount)
+            engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
+            eval_result, eval_reason = Evaluator.evaluate_call(
+                hero_eq, call_amount, engine.pot_size,
+                hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv
+            )
+            engine.place_bet("HERO", call_amount)
+            
+        elif action in ["BET", "RAISE"]:
+            engine.update_range_dict("HERO", action, amount)
+            engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
+            if action == "RAISE":
+                eval_result, eval_reason = Evaluator.evaluate_raise(
+                    hero_eq, amount, hero_facing, engine.pot_size,
+                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
+                )
+            else:
+                eval_result, eval_reason = Evaluator.evaluate_bet(
+                    hero_eq, amount, engine.pot_size,
+                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
+                )
+            engine.place_bet("HERO", amount)
+            
+        elif action == "CHECK":
+            engine.update_range_dict("HERO", "CHECK", 0)
+            engine.record_action("HERO", "CHECK", 0, realized_equity, engine.pot_size)
+            eval_result, eval_reason = Evaluator.evaluate_check(
+                hero_eq, 
+                engine.pot_size, 
+                hero_pos=engine.hero_position, 
+                has_initiative=(engine.aggressor == "HERO"),
+                is_hero_ip=engine.is_hero_ip,
+                cards=engine.hero_hand,
+                board=engine.board,
+                range_adv=hero_range_adv
+            )
+        
         else:
-            eval_result, eval_reason = Evaluator.evaluate_bet(
-                hero_eq, amount, engine.pot_size,
-                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
-            )
-        engine.place_bet("HERO", amount)
-        
-    elif action == "CHECK":
-        engine.update_range_dict("HERO", "CHECK", 0)
-        engine.record_action("HERO", "CHECK", 0, realized_equity, engine.pot_size)
-        eval_result, eval_reason = Evaluator.evaluate_check(
-            hero_eq, 
-            engine.pot_size, 
-            hero_pos=engine.hero_position, 
-            has_initiative=(engine.aggressor == "HERO"),
-            is_hero_ip=engine.is_hero_ip,
-            cards=engine.hero_hand,
-            board=engine.board,
-            range_adv=hero_range_adv
-        )
-    
-    else:
-        raise HTTPException(status_code=400, detail="Invalid action")
+            raise HTTPException(status_code=400, detail="Invalid action")
 
-    # 3. CPU Action (Ideal) IF it is CPU's turn. 
-    cpu_facing = engine.current_bet - engine.cpu_invested
-    
-    # Check if Hero's action just closed the street
-    street_closed_by_hero = False
-    
-    if action == "CALL":
-        if engine.street == "PREFLOP" and engine.cpu_position == "BB" and engine.current_bet == 1.0:
-            # Exception: SB (Hero) limps, BB (CPU) has option to check/raise
-            street_closed_by_hero = False
+        # 3. CPU Action (Ideal) IF it is CPU's turn. 
+        cpu_facing = engine.current_bet - engine.cpu_invested
+        
+        # Check if Hero's action just closed the street
+        street_closed_by_hero = False
+        
+        if action == "CALL":
+            if engine.street == "PREFLOP" and engine.cpu_position == "BB" and engine.current_bet == 1.0:
+                # Exception: SB (Hero) limps, BB (CPU) has option to check/raise
+                street_closed_by_hero = False
+            else:
+                # Normal call matches invested and closes street
+                street_closed_by_hero = (engine.hero_invested == engine.cpu_invested)
+                
+        elif action == "CHECK":
+            # If hero checks, it only closes the street if they are IN POSITION (acting last)
+            # Exception: Preflop BB checking their option closes the action
+            if engine.is_hero_ip or (engine.street == "PREFLOP" and engine.hero_position == "BB" and engine.current_bet == 1.0):
+                street_closed_by_hero = True
+            else:
+                street_closed_by_hero = False
+            
+        cpu_msg = ""
+        if street_closed_by_hero:
+            cpu_action = "CHECK" # Dummy action to immediately pass to advance_street
+            cpu_amount = 0
         else:
-            # Normal call matches invested and closes street
-            street_closed_by_hero = (engine.hero_invested == engine.cpu_invested)
+            cpu_action, cpu_amount = engine.cpu_decide(cpu_eq, action, cpu_facing)
             
-    elif action == "CHECK":
-        # If hero checks, it only closes the street if they are IN POSITION (acting last)
-        # Exception: Preflop BB checking their option closes the action
-        if engine.is_hero_ip or (engine.street == "PREFLOP" and engine.hero_position == "BB" and engine.current_bet == 1.0):
-            street_closed_by_hero = True
-        else:
-            street_closed_by_hero = False
-        
-    cpu_msg = ""
-    if street_closed_by_hero:
-        cpu_action = "CHECK" # Dummy action to immediately pass to advance_street
-        cpu_amount = 0
-    else:
-        cpu_action, cpu_amount = engine.cpu_decide(cpu_eq, action, cpu_facing)
-        
-        if cpu_action == "FOLD":
-             engine.update_range_dict("CPU", "FOLD", 0)
-             engine.record_action("CPU", "FOLD", 0, cpu_eq, engine.pot_size)
-             return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD"}
-        
-        if cpu_action in ["CALL", "BET", "RAISE"]:
-             if cpu_action == "CALL":
-                 engine.update_range_dict("CPU", "CALL", cpu_facing)
-                 engine.record_action("CPU", "CALL", cpu_facing, cpu_eq, engine.pot_size)
-                 engine.place_bet("CPU", cpu_facing)
-             else:
-                 engine.update_range_dict("CPU", cpu_action, cpu_amount)
-                 engine.record_action("CPU", cpu_action, cpu_amount, cpu_eq, engine.pot_size)
-                 engine.place_bet("CPU", cpu_amount)
-             
-             cpu_msg = f"CPU {cpu_action}S {cpu_amount > 0 and str(round(cpu_amount, 1)) + 'bb' or ''}".strip()
-    
-    # Check if CPU acting resolved the street
-    hero_facing_after_cpu = engine.current_bet - engine.hero_invested
-    if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu == 0) or street_closed_by_hero:
-        # 4. Advance Street
-        if engine.street == "RIVER":
-            return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
+            if cpu_action == "FOLD":
+                 engine.update_range_dict("CPU", "FOLD", 0)
+                 engine.record_action("CPU", "FOLD", 0, cpu_eq, engine.pot_size)
+                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD"}
             
-        current_idx = engine.STREETS.index(engine.street)
-        if current_idx + 1 < len(engine.STREETS):
-            next_street = engine.STREETS[current_idx + 1]
-            engine.advance_street(next_street)
-            
-            # If CPU acts first on the NEW street, we should theoretically calculate their move here immediately.
-            if not engine.is_hero_turn():
-                 # CPU acts first on new street
-                 hero_eq_next, cpu_eq_next = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50)
-                 cpu_action_2, cpu_amount_2 = engine.cpu_decide(cpu_eq_next, "CHECK", 0) # Facing no bet
-                 
-                 if cpu_action_2 in ["BET", "RAISE"]:
-                      engine.update_range_dict("CPU", cpu_action_2, cpu_amount_2)
-                      engine.record_action("CPU", cpu_action_2, cpu_amount_2, cpu_eq_next, engine.pot_size)
-                      engine.place_bet("CPU", cpu_amount_2)
-                      cpu_msg += f" | Next street CPU {cpu_action_2}S {round(cpu_amount_2, 1)}bb"
+            if cpu_action in ["CALL", "BET", "RAISE"]:
+                 if cpu_action == "CALL":
+                     engine.update_range_dict("CPU", "CALL", cpu_facing)
+                     engine.record_action("CPU", "CALL", cpu_facing, cpu_eq, engine.pot_size)
+                     engine.place_bet("CPU", cpu_facing)
                  else:
-                      engine.record_action("CPU", "CHECK", 0, cpu_eq_next, engine.pot_size)
-                      cpu_msg += f" | Next street CPU CHECKS"
-        else:
-            return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
-            
-    return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(), "cpuAction": cpu_action, "cpuMessage": cpu_msg}
+                     engine.update_range_dict("CPU", cpu_action, cpu_amount)
+                     engine.record_action("CPU", cpu_action, cpu_amount, cpu_eq, engine.pot_size)
+                     engine.place_bet("CPU", cpu_amount)
+                 
+                 cpu_msg = f"CPU {cpu_action}S {cpu_amount > 0 and str(round(cpu_amount, 1)) + 'bb' or ''}".strip()
+        
+        # Check if CPU acting resolved the street
+        hero_facing_after_cpu = engine.current_bet - engine.hero_invested
+        if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu == 0) or street_closed_by_hero:
+            # 4. Advance Street
+            if engine.street == "RIVER":
+                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
+                
+            current_idx = engine.STREETS.index(engine.street)
+            if current_idx + 1 < len(engine.STREETS):
+                next_street = engine.STREETS[current_idx + 1]
+                engine.advance_street(next_street)
+                
+                # If CPU acts first on the NEW street, we should theoretically calculate their move here immediately.
+                if not engine.is_hero_turn():
+                     # CPU acts first on new street
+                     hero_eq_next, cpu_eq_next = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50)
+                     cpu_action_2, cpu_amount_2 = engine.cpu_decide(cpu_eq_next, "CHECK", 0) # Facing no bet
+                     
+                     if cpu_action_2 in ["BET", "RAISE"]:
+                          engine.update_range_dict("CPU", cpu_action_2, cpu_amount_2)
+                          engine.record_action("CPU", cpu_action_2, cpu_amount_2, cpu_eq_next, engine.pot_size)
+                          engine.place_bet("CPU", cpu_amount_2)
+                          cpu_msg += f" | Next street CPU {cpu_action_2}S {round(cpu_amount_2, 1)}bb"
+                     else:
+                          engine.record_action("CPU", "CHECK", 0, cpu_eq_next, engine.pot_size)
+                          cpu_msg += f" | Next street CPU CHECKS"
+            else:
+                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
+                
+        return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(), "cpuAction": cpu_action, "cpuMessage": cpu_msg}
+    except Exception as e:
+        import traceback
+        with open('trace.txt', 'w') as f:
+            f.write(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
 def get_game_state(finished=False):
     hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50) 

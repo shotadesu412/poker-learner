@@ -131,15 +131,16 @@ class Evaluator:
             except:
                 pass
                 
-            suits = [TreysEvaluator.get_suit_int(c) for c in cards + board]
+            from treys import Card
+            suits = [Card.get_suit_int(c) for c in cards + board]
             suit_counts = {s: suits.count(s) for s in set(suits)}
             if suit_counts and max(suit_counts.values()) == 4:
                 return "STRONG_DRAW"
             return "WEAK_HAND"
             
-        # Preflop evaluation
-        r1 = TreysEvaluator.get_rank_int(cards[0])
-        r2 = TreysEvaluator.get_rank_int(cards[1])
+        from treys import Card
+        r1 = Card.get_rank_int(cards[0])
+        r2 = Card.get_rank_int(cards[1])
         
         # AA-TT (Pocket pairs T+) are strong made hands preflop
         if r1 == r2 and r1 >= 8: # 8 = Ten
@@ -150,8 +151,8 @@ class Evaluator:
             return "MADE_HAND"
             
         # Suited Connectors / Suited Broadways -> STRONG_DRAW
-        s1 = TreysEvaluator.get_suit_int(cards[0])
-        s2 = TreysEvaluator.get_suit_int(cards[1])
+        s1 = Card.get_suit_int(cards[0])
+        s2 = Card.get_suit_int(cards[1])
         is_suited = (s1 == s2)
         gap = abs(r1 - r2)
         
@@ -173,10 +174,11 @@ class Evaluator:
             return 1.0
             
         pi = 1.0
-        r1 = TreysEvaluator.get_rank_int(cards[0])
-        r2 = TreysEvaluator.get_rank_int(cards[1])
-        s1 = TreysEvaluator.get_suit_int(cards[0])
-        s2 = TreysEvaluator.get_suit_int(cards[1])
+        from treys import Card
+        r1 = Card.get_rank_int(cards[0])
+        r2 = Card.get_rank_int(cards[1])
+        s1 = Card.get_suit_int(cards[0])
+        s2 = Card.get_suit_int(cards[1])
         
         if s1 == s2:
             pi += 0.05
@@ -187,7 +189,8 @@ class Evaluator:
             
         # Postflop PI
         if board and len(board) >= 3:
-            suits = [TreysEvaluator.get_suit_int(c) for c in cards + board]
+            from treys import Card
+            suits = [Card.get_suit_int(c) for c in cards + board]
             suit_counts = {s: suits.count(s) for s in set(suits)}
             if suit_counts and max(suit_counts.values()) == 4:
                 pi += 0.10 # Good playability to hit flush
@@ -359,7 +362,7 @@ class Evaluator:
     def calculate_preflop_score(cards):
         """ ヒューリスティックなプリフロップスコア計算 (Chen Formula ベース近似) """
         if not cards or len(cards) != 2: return 0.0
-        
+        from treys import Card
         r1 = Card.get_rank_int(cards[0])
         r2 = Card.get_rank_int(cards[1])
         s1 = Card.get_suit_int(cards[0])

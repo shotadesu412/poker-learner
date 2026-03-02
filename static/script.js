@@ -414,11 +414,20 @@ function showEvaluation(evalSymbol, actionName) {
 
     // Reset classes
     popup.className = "eval-popup";
-    let colorClass = "";
-    if (evalSymbol === "◎") colorClass = "eval-OO";
-    else if (evalSymbol === "◯") colorClass = "eval-O";
-    else if (evalSymbol === "△") colorClass = "eval-T";
-    else if (evalSymbol === "×") colorClass = "eval-X";
+    let colorClass = "eval-X"; // Default fallback to prevent empty token error
+
+    // Robust checking in case of encoding weirdness
+    if (!evalSymbol) {
+        colorClass = "eval-X";
+    } else if (evalSymbol.includes("◎")) {
+        colorClass = "eval-OO";
+    } else if (evalSymbol.includes("◯")) {
+        colorClass = "eval-O";
+    } else if (evalSymbol.includes("△")) {
+        colorClass = "eval-T";
+    } else if (evalSymbol.includes("×")) {
+        colorClass = "eval-X";
+    }
 
     popup.classList.add(colorClass);
     popup.classList.add('show');
