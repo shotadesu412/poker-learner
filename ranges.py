@@ -324,25 +324,25 @@ def update_range_after_action(range_dict, action_type, bet_size=None, board=None
         new_weight = weight
         if action_type == "LARGE_BET":
             if percentile < 0.30:
-                new_weight = 1.0 # Top 30% Strong
+                new_weight = weight * 1.0 # Top 30% Strong
             elif percentile < 0.70:
-                new_weight = 0.0 # Middle 40% 
+                new_weight = weight * 0.2 # Middle 40% (Merge/Pot control)
             else:
-                new_weight = 1.0 # Bottom 30% Bluffs
+                new_weight = weight * 0.8 # Bottom 30% Bluffs
         elif action_type == "SMALL_BET":
             if percentile < 0.50:
-                new_weight = 1.0 # Top 50% merges
+                new_weight = weight * 1.0 # Top 50%
             elif percentile < 0.80:
-                new_weight = 0.5 # Middle merges partially
+                new_weight = weight * 0.5 # Middle 30%
             else:
-                new_weight = 0.0 # Bottom yields
+                new_weight = weight * 0.1 # Bottom 20%
         elif action_type == "CALL":
             if percentile < 0.20:
-                new_weight = 0.5 # Top 20% usually raises, reduced weight in calling range
+                new_weight = weight * 0.3 # Top 20% reduced
             elif percentile < 0.80:
-                new_weight = 1.0 # Middle merges as stable calls
+                new_weight = weight * 1.0 # Middle 60%
             else:
-                new_weight = 0.0 # Bottom folds
+                new_weight = weight * 0.0 # Bottom 20% folds
                 
         updated_range[combo] = max(0.0, min(1.0, float(new_weight)))
         
