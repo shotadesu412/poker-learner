@@ -584,3 +584,73 @@ function handleCoachInputKeyPress(event) {
 document.addEventListener('DOMContentLoaded', () => {
     startHand();
 });
+
+// ============================================
+// Range Matrix Rendering
+// ============================================
+
+function openRangeModal(player) {
+    if (!currentState) return;
+
+    // Title update
+    el('range-modal-title').innerText = `${player} レンジ表`;
+
+    // Fetch appropriate range dict from current state
+    const rangeData = player === 'HERO' ? currentState.heroRangeRaw : currentState.cpuRangeRaw;
+    const grid = el('range-grid');
+    grid.innerHTML = "";
+
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+    for (let r1 = 0; r1 < ranks.length; r1++) {
+        for (let r2 = 0; r2 < ranks.length; r2++) {
+            let comboName = "";
+            let type = "";
+
+            if (r1 === r2) {
+                comboName = ranks[r1] + ranks[r2];
+                type = "pair";
+            } else if (r1 < r2) {
+                // Top right triangle -> Suited
+                comboName = ranks[r1] + ranks[r2] + "s";
+                type = "suited";
+            } else {
+                // Bottom left triangle -> Offsuit -> reversed to standard order e.g AKo not KAo
+                comboName = ranks[r2] + ranks[r1] + "o";
+                type = "offsuit";
+            }
+
+            // Get weight from backend raw data
+            const weight = rangeData && rangeData[comboName] !== undefined ? rangeData[comboName] : 0.0;
+
+            const cell = document.createElement('div');
+            cell.className = 'range-cell';
+            cell.innerText = comboName;
+
+            // Highlight color base
+            let baseColor = "16, 185, 129"; // Green
+            if (type === "pair") baseColor = "59, 130, 246"; // Blue
+            else if (type === "suited") baseColor = "16, 185, 129"; // Green
+            else if (type === "offsuit") baseColor = "245, 158, 11"; // Orange
+
+            if (weight > 0) {
+                // Use opacity of the base color to denote freq/weight
+                cell.style.backgroundColor = `rgba(${baseColor}, ${weight})`;
+                // Slight bump to font visibility if dark
+                cell.style.color = "white";
+            } else {
+                cell.style.backgroundColor = "#111"; // empty
+                cell.style.color = "#444"; // dimmed outline
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+
+    el('range-modal').classList.remove('hidden');
+}
+
+function closeRangeModal() {
+    const modal = el('range-modal');
+    if (modal) modal.classList.add('hidden');
+}

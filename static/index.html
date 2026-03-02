@@ -61,7 +61,7 @@
 
         <!-- Range Visualizations -->
         <div class="ranges-container">
-            <div class="range-box">
+            <div class="range-box" onclick="openRangeModal('HERO')" style="cursor: pointer;">
                 <div class="range-label">Hero Range</div>
                 <div class="range-bar">
                     <div id="hero-range-strong" class="range-segment strong" style="width: 15%">15%</div>
@@ -69,7 +69,7 @@
                     <div id="hero-range-weak" class="range-segment weak" style="width: 50%">50%</div>
                 </div>
             </div>
-            <div class="range-box">
+            <div class="range-box" onclick="openRangeModal('CPU')" style="cursor: pointer;">
                 <div class="range-label">CPU Range</div>
                 <div class="range-bar">
                     <div id="cpu-range-strong" class="range-segment strong" style="width: 15%">15%</div>
@@ -148,10 +148,23 @@
         <!-- Submit button removed as buttons themselves submit the action -->
     </div>
 
+    <!-- Range Matrix Modal -->
+    <div id="range-modal" class="modal-overlay hidden">
+        <div class="range-panel">
+            <div class="range-panel-header">
+                <h3 id="range-modal-title">レンジ表</h3>
+                <button class="close-btn" onclick="closeRangeModal()">✕</button>
+            </div>
+            <div id="range-grid" class="range-grid">
+                <!-- 13x13 grid injected by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Overlay -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeBetPanel()"></div>
 
-    <script src="/static/script.js?v=5"></script>
+    <script src="/static/script.js?v=6"></script>
 </body>
 
 </html>

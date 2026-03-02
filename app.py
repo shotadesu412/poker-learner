@@ -226,6 +226,8 @@ def get_game_state(finished=False):
         "equity": round(realized_eq * 100, 1),
         "heroRange": compress_range(engine.hero_range_dict),
         "cpuRange": compress_range(engine.cpu_range_dict),
+        "heroRangeRaw": dict(engine.hero_range_dict),
+        "cpuRangeRaw": dict(engine.cpu_range_dict),
         "bluffRatio": round(engine.calculate_theoretical_bluff_frequency(engine.current_bet, engine.pot_size) * 100, 1),
         "finished": finished,
         "history": engine.action_history
@@ -262,7 +264,7 @@ def ai_coach(req: AICoachRequest):
             api_messages.append({"role": msg.role, "content": msg.content})
 
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=api_messages,
             max_tokens=500,
             temperature=0.7
