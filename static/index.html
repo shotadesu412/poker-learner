@@ -97,8 +97,6 @@
             <span class="reason-title">アクション解説</span>
         </div>
         <div id="reason-text" class="reason-text"></div>
-        <div class="reason-footer" id="reason-footer">
-        </div>
     </div>
 
     <!-- Bottom Area: Actions -->
@@ -123,7 +121,10 @@
 
     <!-- AI Coach Chat Area -->
     <div id="ai-coach-area" class="ai-coach-area hidden">
-        <div class="coach-header">AI ポーカーコーチ</div>
+        <div class="coach-header">
+            <span>🤖 AI ポーカーコーチ</span>
+            <button class="close-btn" onclick="closeCoachArea()">✕</button>
+        </div>
         <div id="coach-chat-history" class="coach-chat-history"></div>
 
         <div class="coach-input-area">

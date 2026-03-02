@@ -186,6 +186,7 @@ async function startHand() {
 
     // Reset Chat Array and Hide UI
     coachMessages = [];
+    el('ai-coach-area').classList.remove('show');
     el('ai-coach-area').classList.add('hidden');
     el('coach-chat-history').innerHTML = "";
     if (el('coach-input')) el('coach-input').value = "";
@@ -380,12 +381,11 @@ function showReason(symbol, text) {
     const reasonArea = el('reason-area');
     const symbolSpn = el('reason-symbol');
     const textDiv = el('reason-text');
-    const footer = el('reason-footer'); // 追加
 
     if (!reasonArea) return;
 
     symbolSpn.innerText = symbol;
-    textDiv.innerHTML = linkifyGlossary(text); // 用語ツールチップもここで適用！
+    textDiv.innerHTML = linkifyGlossary(text); // 用語ツールチップ保持
 
     // Colorize based on eval mapping
     let colorVar = "var(--border-color)";
@@ -396,23 +396,8 @@ function showReason(symbol, text) {
     else if (symbol === "△") { colorVar = "var(--eval-marginal)"; textVar = "var(--eval-marginal)"; }
     else if (symbol === "×") { colorVar = "var(--eval-bad)"; textVar = "var(--eval-bad)"; }
 
-    reasonArea.style.borderTopColor = colorVar; // LeftColorからTopColorに変更
+    reasonArea.style.borderLeftColor = colorVar; // LeftColorに戻す
     symbolSpn.style.color = textVar;
-
-    // 状況に応じてフッターのボタンを動的に生成
-    footer.innerHTML = "";
-    if (currentState && currentState.finished) {
-        // ハンド終了時：左にAIコーチ、右にNext Hand
-        footer.innerHTML = `
-            <button class="btn-reason-coach" onclick="dismissReasonAndCoach()">🤖 AIコーチに相談</button>
-            <button class="btn-reason-next" onclick="startHand()">Next Hand ➔</button>
-        `;
-    } else {
-        // ハンド継続中：右に次へボタンのみ
-        footer.innerHTML = `
-            <button class="btn-reason-next" onclick="dismissReason()">次へ (Continue) ➔</button>
-        `;
-    }
 
     // Unhide and trigger animation
     reasonArea.classList.remove('hidden');
@@ -420,24 +405,6 @@ function showReason(symbol, text) {
     setTimeout(() => {
         reasonArea.classList.add('show');
     }, 10);
-}
-
-// 解説画面を閉じる
-function dismissReason() {
-    const reasonArea = el('reason-area');
-    if (reasonArea) {
-        reasonArea.classList.remove('show');
-        setTimeout(() => reasonArea.classList.add('hidden'), 300);
-    }
-}
-
-// 解説を閉じてAIコーチを開く
-function dismissReasonAndCoach() {
-    dismissReason();
-    requestCoachExplanation();
-    setTimeout(() => {
-        el('ai-coach-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
 }
 
 // Evaluation UI Feedback
@@ -503,8 +470,19 @@ function renderCoachChat() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
+function closeCoachArea() {
+    const area = el('ai-coach-area');
+    if (area) {
+        area.classList.remove('show');
+        setTimeout(() => area.classList.add('hidden'), 300);
+    }
+}
+
 async function requestCoachExplanation() {
     el('ai-coach-area').classList.remove('hidden');
+    setTimeout(() => {
+        el('ai-coach-area').classList.add('show');
+    }, 10);
     el('btn-ai-coach').disabled = true;
 
     // Build the request array if empty
