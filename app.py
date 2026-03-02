@@ -78,10 +78,11 @@ def take_action(req: ActionRequest):
     
     # 1. Calc Equity
     # Determine if 3bet pot (heuristic based on standard sizings)
-    is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 5.5)
+    is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 12.0)
+    effective_stack = min(engine.hero_stack, engine.cpu_stack)
 
     hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
-    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot)
+    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board)
     realized_equity = hero_eq * eqr
     
     eval_result = "N/A"
@@ -105,7 +106,7 @@ def take_action(req: ActionRequest):
         engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
         eval_result, eval_reason = Evaluator.evaluate_call(
             hero_eq, call_amount, engine.pot_size,
-            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board
+            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack
         )
         engine.place_bet("HERO", call_amount)
         

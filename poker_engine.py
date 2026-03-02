@@ -66,7 +66,7 @@ class Evaluator:
         return call_amount / (pot_size + call_amount)
 
     @staticmethod
-    def ev_call(equity, pot_size, call_amount):
+    def ev_call(equity, pot_size, call_amount, spr=None, hand_category=None):
         """
         EV sanity rules:
 
@@ -82,7 +82,14 @@ class Evaluator:
 
         No double counting of pot.
         """
-        return equity * (pot_size + call_amount) - call_amount
+        base_ev = equity * (pot_size + call_amount) - call_amount
+        
+        # Implied odds bonus for strong draws with deep stacks
+        if spr is not None and hand_category == "STRONG_DRAW":
+            implied_bonus = equity * (pot_size * 0.5 * min(spr, 5.0))
+            return base_ev + implied_bonus
+            
+        return base_ev
 
     @staticmethod
     def ev_check(equity, pot_size):
@@ -193,16 +200,20 @@ class Evaluator:
         OOP補正、3BETポット補正、PI補正を加味した実現エクイティ係数
         """
         base_eqr = 1.0
+        category = Evaluator.categorize_hand(cards, board)
         
         if hero_pos in ["SB", "BB"]:
             # OOP時のカテゴリ別補正
-            category = Evaluator.categorize_hand(cards, board)
             if category == "MADE_HAND":
                 base_eqr = 0.90
             elif category == "STRONG_DRAW":
                 base_eqr = 0.85
             else:
                 base_eqr = 0.70
+                
+        if is_3bet_pot:
+            if category == "STRONG_DRAW" or category == "WEAK_HAND":
+                base_eqr *= 0.85
                 
         # Playability Index
         pi = Evaluator.calculate_pi(cards, board)
@@ -219,24 +230,27 @@ class Evaluator:
         return pot_size / (pot_size + bet_amount)
 
     @staticmethod
-    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None):
+    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0):
         if call_amount == 0:
             return EVAL_OPTIMAL, "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。" # Free card is always optimal if checking
             
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
-        
-        # 3BET pot requiring calculation
-        if is_3bet_pot:
-            e_req += 0.05
-            if hero_pos in ["SB", "BB"]:
-                e_req += 0.02
                 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board)
         realized_equity = equity * eqr
         
-        # EV computation
-        ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount)
+        spr = None
+        if effective_stack > 0 and pot_size > 0:
+            spr = effective_stack / pot_size
+            
+        category = Evaluator.categorize_hand(cards, board)
         
+        # EV computation
+        ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount, spr=spr, hand_category=category)
+        
+        if ev_call_val > 0 and realized_equity < e_req * 0.9:
+            return EVAL_GOOD, f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
+            
         if realized_equity >= e_req * 1.2:
             return EVAL_OPTIMAL, f"必要勝率({e_req*100:.1f}%)に対し、あなたの勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
         elif realized_equity >= e_req:
@@ -252,12 +266,6 @@ class Evaluator:
             return EVAL_BAD, "無料で見られる状況でのフォールドは完全なミスプレイです。"
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
-        
-        # 3BET pot requiring calculation
-        if is_3bet_pot:
-            e_req += 0.05
-            if hero_pos in ["SB", "BB"]:
-                e_req += 0.02
                 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board)
         realized_equity = equity * eqr
