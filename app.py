@@ -82,7 +82,9 @@ def take_action(req: ActionRequest):
     effective_stack = min(engine.hero_stack, engine.cpu_stack)
 
     hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
-    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board)
+    hero_range_adv = engine.calc_range_advantage(engine.hero_hand, engine.board, iterations=100)
+    
+    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
     realized_equity = hero_eq * eqr
     
     eval_result = "N/A"
@@ -96,7 +98,7 @@ def take_action(req: ActionRequest):
         engine.record_action("HERO", "FOLD", 0, realized_equity, engine.pot_size)
         eval_result, eval_reason = Evaluator.evaluate_fold(
             hero_eq, hero_facing, engine.pot_size, 
-            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board
+            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, range_adv=hero_range_adv
         )
         return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "You Folded"}
         
@@ -106,7 +108,7 @@ def take_action(req: ActionRequest):
         engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
         eval_result, eval_reason = Evaluator.evaluate_call(
             hero_eq, call_amount, engine.pot_size,
-            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack
+            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv
         )
         engine.place_bet("HERO", call_amount)
         
@@ -116,12 +118,12 @@ def take_action(req: ActionRequest):
         if action == "RAISE":
             eval_result, eval_reason = Evaluator.evaluate_raise(
                 hero_eq, amount, hero_facing, engine.pot_size,
-                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board
+                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
             )
         else:
             eval_result, eval_reason = Evaluator.evaluate_bet(
                 hero_eq, amount, engine.pot_size,
-                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board
+                hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
             )
         engine.place_bet("HERO", amount)
         
@@ -135,7 +137,8 @@ def take_action(req: ActionRequest):
             has_initiative=(engine.aggressor == "HERO"),
             is_hero_ip=engine.is_hero_ip,
             cards=engine.hero_hand,
-            board=engine.board
+            board=engine.board,
+            range_adv=hero_range_adv
         )
     
     else:

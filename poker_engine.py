@@ -195,9 +195,9 @@ class Evaluator:
         return pi
 
     @staticmethod
-    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None):
+    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
         """
-        OOP補正、3BETポット補正、PI補正を加味した実現エクイティ係数
+        OOP補正、3BETポット補正、PI補正、そしてレンジアドバンテージを加味した実現エクイティ係数
         """
         base_eqr = 1.0
         category = Evaluator.categorize_hand(cards, board)
@@ -215,6 +215,14 @@ class Evaluator:
             if category == "STRONG_DRAW" or category == "WEAK_HAND":
                 base_eqr *= 0.85
                 
+        # Range Advantage Bonus/Penalty (~ -20% to +15%)
+        # range_adv goes from 0.0 (total disadvantage) to 1.0 (total advantage)
+        adv_multiplier = 1.0 + (range_adv - 0.5) * 0.4
+        base_eqr *= adv_multiplier
+        
+        # Clamp EQR to prevent absurd bounds
+        base_eqr = max(0.5, min(1.5, base_eqr))
+        
         # Playability Index
         pi = Evaluator.calculate_pi(cards, board)
         return base_eqr * pi
@@ -230,13 +238,13 @@ class Evaluator:
         return pot_size / (pot_size + bet_amount)
 
     @staticmethod
-    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0):
+    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5):
         if call_amount == 0:
             return EVAL_OPTIMAL, "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。" # Free card is always optimal if checking
             
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
                 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board)
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
         realized_equity = equity * eqr
         
         spr = None
@@ -261,13 +269,13 @@ class Evaluator:
             return EVAL_BAD, f"必要勝率({e_req*100:.1f}%)に対して勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
 
     @staticmethod
-    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None):
+    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
         if opponent_bet_size == 0:
             return EVAL_BAD, "無料で見られる状況でのフォールドは完全なミスプレイです。"
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
                 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board)
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
         realized_equity = equity * eqr
         
         if realized_equity >= e_req * 1.2:
@@ -278,8 +286,8 @@ class Evaluator:
             return EVAL_OPTIMAL, f"必要勝率({e_req*100:.1f}%)に対し勝率({realized_equity*100:.1f}%)が不足しているため、適切なフォールドです。"
 
     @staticmethod
-    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None):
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board)
+    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5):
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
         # ベットサイズに基づいた動的フォールドエクイティの計算 (MDF/Alpha)
@@ -297,8 +305,8 @@ class Evaluator:
             return EVAL_BAD, f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None):
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board)
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5):
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
         # レイズ額に対する動的フォールドエクイティの計算
@@ -318,7 +326,7 @@ class Evaluator:
             return EVAL_BAD, f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
 
     @staticmethod
-    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None):
+    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5):
         if not has_initiative:
             if not is_hero_ip:
                 # OOP（先攻）の場合
@@ -328,7 +336,7 @@ class Evaluator:
                 return EVAL_OPTIMAL, "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"
             
         # チェックが適切かどうか
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board) # Defaults to None, relying on base EQR
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv) # Defaults to None, relying on base EQR
         realized_equity = equity * eqr
 
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
