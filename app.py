@@ -77,8 +77,11 @@ def take_action(req: ActionRequest):
     amount = req.amount
     
     # 1. Calc Equity
+    # Determine if 3bet pot (heuristic based on standard sizings)
+    is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 5.5)
+
     hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
-    eqr = Evaluator.get_eqr_modifier(engine.hero_position)
+    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot)
     realized_equity = hero_eq * eqr
     
     eval_result = "N/A"
@@ -90,32 +93,44 @@ def take_action(req: ActionRequest):
     if action == "FOLD":
         engine.update_range_dict("HERO", "FOLD", 0)
         engine.record_action("HERO", "FOLD", 0, realized_equity, engine.pot_size)
-        eval_result, eval_reason = Evaluator.evaluate_fold(realized_equity, hero_facing, engine.pot_size)
+        eval_result, eval_reason = Evaluator.evaluate_fold(
+            hero_eq, hero_facing, engine.pot_size, 
+            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot
+        )
         return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": "You Folded"}
         
     elif action == "CALL":
         call_amount = hero_facing
         engine.update_range_dict("HERO", "CALL", call_amount)
         engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
-        eval_result, eval_reason = Evaluator.evaluate_call(realized_equity, call_amount, engine.pot_size)
+        eval_result, eval_reason = Evaluator.evaluate_call(
+            hero_eq, call_amount, engine.pot_size,
+            hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot
+        )
         engine.place_bet("HERO", call_amount)
         
     elif action in ["BET", "RAISE"]:
         engine.update_range_dict("HERO", action, amount)
         engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
         if action == "RAISE":
-            eval_result, eval_reason = Evaluator.evaluate_raise(realized_equity, amount, hero_facing, engine.pot_size)
+            eval_result, eval_reason = Evaluator.evaluate_raise(
+                hero_eq, amount, hero_facing, engine.pot_size,
+                hero_pos=engine.hero_position, cards=engine.hero_hand
+            )
         else:
-            eval_result, eval_reason = Evaluator.evaluate_bet(realized_equity, amount, engine.pot_size)
+            eval_result, eval_reason = Evaluator.evaluate_bet(
+                hero_eq, amount, engine.pot_size,
+                hero_pos=engine.hero_position, cards=engine.hero_hand
+            )
         engine.place_bet("HERO", amount)
         
     elif action == "CHECK":
         engine.update_range_dict("HERO", "CHECK", 0)
         engine.record_action("HERO", "CHECK", 0, realized_equity, engine.pot_size)
         eval_result, eval_reason = Evaluator.evaluate_check(
-            realized_equity, 
+            hero_eq, 
             engine.pot_size, 
-            engine.hero_position, 
+            hero_pos=engine.hero_position, 
             has_initiative=(engine.aggressor == "HERO"),
             is_hero_ip=engine.is_hero_ip
         )
