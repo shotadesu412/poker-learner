@@ -22,6 +22,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def serve_index():
     return FileResponse("static/index.html")
 
+@app.get("/api/test_sync")
+def test_sync():
+    return {"status": "SYNCED"}
+
 # We'll use a single global engine instance for this MVP demo
 engine = PokerEngine()
 

@@ -6,7 +6,7 @@ import ranges
 # GTO Theory Constraints: https://link-to-gto-sizing-rules.domain (Implemented Phase 12)
 PREFLOP_OPENS = {
     "UTG": 2.5,
-    "MP": 2.5,
+    "HJ": 2.5,
     "CO": 2.3,
     "BTN": 2.2,
     "SB": 2.5,
@@ -261,10 +261,20 @@ class Evaluator:
         if call_amount == 0:
             return EVAL_OPTIMAL, "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。" # Free card is always optimal if checking
             
+        preflop_prefix = ""
         if not board and hero_range_dict is not None:
+            import ranges
             combo_str = Evaluator.get_combo_str(cards)
-            if combo_str not in hero_range_dict or hero_range_dict[combo_str] == 0.0:
-                return EVAL_BAD, "GTO理論上、このポジションと状況では参加すべきではないハンドです。フォールドを推奨します。"
+            weight = hero_range_dict.get(combo_str, 0.0)
+            classification = ranges.classify_range(weight)
+            feedback = ranges.get_preflop_feedback(classification)
+            reason = ranges.get_hand_reason(combo_str)
+            
+            if weight == 0.0:
+                return EVAL_BAD, f"【{classification}】{feedback} {reason}\n(GTO理論上、この状況では参加すべきではないハンドです。)"
+            
+            preflop_prefix = f"【{classification}】{feedback} {reason}\n"
+
             
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
                 
@@ -281,16 +291,16 @@ class Evaluator:
         ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount, spr=spr, hand_category=category)
         
         if ev_call_val > 0 and realized_equity < e_req * 0.9:
-            return EVAL_GOOD, f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
+            return EVAL_GOOD, preflop_prefix + f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
             
         if realized_equity >= e_req * 1.2:
-            return EVAL_OPTIMAL, f"必要勝率({e_req*100:.1f}%)に対し、あなたの勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
+            return EVAL_OPTIMAL, preflop_prefix + f"必要勝率({e_req*100:.1f}%)に対し、あなたの勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
         elif realized_equity >= e_req:
-            return EVAL_GOOD, f"必要勝率({e_req*100:.1f}%)を満たしており、利益的なコールです。"
+            return EVAL_GOOD, preflop_prefix + f"必要勝率({e_req*100:.1f}%)を満たしており、利益的なコールです。"
         elif realized_equity >= e_req * 0.8:
-            return EVAL_MARGINAL, f"必要勝率({e_req*100:.1f}%)にわずかに届いていません。ブラフキャッチ等の追加の理由が必要です。"
+            return EVAL_MARGINAL, preflop_prefix + f"必要勝率({e_req*100:.1f}%)にわずかに届いていません。ブラフキャッチ等の追加の理由が必要です。"
         else:
-            return EVAL_BAD, f"必要勝率({e_req*100:.1f}%)に対して勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
+            return EVAL_BAD, preflop_prefix + f"必要勝率({e_req*100:.1f}%)に対して勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
 
     @staticmethod
     def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
@@ -330,10 +340,19 @@ class Evaluator:
 
     @staticmethod
     def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):
+        preflop_prefix = ""
         if not board and hero_range_dict is not None:
+            import ranges
             combo_str = Evaluator.get_combo_str(cards)
-            if combo_str not in hero_range_dict or hero_range_dict[combo_str] == 0.0:
-                return EVAL_BAD, "GTO理論上、このポジションと状況では参加すべきではないハンドです。フォールドを推奨します。"
+            weight = hero_range_dict.get(combo_str, 0.0)
+            classification = ranges.classify_range(weight)
+            feedback = ranges.get_preflop_feedback(classification)
+            reason = ranges.get_hand_reason(combo_str)
+            
+            if weight == 0.0:
+                return EVAL_BAD, f"【{classification}】{feedback} {reason}\n(GTO理論上、この状況では参加すべきではないハンドです。)"
+            
+            preflop_prefix = f"【{classification}】{feedback} {reason}\n"
                 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
@@ -346,13 +365,13 @@ class Evaluator:
         ev_calling = Evaluator.ev_call(realized_equity, pot_size, opponent_bet_size)
         
         if ev_raising > ev_calling + (0.05 * pot_size):
-            return EVAL_OPTIMAL, f"コール(EV: {ev_calling:.1f})に対し、レイズ(EV: {ev_raising:.1f})が明確に上回る非常に強力なプレイです。"
+            return EVAL_OPTIMAL, preflop_prefix + f"コール(EV: {ev_calling:.1f})に対し、レイズ(EV: {ev_raising:.1f})が明確に上回る非常に強力なプレイです。"
         elif ev_raising >= ev_calling:
-            return EVAL_GOOD, f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
+            return EVAL_GOOD, preflop_prefix + f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
         elif ev_raising >= ev_calling - (0.05 * pot_size):
-            return EVAL_MARGINAL, f"レイズ(EV: {ev_raising:.1f})とコール(EV: {ev_calling:.1f})の期待値が拮抗しています。明確な目的が必要です。"
+            return EVAL_MARGINAL, preflop_prefix + f"レイズ(EV: {ev_raising:.1f})とコール(EV: {ev_calling:.1f})の期待値が拮抗しています。明確な目的が必要です。"
         else:
-            return EVAL_BAD, f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
+            return EVAL_BAD, preflop_prefix + f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
 
     @staticmethod
     def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5):
@@ -449,7 +468,7 @@ class PokerEngine:
         self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action="open").copy()
         
         self.cpu_tendency = "BALANCED"
-        self.POSITIONS = ["UTG", "MP", "CO", "BTN", "SB", "BB"]
+        self.POSITIONS = ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
         
         self.hero_invested = 0.0
         self.cpu_invested = 0.0
@@ -461,8 +480,8 @@ class PokerEngine:
         
     def is_hero_turn(self):
         """ True if Hero acts, False if CPU acts. """
-        preflop_order = ["UTG", "MP", "CO", "BTN", "SB", "BB"]
-        postflop_order = ["SB", "BB", "UTG", "MP", "CO", "BTN"]
+        preflop_order = ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
+        postflop_order = ["SB", "BB", "UTG", "HJ", "CO", "BTN"]
         
         if self.street == "PREFLOP":
              return preflop_order.index(self.hero_position) < preflop_order.index(self.cpu_position)
@@ -472,7 +491,7 @@ class PokerEngine:
     @property
     def is_hero_ip(self):
         """ True if Hero acts last postflop (In Position) """
-        postflop_order = ["SB", "BB", "UTG", "MP", "CO", "BTN"]
+        postflop_order = ["SB", "BB", "UTG", "HJ", "CO", "BTN"]
         return postflop_order.index(self.hero_position) > postflop_order.index(self.cpu_position)
         
     def start_new_hand(self):

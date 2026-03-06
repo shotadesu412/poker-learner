@@ -1,11 +1,9 @@
 """
 ranges.py
 Defines basic preflop hand ranges for Hero and CPU.
-These are simplified default ranges to be used for Monte Carlo Equity Evaluation.
-Ranges are defined as list of hands e.g. ["AA", "KK", "AKs", "AJo", ...]
+These are updated simplified default ranges based on 6-max 100bb beginner strategy.
 """
 
-# Helper to generate all combos with default weight 1.0
 def generate_all_hands_dict():
     ranks = "AKQJT98765432"
     hands = {}
@@ -21,157 +19,168 @@ def generate_all_hands_dict():
 
 ALL_HANDS_DICT = generate_all_hands_dict()
 
-# GTO Position-Based Opening Ranges (Refactored to Weighted Dictionaries)
-RANGES = {
+# --- NEW EDUCATIONAL RANGES & FEEDBACK ---
+
+position_ranges = {
     "UTG": {
-        "open": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0,
-            "AKs": 1.0, "AQs": 1.0, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A5s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0,
-            "QJs": 1.0, "QTs": 1.0,
-            "JTs": 1.0, "T9s": 1.0, "98s": 1.0,
-            "AKo": 1.0, "AQo": 1.0, "AJo": 0.5
-        },
-        "vs_3bet_call": {
-            "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0,
-            "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5
-        },
-        "vs_3bet_4bet": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5
-        }
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1, 
+        "66": 0.5, "55": 0.5,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A5s": 0.5,
+        "KQs": 1, "KJs": 1,
+        "AKo": 1, "AQo": 1, "AJo": 0.5, "KQo": 0.5
     },
-    "MP": {
-        "open": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 0.5,
-            "AKs": 1.0, "AQs": 1.0, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 0.5, "A5s": 1.0, "A4s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 0.5,
-            "JTs": 1.0, "J9s": 0.5, "T9s": 1.0, "98s": 1.0, "87s": 0.5,
-            "AKo": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 0.5, "KQo": 1.0, "KJo": 0.5
-        },
-        "vs_open_call": {
-            "JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 0.5,
-            "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5,
-            "AQo": 0.5, "AJo": 1.0, "KQo": 1.0
-        },
-        "vs_open_3bet": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5,
-            "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5,
-            "AKo": 1.0, "AQo": 0.5
-        }
+    "HJ": {
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1, 
+        "66": 1, "55": 1, "44": 0.5,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A5s": 1, "A4s": 0.5,
+        "KQs": 1, "KJs": 1, "KTs": 0.5, "QTs": 0.5,
+        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 0.5, "KQo": 1, "KJo": 0.5
     },
     "CO": {
-        "open": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 0.5, "22": 0.5,
-            "AKs": 1.0, "AQs": 1.0, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 0.5, "K7s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 0.5,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 0.5,
-            "T9s": 1.0, "T8s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "65s": 0.5,
-            "AKo": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 0.5, "KQo": 1.0, "KJo": 1.0, "KTo": 0.5, "QJo": 1.0, "QTo": 0.5, "JTo": 0.5
-        },
-        "vs_open_call": {
-            "JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 0.5,
-            "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5,
-            "AQo": 0.5, "AJo": 1.0, "KQo": 1.0
-        },
-        "vs_open_3bet": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5,
-            "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5,
-            "AKo": 1.0, "AQo": 0.5
-        }
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1, 
+        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, 
+        "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
+        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 0.5,
+        "QJs": 1, "QTs": 1, "Q9s": 1, 
+        "JTs": 1, "J9s": 0.5, "T9s": 1, "98s": 1, "87s": 0.5,
+        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 0.5, 
+        "KQo": 1, "KJo": 1, "KTo": 1, "QJo": 1, "QTo": 0.5
     },
     "BTN": {
-        "open": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0,
-            "AKs": 1.0, "AQs": 1.0, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 0.5, "K5s": 0.5, "K4s": 0.5, "K3s": 0.5, "K2s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 0.5, "Q6s": 0.5, "Q5s": 0.5,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "J7s": 0.5,
-            "T9s": 1.0, "T8s": 1.0, "T7s": 0.5,
-            "98s": 1.0, "97s": 1.0, "87s": 1.0, "86s": 0.5, "76s": 1.0, "75s": 0.5, "65s": 1.0, "54s": 0.5,
-            "AKo": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 1.0, "A7o": 0.5, "A6o": 0.5, "A5o": 1.0, "A4o": 0.5,
-            "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "K9o": 0.5, "QJo": 1.0, "QTo": 1.0, "Q9o": 0.5, "JTo": 1.0, "J9o": 0.5, "T9o": 0.5
-        },
-        "vs_open_call": {
-            "JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 0.5,
-            "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5,
-            "AQo": 0.5, "AJo": 1.0, "KQo": 1.0
-        },
-        "vs_open_3bet": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5,
-            "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5,
-            "AKo": 1.0, "AQo": 0.5
-        }
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1, 
+        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1, 
+        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
+        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 1, "K6s": 1, "K5s": 0.5,
+        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 1, "Q7s": 0.5,
+        "JTs": 1, "J9s": 1, "J8s": 1, "T9s": 1, "T8s": 1, 
+        "98s": 1, "87s": 1, "76s": 1, "65s": 1, "54s": 1,
+        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 1, "A7o": 0.5, "A5o": 0.5,
+        "KQo": 1, "KJo": 1, "KTo": 1, "K9o": 1, 
+        "QJo": 1, "QTo": 1, "Q9o": 0.5, "JTo": 1, "J9o": 0.5, "T9o": 1
     },
     "SB": {
-        "open": {
-            "AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0,
-            "AKs": 1.0, "AQs": 1.0, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 1.0,
-            "T9s": 1.0, "T8s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "65s": 1.0,
-            "AKo": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 1.0, "A7o": 0.5, "A5o": 0.5,
-            "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "K9o": 0.5, "QJo": 1.0, "QTo": 1.0, "JTo": 1.0
-        },
-        "vs_open_call": {},
-        "vs_open_3bet": {}
-    },
-    "BB": {
-        "vs_UTG": {
-            "QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 0.5, "A5s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 0.5, 
-            "QJs": 1.0, "QTs": 1.0, "JTs": 1.0, "T9s": 1.0, "98s": 1.0, "87s": 1.0,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 0.5, "KQo": 1.0, "KJo": 0.5
-        },
-        "vs_MP": {
-            "QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 0.5, "A5s": 1.0, "A4s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0,
-            "JTs": 1.0, "J9s": 1.0, "T9s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 0.5, "KQo": 1.0, "KJo": 1.0, "QJo": 1.0
-        },
-        "vs_CO": {
-            "QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 0.5, "K5s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 0.5,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "T9s": 1.0, "T8s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "65s": 1.0, "54s": 0.5,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 0.5, "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "QJo": 1.0, "QTo": 1.0, "JTo": 1.0
-        },
-        "vs_BTN": {
-            "QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 1.0, "K5s": 1.0, "K4s": 1.0, "K3s": 1.0, "K2s": 1.0,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 1.0, "Q6s": 0.5, "Q5s": 0.5,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "J7s": 1.0, "T9s": 1.0, "T8s": 1.0, "T7s": 0.5, 
-            "98s": 1.0, "97s": 1.0, "87s": 1.0, "86s": 1.0, "76s": 1.0, "75s": 0.5, "65s": 1.0, "64s": 0.5, "54s": 1.0,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 1.0, "A7o": 1.0, "A6o": 0.5, "A5o": 1.0, "A4o": 0.5,
-            "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "K9o": 1.0, "K8o": 0.5, "QJo": 1.0, "QTo": 1.0, "Q9o": 1.0, "JTo": 1.0, "J9o": 1.0, "T9o": 1.0, "98o": 1.0
-        },
-        "vs_SB": {
-            "QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0,
-            "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 1.0, "K5s": 1.0, "K4s": 1.0, "K3s": 1.0, "K2s": 1.0,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 1.0, "Q6s": 1.0, "Q5s": 1.0,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "J7s": 1.0, "T9s": 1.0, "T8s": 1.0, "T7s": 1.0, 
-            "98s": 1.0, "97s": 1.0, "87s": 1.0, "86s": 1.0, "76s": 1.0, "75s": 1.0, "65s": 1.0, "64s": 0.5, "54s": 1.0,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 1.0, "A7o": 1.0, "A6o": 1.0, "A5o": 1.0, "A4o": 1.0, "A3o": 0.5, "A2o": 0.5,
-            "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "K9o": 1.0, "K8o": 1.0, "K7o": 0.5, "QJo": 1.0, "QTo": 1.0, "Q9o": 1.0, "Q8o": 0.5,
-            "JTo": 1.0, "J9o": 1.0, "J8o": 0.5, "T9o": 1.0, "T8o": 0.5, "98o": 1.0, "87o": 1.0
-        }
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1, 
+        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1, 
+        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
+        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 0.5,
+        "QJs": 1, "QTs": 1, "Q9s": 1, "JTs": 1, "J9s": 1, "T9s": 1, 
+        "98s": 1, "87s": 1, "76s": 1,
+        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 0.5,
+        "KQo": 1, "KJo": 1, "KTo": 1, "QJo": 1, "QTo": 1, "JTo": 1
     }
 }
 
+threebet_ranges = {
+    "BTN_vs_CO": {
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 0.5,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 0.5, "KQs": 1, "KJs": 0.5,
+        "AKo": 1, "AQo": 1, "AJo": 0.5, "KQo": 0.5,
+        "A5s": 0.5, "A4s": 0.5, 
+        "T9s": 0.5, "98s": 0.5, "87s": 0.5
+    },
+    "SB_vs_BTN": {
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 0.5,
+        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "KQs": 1, "KJs": 1,
+        "AKo": 1, "AQo": 1, "AJo": 1, "KQo": 1,
+        "A5s": 1, "A4s": 1, "A3s": 0.5, "A2s": 0.5,
+        "KTs": 0.5, "QTs": 0.5, "JTs": 0.5,
+        "76s": 0.5, "65s": 0.5
+    },
+    "BB_vs_BTN": {
+        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, 
+        "AKs": 1, "AQs": 1, 
+        "AKo": 1,
+        "A5s": 1, "A4s": 1, "A3s": 0.5, "A2s": 0.5,
+        "K9s": 0.5, "K8s": 0.5, "Q9s": 0.5,
+        "J8s": 0.5, "T8s": 0.5,
+        "76s": 0.5, "65s": 0.5, "54s": 0.5
+    }
+}
+
+hand_categories = {
+    "premium": ["AA", "KK", "QQ", "AKs", "AKo"],
+    "strong": ["JJ", "TT", "99", "AQs", "AJs", "ATs", "AQo"],
+    "medium": ["88", "77", "66", "55", "KQs", "KJs", "KTs", "QJs", "QTs", "JTs", "AJo", "ATo", "KQo", "KJo"],
+    "speculative": ["44", "33", "22", "A9s", "A8s", "A7s", "A6s", "A5s", "A4s", "A3s", "A2s", 
+                    "K9s", "K8s", "K7s", "K6s", "K5s", "K4s", "K3s", "K2s",
+                    "Q9s", "Q8s", "Q7s", "Q6s", "Q5s", "J9s", "J8s", "J7s",
+                    "T9s", "T8s", "T7s", "98s", "97s", "87s", "86s", "76s", "75s", "65s", "64s", "54s"],
+    "weak": []
+}
+
+def classify_range(weight):
+    if weight >= 1.0:
+        return "CORE"
+    elif weight > 0.0:
+        return "MIXED"
+    else:
+        return "FOLD"
+
+def get_preflop_feedback(classification):
+    if classification == "CORE":
+        return "標準的なオープンレンジです"
+    elif classification == "MIXED":
+        return "状況によってオープンされるハンドです"
+    else:
+        return "フォールド寄りのハンドです"
+
+def get_hand_reason(combo_str):
+    if combo_str in ["A5s", "A4s", "A3s", "A2s", "K5s", "K4s"]:
+        return "スーテッドエースやスーテッドキングで、プレイアビリティとブロッカー効果があります。"
+    elif combo_str in ["KJo", "KTo", "QJo", "QTo", "JTo"]:
+        return "ドミネートされやすい危険なトラップハンドです。"
+    elif combo_str in ["AJo", "ATo"]:
+        return "強いレンジに支配されやすく、弱いレンジには強いマージナルなハンドです。"
+    elif combo_str in ["K9s", "QTs", "Q9s", "J8s"]:
+        return "プレイアビリティは高いものの、トップペア時のキッカー負けリスクがあります。"
+    elif combo_str in ["AA", "KK", "QQ"]:
+        return "最強クラスのプレミアムハンドです。自信を持ってアグレッシブにプレイしましょう。"
+    elif combo_str in ["AKs", "AKo"]:
+        return "非常に強力なプレミアムハンドで、3BETや4BETにも適しています。"
+    elif combo_str in ["76s", "65s", "54s", "87s", "98s"]:
+        return "ストレートやフラッシュを作りやすい投機的なハンド（スーテッドコネクター）です。"
+    elif len(combo_str) == 2 and combo_str[0] == combo_str[1]: # Pocket pairs
+        return "セットマイン（スリーカード狙い）のポテンシャルを持つポケットペアです。"
+    return "ポジションに応じた標準的なレンジ構成ハンドです。"
+
+# Backward compatibility map for the engine's current structure
+RANGES = {
+    "UTG": {
+        "open": position_ranges["UTG"],
+        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
+        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5}
+    },
+    "HJ": {
+        "open": position_ranges["HJ"],
+        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5, "KQs": 1.0, "KJs": 1.0, "KTs": 0.5, "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
+        "vs_open_3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5}
+    },
+    "CO": {
+        "open": position_ranges["CO"],
+        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5, "KQs": 1.0, "KJs": 1.0, "KTs": 0.5, "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
+        "vs_open_3bet": threebet_ranges.get("BTN_vs_CO", {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5})
+    },
+    "BTN": {
+        "open": position_ranges["BTN"],
+        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 0.5, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 0.5, "KQs": 1.0, "KJs": 1.0, "KTs": 0.5, "QJs": 1.0, "QTs": 0.5, "JTs": 1.0, "T9s": 1.0, "98s": 0.5, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
+        "vs_open_3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5}
+    },
+    "SB": {
+        "open": position_ranges["SB"],
+        "vs_open_call": {},
+        "vs_open_3bet": threebet_ranges.get("SB_vs_BTN", {})
+    },
+    "BB": {
+        "vs_UTG": {"QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 0.5, "A5s": 0.5, "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 0.5, "QJs": 1.0, "QTs": 1.0, "JTs": 1.0, "T9s": 1.0, "98s": 1.0, "87s": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 0.5, "KQo": 1.0, "KJo": 0.5},
+        "vs_HJ": {"QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 0.5, "A5s": 1.0, "A4s": 0.5, "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 0.5, "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "JTs": 1.0, "J9s": 1.0, "T9s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 0.5, "KQo": 1.0, "KJo": 1.0, "QJo": 1.0},
+        "vs_CO": {"QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0, "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 0.5, "K5s": 0.5, "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 0.5, "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "T9s": 1.0, "T8s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "65s": 1.0, "54s": 0.5, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 0.5, "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "QJo": 1.0, "QTo": 1.0, "JTo": 1.0},
+        "vs_BTN": threebet_ranges.get("BB_vs_BTN", {}), # In reality BB also calls a lot vs BTN, but mapping purely to 3bet for MVP
+        "vs_SB": {"QQ": 0.5, "JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "66": 1.0, "55": 1.0, "44": 1.0, "33": 1.0, "22": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 1.0, "A6s": 1.0, "A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0, "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 1.0, "K7s": 1.0, "K6s": 1.0, "K5s": 1.0, "K4s": 1.0, "K3s": 1.0, "K2s": 1.0, "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0, "Q8s": 1.0, "Q7s": 1.0, "Q6s": 1.0, "Q5s": 1.0, "JTs": 1.0, "J9s": 1.0, "J8s": 1.0, "J7s": 1.0, "T9s": 1.0, "T8s": 1.0, "T7s": 1.0, "98s": 1.0, "97s": 1.0, "87s": 1.0, "86s": 1.0, "76s": 1.0, "75s": 1.0, "65s": 1.0, "64s": 0.5, "54s": 1.0, "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 1.0, "A8o": 1.0, "A7o": 1.0, "A6o": 1.0, "A5o": 1.0, "A4o": 1.0, "A3o": 0.5, "A2o": 0.5, "KQo": 1.0, "KJo": 1.0, "KTo": 1.0, "K9o": 1.0, "K8o": 1.0, "K7o": 0.5, "QJo": 1.0, "QTo": 1.0, "Q9o": 1.0, "Q8o": 0.5, "JTo": 1.0, "J9o": 1.0, "J8o": 0.5, "T9o": 1.0, "T8o": 0.5, "98o": 1.0, "87o": 1.0}
+    }
+}
 
 class HandRange:
     """
@@ -199,14 +208,10 @@ def get_range_by_category(category, action="open"):
     return pos_data.get(action, ALL_HANDS_DICT)
 
 def parse_combo(combo_str):
-    """
-    Parses a string like 'AKs' or 'JJ' into a list of specific card strings 
-    for Treys evaluator e.g. ['As', 'Ks'], ['Ah', 'Kh'], etc.
-    """
     ranks = '23456789TJQKA'
     suits = 'shdc'
     
-    if len(combo_str) == 2:  # Pair e.g. 'AA'
+    if len(combo_str) == 2:
         rank = combo_str[0]
         combos = []
         for i in range(len(suits)):
@@ -217,10 +222,10 @@ def parse_combo(combo_str):
     elif len(combo_str) == 3:
         rank1, rank2, stype = combo_str[0], combo_str[1], combo_str[2]
         combos = []
-        if stype == 's': # Suited
+        if stype == 's':
             for s in suits:
                 combos.append([rank1+s, rank2+s])
-        elif stype == 'o': # Offsuit
+        elif stype == 'o':
             for s1 in suits:
                 for s2 in suits:
                     if s1 != s2:
@@ -230,10 +235,6 @@ def parse_combo(combo_str):
     return []
 
 def get_possible_hole_cards_weighted(range_category, action="open", dead_cards=None):
-    """
-    Returns a list of tuples: [ (['As', 'Ks'], 1.0), (['Ah', 'Qc'], 0.5), ... ]
-    Automatically expands string representations and strips dead cards.
-    """
     if dead_cards is None:
         dead_cards = []
         
@@ -254,10 +255,6 @@ def get_possible_hole_cards_weighted(range_category, action="open", dead_cards=N
 from treys import Card
 
 def sort_range_by_strength(range_dict, board=None, treys_evaluator=None):
-    """
-    Sorts a range dictionary from strongest to weakest based on preflop heuristics 
-    or postflop Treys exact evaluation against the current board sequence.
-    """
     def preflop_strength(combo_str):
         if not combo_str:
             return (0, 0, 0)
@@ -289,14 +286,9 @@ def sort_range_by_strength(range_dict, board=None, treys_evaluator=None):
                         best_score = score
             return best_score
             
-        # Treys returns lower integers for stronger hands
         return sorted(range_dict.keys(), key=postflop_strength, reverse=False)
 
 def update_range_after_action(range_dict, action_type, bet_size=None, board=None, treys_evaluator=None):
-    """
-    Simulates positional polarization and merging over the dict representation of a range
-    based on the actions taken. (LARGE_BET, SMALL_BET, CALL, FOLD)
-    """
     if not range_dict:
         return {}
         
