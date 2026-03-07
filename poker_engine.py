@@ -3,172 +3,63 @@ import math
 from treys import Deck, Card, Evaluator as TreysEvaluator
 import ranges
 
-# GTO Theory Constraints: https://link-to-gto-sizing-rules.domain (Implemented Phase 12)
-PREFLOP_OPENS = {
-    "UTG": 2.5,
-    "HJ": 2.5,
-    "CO": 2.3,
-    "BTN": 2.2,
-    "SB": 2.5,
-    "BB": 0.0 # BB does not strictly open
-}
-
-PREFLOP_3BET = {
-    "IP": 2.8,
-    "OOP": 3.5
-}
-
-BET_SIZES = {
-    "FLOP": {"small": 0.25, "medium": 0.50, "large": 0.75}, # Pot fraction
-    "TURN": {"small": 0.33, "medium": 0.66, "large": 1.00},
-    "RIVER": {"small": 0.50, "medium": 1.00, "large": 1.50}  # 1.5 = Overbet
-}
-
-RAISE_MULTIPLIER = { # Generalized Fallback postflop multi
-    "FLOP": {"small": 2.5, "medium": 3.0, "large": 3.5},
-    "TURN": {"small": 2.5, "medium": 3.0, "large": 3.5},
-    "RIVER": {"small": 2.5, "medium": 3.0, "large": 5.0} # or all-in
-}
-
-TEXTURE_MULTIPLIER = {
-    "dry": 1.15,
-    "semi_wet": 1.0,
-    "wet": 0.85,
-    "paired": 1.1
-}
-
-POSITION_MULTIPLIER = {
-    "IP": 1.1,
-    "OOP": 0.9
-}
-
-SPR_MULTIPLIER = {
-    "low": 0.8,     # SPR < 3
-    "mid": 1.0,     # 3〜6
-    "high": 1.2     # >6
-}
-
-# --- 評価記号 ---
-EVAL_OPTIMAL = "◎"
-EVAL_GOOD = "◯"
-EVAL_MARGINAL = "△"
-EVAL_BAD = "×"
-
+from bet_sizing import (
+    PREFLOP_OPENS, PREFLOP_3BET, BET_SIZES, RAISE_MULTIPLIER, 
+    TEXTURE_MULTIPLIER, POSITION_MULTIPLIER, SPR_MULTIPLIER,
+    EVAL_OPTIMAL, EVAL_GOOD, EVAL_MARGINAL, EVAL_BAD
+)
+from equity import EquityCalculator
+from ev_calculator import EVCalculator
+from hand_classifier import HandClassifier
+import range_utils
 class Evaluator:
-    """
-    数学的根拠に基づき、ユーザーのアクションを評価するクラス。
-    """
+    # --- EV Threshold Constants ---
+    CALL_IMPLIED_ODDS_THRESHOLD = 0.9
+    CALL_OPTIMAL_THRESHOLD = 1.2
+    CALL_MARGINAL_THRESHOLD = 0.8
+    BET_OPTIMAL_MARGIN_PCT = 0.05
+    FOLD_OPTIMAL_THRESHOLD = 1.2
+
     @staticmethod
     def calculate_required_equity(call_amount, pot_size):
-        """ 必要エクイティ (E_req) の計算 """
-        if call_amount == 0:
-            return 0.0
-        return call_amount / (pot_size + call_amount)
+        return EVCalculator.calculate_required_equity(call_amount, pot_size)
 
     @staticmethod
     def ev_call(equity, pot_size, call_amount, spr=None, hand_category=None):
-        """
-        EV sanity rules:
-
-        CALL:
-            equity * (pot + call) - call
-
-        BET:
-            FE * pot
-            + (1 - FE) * [ equity*(pot + bet) - (1-equity)*bet ]
-
-        CHECK:
-            equity * pot
-
-        No double counting of pot.
-        """
-        base_ev = equity * (pot_size + call_amount) - call_amount
-        
-        # Implied odds bonus for strong draws with deep stacks
-        if spr is not None and hand_category == "STRONG_DRAW":
-            implied_bonus = equity * (pot_size * 0.5 * min(spr, 5.0))
-            return base_ev + implied_bonus
-            
-        return base_ev
+        return EVCalculator.ev_call(equity, pot_size, call_amount, spr, hand_category)
 
     @staticmethod
     def ev_check(equity, pot_size):
-        """
-        Simplified EV of checking.
-        We assume no fold equity and no additional money invested.
-        """
-        return equity * pot_size
+        return EVCalculator.ev_check(equity, pot_size)
 
     @staticmethod
     def ev_bet(equity, pot_size, bet_amount, fold_equity):
-        """
-        EV when betting (no raise back assumed).
-
-        EV = FE * pot
-             + (1 - FE) * [ equity * (pot + bet)
-                            - (1 - equity) * bet ]
-        """
-        win_part = equity * (pot_size + bet_amount)
-        lose_part = (1 - equity) * bet_amount
-        return fold_equity * pot_size + (1 - fold_equity) * (win_part - lose_part)
+        return EVCalculator.ev_bet(equity, pot_size, bet_amount, fold_equity)
     
     @staticmethod
+    def calculate_alpha(bet_amount, pot_size):
+        return EVCalculator.calculate_alpha(bet_amount, pot_size)
+    
+    @staticmethod
+    def calculate_mdf(bet_amount, pot_size):
+        return EVCalculator.calculate_mdf(bet_amount, pot_size)
+
+    @staticmethod
+    def calculate_theoretical_bluff_frequency(bet_size, pot):
+        return EVCalculator.calculate_theoretical_bluff_frequency(bet_size, pot)
+
+    @staticmethod
+    def detect_draw_strength(cards, board):
+        return HandClassifier.detect_draw_strength(cards, board)
+
+    @staticmethod
     def categorize_hand(cards, board=None):
-        """
-        簡易的にハンドをカテゴリ分けする
-        MADE_HAND, STRONG_DRAW, WEAK_HAND
-        """
-        if not cards or len(cards) < 2:
-            return "WEAK_HAND"
-            
-        # Postflop evaluation
-        if board and len(board) >= 3:
-            evaluator = TreysEvaluator()
-            try:
-                score = evaluator.evaluate(board, cards)
-                if score <= 6185: # Pair or better
-                    return "MADE_HAND"
-            except:
-                pass
-                
-            from treys import Card
-            suits = [Card.get_suit_int(c) for c in cards + board]
-            suit_counts = {s: suits.count(s) for s in set(suits)}
-            if suit_counts and max(suit_counts.values()) == 4:
-                return "STRONG_DRAW"
-            return "WEAK_HAND"
-            
-        from treys import Card
-        r1 = Card.get_rank_int(cards[0])
-        r2 = Card.get_rank_int(cards[1])
-        
-        # AA-TT (Pocket pairs T+) are strong made hands preflop
-        if r1 == r2 and r1 >= 8: # 8 = Ten
-            return "MADE_HAND"
-            
-        # Top Broadways AK, AQ
-        if r1 >= 10 and r2 >= 10:
-            return "MADE_HAND"
-            
-        # Suited Connectors / Suited Broadways -> STRONG_DRAW
-        s1 = Card.get_suit_int(cards[0])
-        s2 = Card.get_suit_int(cards[1])
-        is_suited = (s1 == s2)
-        gap = abs(r1 - r2)
-        
-        if is_suited and (gap <= 2):
-            return "STRONG_DRAW"
-            
-        # Small pocket pairs
-        if r1 == r2:
-            return "STRONG_DRAW"
-            
-        return "WEAK_HAND"
+        return HandClassifier.categorize_hand(cards, board)
 
     @staticmethod
     def calculate_pi(cards, board=None):
         """
-        Playability Index (PI) の計算
+        Playability Index (PI) の計算 (Updated to GTO Constraints)
         """
         if not cards or len(cards) < 2:
             return 1.0
@@ -181,15 +72,14 @@ class Evaluator:
         s2 = Card.get_suit_int(cards[1])
         
         if s1 == s2:
-            pi += 0.05
+            pi += 0.08
         if abs(r1 - r2) <= 1:
-            pi += 0.05
+            pi += 0.06
         if r1 == r2:
-            pi += 0.05
+            pi += 0.10
             
         # Postflop PI
         if board and len(board) >= 3:
-            from treys import Card
             suits = [Card.get_suit_int(c) for c in cards + board]
             suit_counts = {s: suits.count(s) for s in set(suits)}
             if suit_counts and max(suit_counts.values()) == 4:
@@ -198,37 +88,80 @@ class Evaluator:
         return pi
 
     @staticmethod
-    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
+    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None, range_adv=0.5, spr=10.0):
         """
-        OOP補正、3BETポット補正、PI補正、そしてレンジアドバンテージを加味した実現エクイティ係数
+        Calculates EQR (Equity Realization) based on:
+        1. Position (IP vs OOP)
+        2. Playability (Hand Category fragility)
+        3. SPR convergence
+        4. Range Advantage
+        5. Board Texture (New)
+        6. Nut Advantage (New)
         """
         base_eqr = 1.0
         category = Evaluator.categorize_hand(cards, board)
+        is_ip = hero_pos in ["BTN", "CO", "HJ"] # Rough IP heuristic
         
-        if hero_pos in ["SB", "BB"]:
-            # OOP時のカテゴリ別補正
-            if category == "MADE_HAND":
-                base_eqr = 0.90
-            elif category == "STRONG_DRAW":
-                base_eqr = 0.85
-            else:
-                base_eqr = 0.70
-                
+        # 1. Positional Modifier
+        if is_ip:
+            base_eqr += 0.10
+        else:
+            base_eqr -= 0.10
+            
+        # 2. Playability Modifier (8-tier buckets)
+        if category in ["STRONG_DRAW", "MEDIUM_DRAW"]:
+            base_eqr += 0.15 # Draws over-realize
+        elif category in ["NUT_HAND", "STRONG_MADE"]:
+            base_eqr += 0.05 # Strong made hands realize well
+        elif category == "AIR" or category == "WEAK_MADE":
+            base_eqr -= 0.20 # Air and weak pairs under-realize
+        elif category == "WEAK_DRAW":
+            base_eqr -= 0.10
+            
         if is_3bet_pot:
-            if category == "STRONG_DRAW" or category == "WEAK_HAND":
-                base_eqr *= 0.85
+            # 3bet pots punish marginal/air hands even more heavily
+            if category in ["MEDIUM_MADE", "WEAK_MADE", "WEAK_DRAW", "AIR"]:
+                base_eqr -= 0.15
                 
-        # Range Advantage Bonus/Penalty (~ -20% to +15%)
-        # range_adv goes from 0.0 (total disadvantage) to 1.0 (total advantage)
-        adv_multiplier = 1.0 + (range_adv - 0.5) * 0.4
+        # 3. SPR Convergence using SPR_MULTIPLIER categories
+        if spr < 1.0:
+            spr_adj = (1.0 - base_eqr) * SPR_MULTIPLIER["ultra_low"]
+            base_eqr += spr_adj
+        elif spr < 3.0:
+            spr_adj = (1.0 - base_eqr) * SPR_MULTIPLIER["low"]
+            base_eqr += spr_adj
+        elif spr > 6.0:
+            base_eqr *= SPR_MULTIPLIER["high"]
+            
+        # 4. Range Advantage Bonus/Penalty
+        adv_multiplier = 1.0 + (range_adv - 0.5) * 0.3
         base_eqr *= adv_multiplier
         
-        # Clamp EQR to prevent absurd bounds
-        base_eqr = max(0.5, min(1.5, base_eqr))
+        # 5 & 6. Board Texture and Nut Advantage
+        if board:
+            texture = HandClassifier.classify_board_texture(board)
+            if texture == "paired":
+                nut_adv = 0.3 if is_ip else -0.1
+                base_eqr *= TEXTURE_MULTIPLIER["paired"]
+            elif texture == "dry":
+                nut_adv = 0.2 if is_ip else -0.1
+                base_eqr *= TEXTURE_MULTIPLIER["dry"]
+            elif texture == "wet":
+                nut_adv = -0.2 if is_ip else 0.2
+                base_eqr *= TEXTURE_MULTIPLIER["wet"]
+            elif texture == "monotone":
+                nut_adv = -0.3 if is_ip else 0.2
+                base_eqr *= TEXTURE_MULTIPLIER.get("semi_wet", 1.0)
+            else:
+                nut_adv = 0.0
+                
+            base_eqr += (nut_adv * 0.15)
         
-        # Playability Index
+        # Add basic PI
         pi = Evaluator.calculate_pi(cards, board)
-        return base_eqr * pi
+        
+        final_eqr = base_eqr * pi
+        return max(0.65, min(1.25, final_eqr))
     
     @staticmethod
     def calculate_alpha(bet_amount, pot_size):
@@ -241,7 +174,7 @@ class Evaluator:
         return pot_size / (pot_size + bet_amount)
 
     @staticmethod
-    def get_combo_str(cards):
+    def get_combo_str(cards, range_dict=None):
         from treys import Card
         if not cards or len(cards) != 2: return ""
         r1 = Card.get_rank_int(cards[0])
@@ -249,6 +182,20 @@ class Evaluator:
         s1 = Card.get_suit_int(cards[0])
         s2 = Card.get_suit_int(cards[1])
         ranks = "23456789TJQKA"
+        suits_str = "shdc"
+        
+        # Exact hole cards check (e.g., AhKh)
+        c1_str = ranks[r1] + suits_str[s1]
+        c2_str = ranks[r2] + suits_str[s2]
+        exact_str1 = c1_str + c2_str
+        exact_str2 = c2_str + c1_str
+        
+        if range_dict:
+            if exact_str1 in range_dict:
+                return exact_str1
+            if exact_str2 in range_dict:
+                return exact_str2
+                
         char1 = ranks[r1]
         char2 = ranks[r2]
         if r1 == r2: return char1 + char2
@@ -257,27 +204,56 @@ class Evaluator:
         return char1 + char2 + suffix
 
     @staticmethod
+    def evaluate_preflop_range(cards, hero_range_dict):
+        combo = Evaluator.get_combo_str(cards, hero_range_dict)
+
+        if combo not in hero_range_dict:
+            return "fold"
+
+        weight = hero_range_dict.get(combo, 0.0)
+
+        if weight >= 0.75:
+            return "play"
+
+        if weight > 0:
+            return "mix"
+
+        return "fold"
+
+    @staticmethod
     def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None):
         if call_amount == 0:
-            return EVAL_OPTIMAL, "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。" # Free card is always optimal if checking
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。"}
             
         preflop_prefix = ""
+        # PREFLOP RANGE CHECK
         if not board and hero_range_dict is not None:
+            decision = Evaluator.evaluate_preflop_range(cards, hero_range_dict)
+            
             import ranges
-            combo_str = Evaluator.get_combo_str(cards)
+            combo_str = Evaluator.get_combo_str(cards, hero_range_dict)
             weight = hero_range_dict.get(combo_str, 0.0)
             classification = ranges.classify_range(weight)
             feedback = ranges.get_preflop_feedback(classification)
             reason = ranges.get_hand_reason(combo_str)
             
-            if weight == 0.0:
-                return EVAL_BAD, f"【{classification}】{feedback} {reason}\n(GTO理論上、この状況では参加すべきではないハンドです。)"
+            if decision == "fold":
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
+                    "evaluation": EVAL_BAD, 
+                    "reason": f"【{classification}】{feedback} {reason}\n(このポジションのGTOレンジではフォールドが基本です。)"
+                }
+            
+            if decision == "mix":
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
+                    "evaluation": EVAL_MARGINAL, 
+                    "reason": f"【{classification}】{feedback} {reason}\n(このハンドはミックスレンジです。コールとフォールドが混在します。)"
+                }
             
             preflop_prefix = f"【{classification}】{feedback} {reason}\n"
 
-            
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
-                
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
         realized_equity = equity * eqr
         
@@ -290,118 +266,198 @@ class Evaluator:
         # EV computation
         ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount, spr=spr, hand_category=category)
         
-        if ev_call_val > 0 and realized_equity < e_req * 0.9:
-            return EVAL_GOOD, preflop_prefix + f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
-            
-        if realized_equity >= e_req * 1.2:
-            return EVAL_OPTIMAL, preflop_prefix + f"必要勝率({e_req*100:.1f}%)に対し、あなたの勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
+        result_eval = EVAL_BAD
+        result_reason = preflop_prefix
+        
+        if ev_call_val > 0 and realized_equity < e_req * Evaluator.CALL_IMPLIED_ODDS_THRESHOLD:
+            result_eval = EVAL_GOOD
+            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
+        elif realized_equity >= e_req * Evaluator.CALL_OPTIMAL_THRESHOLD:
+            result_eval = EVAL_OPTIMAL
+            result_reason += f"必要勝率({e_req*100:.1f}%)に対し、あなたの実現勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
         elif realized_equity >= e_req:
-            return EVAL_GOOD, preflop_prefix + f"必要勝率({e_req*100:.1f}%)を満たしており、利益的なコールです。"
-        elif realized_equity >= e_req * 0.8:
-            return EVAL_MARGINAL, preflop_prefix + f"必要勝率({e_req*100:.1f}%)にわずかに届いていません。ブラフキャッチ等の追加の理由が必要です。"
+            result_eval = EVAL_GOOD
+            result_reason += f"必要勝率({e_req*100:.1f}%)を満たしており、利益的なコールです。"
+        elif realized_equity >= e_req * Evaluator.CALL_MARGINAL_THRESHOLD:
+            result_eval = EVAL_MARGINAL
+            result_reason += f"必要勝率({e_req*100:.1f}%)にわずかに届いていません。ブラフキャッチ等の追加の理由が必要です。"
         else:
-            return EVAL_BAD, preflop_prefix + f"必要勝率({e_req*100:.1f}%)に対して勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
+            result_eval = EVAL_BAD
+            result_reason += f"必要勝率({e_req*100:.1f}%)に対して実現勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
+            
+        return {
+            "ev": ev_call_val,
+            "req_eq": e_req,
+            "realized_eq": realized_equity,
+            "evaluation": result_eval,
+            "reason": result_reason
+        }
 
     @staticmethod
     def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
         if opponent_bet_size == 0:
-            return EVAL_BAD, "無料で見られる状況でのフォールドは完全なミスプレイです。"
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "無料で見られる状況でのフォールドは完全なミスプレイです。"}
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
-                
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
         realized_equity = equity * eqr
         
-        if realized_equity >= e_req * 1.2:
-            return EVAL_BAD, f"必要勝率({e_req*100:.1f}%)に対して勝率({realized_equity*100:.1f}%)が十分に高く、コールやレイズすべきでした。期待値マイナスです。"
+        result_eval = EVAL_OPTIMAL
+        result_reason = ""
+        
+        if realized_equity >= e_req * Evaluator.FOLD_OPTIMAL_THRESHOLD:
+            result_eval = EVAL_BAD
+            result_reason = f"必要勝率({e_req*100:.1f}%)に対して実現勝率({realized_equity*100:.1f}%)が十分に高く、コールやレイズすべきでした。期待値マイナスです。"
         elif realized_equity >= e_req:
-            return EVAL_MARGINAL, f"必要勝率({e_req*100:.1f}%)を満たしており({realized_equity*100:.1f}%)、フォールドは消極的すぎるかもしれません。"
+            result_eval = EVAL_MARGINAL
+            result_reason = f"必要勝率({e_req*100:.1f}%)を満たしており({realized_equity*100:.1f}%)、フォールドは消極的すぎるかもしれません。"
         else:
-            return EVAL_OPTIMAL, f"必要勝率({e_req*100:.1f}%)に対し勝率({realized_equity*100:.1f}%)が不足しているため、適切なフォールドです。"
+            result_eval = EVAL_OPTIMAL
+            result_reason = f"必要勝率({e_req*100:.1f}%)に対し実現勝率({realized_equity*100:.1f}%)が不足しているため、適切なフォールドです。"
+            
+        return {
+            "ev": 0.0,  # Fold EV is always 0
+            "req_eq": e_req,
+            "realized_eq": realized_equity,
+            "evaluation": result_eval,
+            "reason": result_reason
+        }
 
     @staticmethod
     def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5):
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
-        # ベットサイズに基づいた動的フォールドエクイティの計算 (MDF/Alpha)
-        fold_equity = Evaluator.calculate_alpha(bet_amount, pot_size)
+        # Fold Equity Estimate using MDF threshold
+        # If villain defends MDF, fold frequency is (1 - MDF) = bet / (pot + bet)
+        fold_equity = bet_amount / (pot_size + bet_amount)
+        
         ev_betting = Evaluator.ev_bet(realized_equity, pot_size, bet_amount, fold_equity)
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
-        if ev_betting > ev_checking + (0.05 * pot_size):
-            return EVAL_OPTIMAL, f"チェックの期待値(EV: {ev_checking:.1f})に対し、ベット(EV: {ev_betting:.1f})が明確に上回っています。強気な最適ベットです。"
+        result_eval = EVAL_BAD
+        if ev_betting > ev_checking + (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
+            result_eval = EVAL_OPTIMAL
+            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})に対し、ベット(EV: {ev_betting:.1f})が明確に上回っています。強気な最適ベットです。"
         elif ev_betting >= ev_checking:
-            return EVAL_GOOD, f"ベット期待値(EV: {ev_betting:.1f})がチェック(EV: {ev_checking:.1f})を上回っており、妥当なアクションです。"
-        elif ev_betting >= ev_checking - (0.05 * pot_size):
-            return EVAL_MARGINAL, f"期待値(EV: {ev_betting:.1f})がパッシブなラインと拮抗しています。戦略的な意図が必要です。"
+            result_eval = EVAL_GOOD
+            result_reason = f"ベット期待値(EV: {ev_betting:.1f})がチェック(EV: {ev_checking:.1f})を上回っており、妥当なアクションです。"
+        elif ev_betting >= ev_checking - (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
+            result_eval = EVAL_MARGINAL
+            result_reason = f"期待値(EV: {ev_betting:.1f})がパッシブなラインと拮抗しています。戦略的な意図が必要です。"
         else:
-            return EVAL_BAD, f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
+            result_eval = EVAL_BAD
+            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
+
+        return {
+            "ev": ev_betting,
+            "req_eq": 0.0, # N/A for betting
+            "realized_eq": realized_equity,
+            "evaluation": result_eval,
+            "reason": result_reason
+        }
 
     @staticmethod
     def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):
         preflop_prefix = ""
+        # PREFLOP RANGE CHECK
         if not board and hero_range_dict is not None:
+            decision = Evaluator.evaluate_preflop_range(cards, hero_range_dict)
+            
             import ranges
-            combo_str = Evaluator.get_combo_str(cards)
+            combo_str = Evaluator.get_combo_str(cards, hero_range_dict)
             weight = hero_range_dict.get(combo_str, 0.0)
             classification = ranges.classify_range(weight)
             feedback = ranges.get_preflop_feedback(classification)
             reason = ranges.get_hand_reason(combo_str)
             
-            if weight == 0.0:
-                return EVAL_BAD, f"【{classification}】{feedback} {reason}\n(GTO理論上、この状況では参加すべきではないハンドです。)"
-            
+            if decision == "fold":
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
+                    "evaluation": EVAL_BAD, 
+                    "reason": f"【{classification}】{feedback} {reason}\n(このポジションのGTOレンジではレイズすべきではないハンドです。)"
+                }
+                
+            if decision == "mix":
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
+                    "evaluation": EVAL_MARGINAL, 
+                    "reason": f"【{classification}】{feedback} {reason}\n(このハンドはミックスレンジです。稀にレイズが正当化されます。)"
+                }
+                
             preflop_prefix = f"【{classification}】{feedback} {reason}\n"
                 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
-        # レイズ額に対する動的フォールドエクイティの計算
-        fold_equity = Evaluator.calculate_alpha(raise_amount, pot_size + opponent_bet_size)
-        ev_raising = Evaluator.ev_bet(realized_equity, pot_size + opponent_bet_size, raise_amount, fold_equity)
+        # Calculate fold equity dynamically via MDF.
+        # FE = bet / (pot + bet)
+        total_pot = pot_size + opponent_bet_size
+        fold_equity = raise_amount / (total_pot + raise_amount)
         
-        # 比較対象としてコールした場合のEVを計算
+        ev_raising = Evaluator.ev_bet(realized_equity, total_pot, raise_amount, fold_equity)
         ev_calling = Evaluator.ev_call(realized_equity, pot_size, opponent_bet_size)
         
-        if ev_raising > ev_calling + (0.05 * pot_size):
-            return EVAL_OPTIMAL, preflop_prefix + f"コール(EV: {ev_calling:.1f})に対し、レイズ(EV: {ev_raising:.1f})が明確に上回る非常に強力なプレイです。"
+        if ev_raising > ev_calling + (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
+            result_eval = EVAL_OPTIMAL
+            result_reason = preflop_prefix + f"コール(EV: {ev_calling:.1f})に対し、レイズ(EV: {ev_raising:.1f})が明確に上回る非常に強力なプレイです。"
         elif ev_raising >= ev_calling:
-            return EVAL_GOOD, preflop_prefix + f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
-        elif ev_raising >= ev_calling - (0.05 * pot_size):
-            return EVAL_MARGINAL, preflop_prefix + f"レイズ(EV: {ev_raising:.1f})とコール(EV: {ev_calling:.1f})の期待値が拮抗しています。明確な目的が必要です。"
+            result_eval = EVAL_GOOD
+            result_reason = preflop_prefix + f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
+        elif ev_raising >= ev_calling - (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
+            result_eval = EVAL_MARGINAL
+            result_reason = preflop_prefix + f"レイズ(EV: {ev_raising:.1f})とコール(EV: {ev_calling:.1f})の期待値が拮抗しています。明確な目的が必要です。"
         else:
-            return EVAL_BAD, preflop_prefix + f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
+            result_eval = EVAL_BAD
+            result_reason = preflop_prefix + f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
+
+        return {
+            "ev": ev_raising,
+            "req_eq": 0.0,
+            "realized_eq": realized_equity,
+            "evaluation": result_eval,
+            "reason": result_reason
+        }
 
     @staticmethod
     def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5):
         if not has_initiative:
             if not is_hero_ip:
-                # OOP（先攻）の場合
-                return EVAL_OPTIMAL, "あなたはアグレッサーではないため、まずはチェックして相手（レイザー）のアクションを待つのが定石です。"
+                # OOP
+                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "あなたはアグレッサーではないため、まずはチェックして相手（レイザー）のアクションを待つのが定石です。"}
             else:
-                # IP（後攻）の場合
-                return EVAL_OPTIMAL, "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"
+                # IP
+                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"}
             
-        # チェックが適切かどうか
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv) # Defaults to None, relying on base EQR
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
-
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
-        # 便宜上、ハーフポットベットのEVと比較して判断する
+        # Compare vs half-pot bet
         half_pot = pot_size / 2.0
-        fold_equity = Evaluator.calculate_alpha(half_pot, pot_size)
+        fold_equity = half_pot / (pot_size + half_pot)
         ev_betting_half_pot = Evaluator.ev_bet(realized_equity, pot_size, half_pot, fold_equity)
         
         if ev_checking >= ev_betting_half_pot:
-            return EVAL_OPTIMAL, f"ベット(EV: {ev_betting_half_pot:.1f})よりチェック(EV: {ev_checking:.1f})が高く、パッシブな進行が最善です。"
+            result_eval = EVAL_OPTIMAL
+            result_reason = f"ベット(EV: {ev_betting_half_pot:.1f})よりチェック(EV: {ev_checking:.1f})が高く、パッシブな進行が最善です。"
         elif ev_checking >= ev_betting_half_pot * 0.8:
-            return EVAL_GOOD, f"チェックの期待値(EV: {ev_checking:.1f})は標準的です。ポットコントロールに適しています。"
+            result_eval = EVAL_GOOD
+            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})は標準的です。ポットコントロールに適しています。"
         elif ev_checking >= ev_betting_half_pot * 0.5:
-            return EVAL_MARGINAL, f"ベットすべき状況かもしれませんが、チェックも限定的に正当化されます。"
+            result_eval = EVAL_MARGINAL
+            result_reason = f"ベットすべき状況かもしれませんが、チェックも限定的に正当化されます。"
         else:
-            return EVAL_BAD, f"ベット期待値(EV: {ev_betting_half_pot:.1f})が非常に高く、チェックは利益を逃す悪手です。"
+            result_eval = EVAL_BAD
+            result_reason = f"ベット期待値(EV: {ev_betting_half_pot:.1f})が非常に高く、チェックは利益を逃す悪手です。"
+
+        return {
+            "ev": ev_checking,
+            "req_eq": 0.0,
+            "realized_eq": realized_equity,
+            "evaluation": result_eval,
+            "reason": result_reason
+        }
 
     @staticmethod
     def calculate_preflop_score(cards):
@@ -625,11 +681,12 @@ class PokerEngine:
     def classify_board_texture(self, board):
         """
         board: Board Cards
-        return: 'dry', 'semi_wet', 'wet', 'paired'
+        return: 'dry', 'semi_wet', 'wet', 'paired', 'monotone'
         """
         if len(board) == 0:
              return "dry"
         
+        from treys import Card
         suits = [Card.get_suit_int(c) for c in board]
         ranks = [Card.get_rank_int(c) for c in board]
         
@@ -637,36 +694,37 @@ class PokerEngine:
         rank_counts = {r: ranks.count(r) for r in set(ranks)}
         max_suit = max(suit_counts.values()) if suit_counts else 0
         
-        # 1. Paired board
+        # 1. Monotone
+        if max_suit >= 3:
+            return "monotone"
+            
+        # 2. Paired board
         if max(rank_counts.values()) >= 2:
             return "paired"
             
-        # 2. Wet board logic
-        # 同スート2枚以上 (Flush Draw presence) or Connected sequence >= 3
+        # Connectivity Assessment
         sorted_ranks = sorted(ranks, reverse=True)
-        is_connected = False
+        is_highly_connected = False
+        is_semi_connected = False
+        
         if len(sorted_ranks) >= 3:
-            # Check for 3-card straight draw (e.g. 9 8 7, J T 8)
-            # A 3-card connected sequence means the gap between the highest and lowest of those 3 is <= 4
             for i in range(len(sorted_ranks) - 2):
-                 if sorted_ranks[i] - sorted_ranks[i+2] <= 4:
-                      # Additional guard: ensure it's actually 3 distinct cards making up the draw
-                      # rank_counts already ensures no pairs in this path if we reached here for a 3-board,
-                      # but for River boards (5 cards), we just need a spread of <= 4 across 3 indices.
-                      is_connected = True
-                      break
+                 gap = sorted_ranks[i] - sorted_ranks[i+2]
+                 if gap <= 3: # 7 6 5, J T 8 (OESD/Gutter dense)
+                      is_highly_connected = True
+                 elif gap <= 4: # Q 9 8, K T 8 (Some gutters)
+                      is_semi_connected = True
                       
-        # Severe Wetness: 3-flush
-        # Even if a board has 2-flush and connected (e.g. Jh Th 9s), user defined Jh Th 9s as 'wet' manually in instructions.
-        if max_suit >= 3 or (max_suit >= 2 and is_connected):
-             return "wet"
-             
-        # 3. Dry board Logic (No flush draw, no connections, no pairs)
-        if max_suit <= 1 and not is_connected:
-             return "dry"
-             
-        # 4. Fallback base (Either a 2-flush without straight draw, or a straight draw without flush draw)
-        return "semi_wet"
+        # 3. Wet
+        if max_suit == 2 and is_highly_connected:
+            return "wet"
+            
+        # 4. Semi_wet
+        if max_suit == 2 or is_highly_connected or is_semi_connected:
+            return "semi_wet"
+            
+        # 5. Dry
+        return "dry"
 
     def get_nuts_advantage(self, board_texture, hero_pos):
         """
@@ -728,23 +786,6 @@ class PokerEngine:
         if bet_size <= 0: return 0.0
         return bet_size / (pot + bet_size)
 
-    def _calculate_range_preflop_score(self, range_dict, dead_cards):
-        total_score = 0.0
-        total_weight = 0.0
-        
-        for combo_str, weight in range_dict.items():
-            if weight <= 0.0: continue
-            parsed = ranges.parse_combo(combo_str)
-            for specific_cards_str in parsed:
-                if not any(c in dead_cards for c in specific_cards_str):
-                    cards = [Card.new(c) for c in specific_cards_str]
-                    score = Evaluator.calculate_preflop_score(cards)
-                    total_score += score * weight
-                    total_weight += weight
-                    
-        if total_weight <= 0: return 0.0
-        return total_score / total_weight
-
     def generate_realized_cpu_hand(self):
         """ ショーダウン用に、現在のCPUレンジ（cpu_range_dict）とデッドカードを考慮して、
             確率に基づいた特定の物理的なハンド（Card int配列）を1つ確定させる。
@@ -784,176 +825,7 @@ class PokerEngine:
                     
         self.cpu_hand = [Card.new(c) for c in chosen_str]
 
-    def calc_equity_monte_carlo(self, hero_cards, board_cards, iterations=1000, target_actor="CPU"):
-        """
-        モンテカルロ法によるエクイティ計算（最新版）
-        内部辞書（hero_range_dict / cpu_range_dict）の直接的なウェイト分布を用いて計算する。
-        """
-        if self.street == "PREFLOP":
-            # プリフロップは計算コストが高いため、Chen Formulaベースの近似ヒューリスティックを使用する
-            target_dict = self.cpu_range_dict if target_actor == "CPU" else self.hero_range_dict
-            dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-            
-            hero_score = Evaluator.calculate_preflop_score(hero_cards)
-            cpu_score = self._calculate_range_preflop_score(target_dict, dead_cards_str)
-            
-            delta = hero_score - cpu_score
-            hero_equity = 0.5 + (delta * 0.02)
-            hero_equity = max(0.05, min(0.95, hero_equity))
-            return hero_equity, 1.0 - hero_equity
 
-        hero_wins = 0
-        ties = 0
-        
-        # Determine the target evaluation range
-        target_dict = self.cpu_range_dict if target_actor == "CPU" else self.hero_range_dict
-        
-        # Dead cards known to hero
-        dead_cards = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-        
-        # Flatten dictionary weights -> Specific Valid Combinations
-        valid_combos_weighted = []
-        for combo_str, weight in target_dict.items():
-            if weight <= 0.0: continue
-            parsed = ranges.parse_combo(combo_str)
-            for specific_cards in parsed:
-                if not any(c in dead_cards for c in specific_cards):
-                    valid_combos_weighted.append((specific_cards, weight))
-        
-        if not valid_combos_weighted:
-             return 1.0, 0.0 # Target has no logical range here
-             
-        # Helper to pick a random combo based on its native dynamic GTO weight
-        total_weight = sum(w for _, w in valid_combos_weighted)
-        def pick_weighted_combo():
-            if total_weight <= 0:
-                return random.choice(valid_combos_weighted)[0] # Fallback
-            r = random.uniform(0, total_weight)
-            cum = 0.0
-            for combo, weight in valid_combos_weighted:
-                cum += weight
-                if r <= cum:
-                    return combo
-            return valid_combos_weighted[-1][0]
-             
-        # Simulate
-        for _ in range(iterations):
-            temp_deck = Deck() # Create a clean deck
-            sim_board = list(board_cards)
-            
-            # Remove known cards from temp deck explicitly
-            removals = hero_cards + board_cards
-            temp_deck.cards = [c for c in temp_deck.cards if c not in removals]
-            
-            # Draw remaining board to river
-            needed = 5 - len(sim_board)
-            if needed > 0:
-                drawn = temp_deck.draw(needed)
-                if not isinstance(drawn, list): drawn = [drawn]
-                sim_board.extend(drawn)
-                
-            # Pick purely using the mathematical native dictionary distribution
-            cpu_cards_str = pick_weighted_combo()
-            cpu_cards = [Card.new(c) for c in cpu_cards_str]
-            
-            # Make sure CPU cards aren't in the drawn board (highly unlikely if carefully written, but standard bounds check)
-            if any(c in sim_board for c in cpu_cards):
-                 continue
-                 
-            # Evaluate using Treys (lower score is better)
-            hero_score = self.treys_evaluator.evaluate(sim_board, hero_cards)
-            cpu_score = self.treys_evaluator.evaluate(sim_board, cpu_cards)
-            
-            if hero_score < cpu_score: # Inverse in Treys (Lower is better)
-                hero_wins += 1
-            elif hero_score == cpu_score:
-                ties += 1
-
-        total_sims = iterations
-        hero_equity = (hero_wins + ties / 2) / total_sims
-        cpu_equity = 1.0 - hero_equity
-        return hero_equity, cpu_equity
-
-
-
-    def calc_range_advantage(self, hero_cards, board_cards, iterations=1000):
-        """
-        Calculates the Range Advantage (0 to 1) comparing the CPU's native range dict
-        to the Hero's native range dict over the runout. 
-        """
-        if self.street == "PREFLOP":
-            return 0.5
-            
-        hero_wins = 0
-        ties = 0
-        total_sims = iterations
-        
-        # Dead cards known globally (we don't know hero cards when simulating pure range vs range, 
-        # but since CPU doesn't know hero's cards, CPU just uses board for pure range vs range abstraction)
-        # Note: In real GTO, Range Adv is computed with no known hole cards. CPU estimates both.
-        dead_cards = [Card.int_to_str(c) for c in board_cards]
-        
-        # Parse active ranges 
-        hero_combos_weighted = []
-        for combo_str, weight in self.hero_range_dict.items():
-            if weight <= 0.0: continue
-            parsed = ranges.parse_combo(combo_str)
-            for specific_cards in parsed:
-                if not any(c in dead_cards for c in specific_cards):
-                    hero_combos_weighted.append((specific_cards, weight))
-                    
-        cpu_combos_weighted = []
-        for combo_str, weight in self.cpu_range_dict.items():
-            if weight <= 0.0: continue
-            parsed = ranges.parse_combo(combo_str)
-            for specific_cards in parsed:
-                if not any(c in dead_cards for c in specific_cards):
-                    cpu_combos_weighted.append((specific_cards, weight))
-                    
-        if not hero_combos_weighted or not cpu_combos_weighted:
-             return 0.5
-             
-        # Total Native Weights
-        ht_weight = sum(w for _, w in hero_combos_weighted)
-        ct_weight = sum(w for _, w in cpu_combos_weighted)
-        
-        def pick_combo(c_list, t_weight):
-            if t_weight <= 0: return random.choice(c_list)[0]
-            r = random.uniform(0, t_weight)
-            cum = 0.0
-            for combo, weight in c_list:
-                cum += weight
-                if r <= cum: return combo
-            return c_list[-1][0]
-            
-        hero_wins, ties, valid = 0, 0, 0
-        for _ in range(iterations):
-            h_str = pick_combo(hero_combos_weighted, ht_weight)
-            c_str = pick_combo(cpu_combos_weighted, ct_weight)
-            h_cards = [Card.new(c) for c in h_str]
-            c_cards = [Card.new(c) for c in c_str]
-            
-            # bounds check (skip if cards overlap)
-            if any(c in board_cards for c in h_cards) or any(c in board_cards for c in c_cards) or any(c in h_cards for c in c_cards): 
-                continue
-            
-            valid += 1
-            sim_board = list(board_cards)
-            temp_deck = Deck()
-            removals = h_cards + c_cards + board_cards
-            temp_deck.cards = [c for c in temp_deck.cards if c not in removals]
-            needed = 5 - len(sim_board)
-            if needed > 0:
-                drawn = temp_deck.draw(needed)
-                if not isinstance(drawn, list): drawn = [drawn]
-                sim_board.extend(drawn)
-                
-            hero_score = self.treys_evaluator.evaluate(sim_board, h_cards)
-            cpu_score = self.treys_evaluator.evaluate(sim_board, c_cards)
-            if hero_score < cpu_score: hero_wins += 1
-            elif hero_score == cpu_score: ties += 1
-            
-        return (hero_wins + ties/2.0) / max(1, valid)
 
     def update_pot(self, amount):
         self.pot_size += amount
@@ -962,7 +834,8 @@ class PokerEngine:
         """ 理想的な動きをするCPU (GTO/Math-based basis) 
             Enforces strict sizing constraints and Range advantage heuristics. 
         """
-        hero_range_adv = self.calc_range_advantage(self.hero_hand, self.board, iterations=500)
+        is_preflop = (self.street == "PREFLOP")
+        hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_range_dict, self.cpu_range_dict, self.board, is_preflop=is_preflop, iterations=500)
         cpu_range_adv = 1.0 - hero_range_adv
 
         # 疑似的な手札の強さを生成（レンジの強さ ± 30%のブレ）
@@ -1181,7 +1054,11 @@ def run_session(num_hands=3):
         engine.hero_stack = 100 - 0.5
         engine.cpu_stack = 100 - 1.0
         engine.deal() # Give player real cards
-        engine.is_hero_ip = (i % 2 == 0) # Flip IP/OOP 
+        
+        if i % 2 == 0:
+            engine.hero_position, engine.cpu_position = "BTN", "BB"
+        else:
+            engine.hero_position, engine.cpu_position = "BB", "BTN"
         
         print(f"You are: {'In Position (BTN)' if engine.is_hero_ip else 'Out of Position (BB)'}")
         print(f"Your Hand: {engine.get_hand_str(engine.hero_hand)}")
@@ -1192,10 +1069,10 @@ def run_session(num_hands=3):
             if engine.board:
                 print(f"Board: {engine.get_hand_str(engine.board)}")
                 
-            hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
+            hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, target_actor="CPU", is_preflop=(engine.street=="PREFLOP"), iterations=100)
             
             # EQR調整値の表示
-            eqr_modifier = Evaluator.get_eqr_modifier(engine.hero_position)
+            eqr_modifier = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, False, engine.board)
             realized_equity = hero_eq * eqr_modifier
             print(f"Pot: {engine.pot_size}bb")
             print(f"Raw Equity: {hero_eq*100:.1f}% | EQR Mod: x{eqr_modifier:.2f} | Realized Equity: {realized_equity*100:.1f}%")
