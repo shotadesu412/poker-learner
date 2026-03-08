@@ -338,13 +338,18 @@ class Evaluator:
         result_eval = EVAL_BAD
         if ev_betting > ev_checking + (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
             result_eval = EVAL_OPTIMAL
-            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})に対し、ベット(EV: {ev_betting:.1f})が明確に上回っています。強気な最適ベットです。"
+            if range_adv > 0.55:
+                result_reason = f"あなたに明確なレンジアドバンテージ(勝率優位)があるため、アグレッシブなベットが正当化されます。EV: {ev_betting:.1f}"
+            elif realized_equity < 0.35:
+                result_reason = f"勝率は低いですが、高いフォールドエクイティ(相手を降ろす確率)を利用した利益的なブラフベットです。EV: {ev_betting:.1f}"
+            else:
+                result_reason = f"チェックよりもベットの期待値が明確に上回る、バリューとプレッシャーを兼ね備えたアクションです。EV: {ev_betting:.1f}"
         elif ev_betting >= ev_checking:
             result_eval = EVAL_GOOD
             result_reason = f"ベット期待値(EV: {ev_betting:.1f})がチェック(EV: {ev_checking:.1f})を上回っており、妥当なアクションです。"
         elif ev_betting >= ev_checking - (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
             result_eval = EVAL_MARGINAL
-            result_reason = f"期待値(EV: {ev_betting:.1f})がパッシブなラインと拮抗しています。戦略的な意図が必要です。"
+            result_reason = "ベットとチェックの期待値が拮抗しています。GTOにおいては、相手に読まれないよう頻度（乱数）でアクションを混ぜる（混合戦略）べきスポットです。"
         else:
             result_eval = EVAL_BAD
             result_reason = f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
@@ -400,13 +405,18 @@ class Evaluator:
         
         if ev_raising > ev_calling + (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
             result_eval = EVAL_OPTIMAL
-            result_reason = preflop_prefix + f"コール(EV: {ev_calling:.1f})に対し、レイズ(EV: {ev_raising:.1f})が明確に上回る非常に強力なプレイです。"
+            if range_adv > 0.55:
+                result_reason = preflop_prefix + f"あなたに明確なレンジアドバンテージ(勝率優位)があるため、アグレッシブなレイズが正当化されます。EV: {ev_raising:.1f}"
+            elif realized_equity < 0.35:
+                result_reason = preflop_prefix + f"勝率は低いですが、高いフォールドエクイティ(相手を降ろす確率)を利用した利益的なブラフレイズです。EV: {ev_raising:.1f}"
+            else:
+                result_reason = preflop_prefix + f"コールよりもレイズの期待値が明確に上回る、バリューとプレッシャーを兼ね備えたアクションです。EV: {ev_raising:.1f}"
         elif ev_raising >= ev_calling:
             result_eval = EVAL_GOOD
             result_reason = preflop_prefix + f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
         elif ev_raising >= ev_calling - (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
             result_eval = EVAL_MARGINAL
-            result_reason = preflop_prefix + f"レイズ(EV: {ev_raising:.1f})とコール(EV: {ev_calling:.1f})の期待値が拮抗しています。明確な目的が必要です。"
+            result_reason = preflop_prefix + "レイズとコールの期待値が拮抗しています。GTOにおいては、相手に読まれないよう頻度（乱数）でアクションを混ぜる（混合戦略）べきスポットです。"
         else:
             result_eval = EVAL_BAD
             result_reason = preflop_prefix + f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
@@ -424,7 +434,7 @@ class Evaluator:
         if not has_initiative:
             if not is_hero_ip:
                 # OOP
-                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "あなたはアグレッサーではないため、まずはチェックして相手（レイザー）のアクションを待つのが定石です。"}
+                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "あなたはアグレッサーではなくOOP（ポジション不利）であるため、まずはレンジ全体でチェックし、相手のアクションを見てからディフェンスするのがGTOの基本戦略です。"}
             else:
                 # IP
                 return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"}
@@ -440,7 +450,10 @@ class Evaluator:
         
         if ev_checking >= ev_betting_half_pot:
             result_eval = EVAL_OPTIMAL
-            result_reason = f"ベット(EV: {ev_betting_half_pot:.1f})よりチェック(EV: {ev_checking:.1f})が高く、パッシブな進行が最善です。"
+            if range_adv < 0.45:
+                result_reason = "相手のレンジの方が強いため、ベットして無駄にチップを失うより、チェックでポットコントロールを図るのが最適です。"
+            else:
+                result_reason = f"ベット(EV: {ev_betting_half_pot:.1f})よりチェック(EV: {ev_checking:.1f})が高く、パッシブな進行が最善です。"
         elif ev_checking >= ev_betting_half_pot * 0.8:
             result_eval = EVAL_GOOD
             result_reason = f"チェックの期待値(EV: {ev_checking:.1f})は標準的です。ポットコントロールに適しています。"
