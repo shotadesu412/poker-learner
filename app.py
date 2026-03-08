@@ -43,6 +43,7 @@ class AICoachRequest(BaseModel):
 
 @app.get("/api/start_hand")
 def start_hand():
+  try:
     MAX_RETRIES = 50
     cpu_msg = ""
     
@@ -75,6 +76,11 @@ def start_hand():
         state["cpuMessage"] = cpu_msg 
         
     return state
+  except Exception as e:
+    import traceback
+    with open('trace_start.txt', 'w', encoding='utf-8') as f:
+        traceback.print_exc(file=f)
+    raise HTTPException(status_code=500, detail=str(e))
 
 import traceback
 @app.post("/api/action")

@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\roker learner\app.py", line 61, in start_hand
+    cpu_action, cpu_amount = engine.cpu_decide(cpu_eq_next, "CHECK", cpu_facing)
+                             ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\roker learner\poker_engine.py", line 857, in cpu_decide
+    hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_range_dict, self.cpu_range_dict, self.board, is_preflop=is_preflop, iterations=500)
+TypeError: EquityCalculator.calc_range_advantage() missing 1 required positional argument: 'cpu_range_dict'

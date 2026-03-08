@@ -854,7 +854,7 @@ class PokerEngine:
             Enforces strict sizing constraints and Range advantage heuristics. 
         """
         is_preflop = (self.street == "PREFLOP")
-        hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_range_dict, self.cpu_range_dict, self.board, is_preflop=is_preflop, iterations=500)
+        hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_hand, self.board, self.hero_range_dict, self.cpu_range_dict, is_preflop=is_preflop, iterations=500)
         cpu_range_adv = 1.0 - hero_range_adv
 
         # 疑似的な手札の強さを生成（レンジの強さ ± 30%のブレ）
