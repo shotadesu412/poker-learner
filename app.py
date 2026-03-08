@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from poker_engine import PokerEngine, Evaluator
+from equity import EquityCalculator
 from treys import Card
 import os
 from openai import OpenAI
@@ -54,7 +55,7 @@ def start_hand():
             break
             
         # CPUが先手の場合のアクションを計算
-        hero_eq_next, cpu_eq_next = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50)
+        hero_eq_next, cpu_eq_next = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=50)
         cpu_facing = engine.current_bet - engine.cpu_invested
         cpu_action, cpu_amount = engine.cpu_decide(cpu_eq_next, "CHECK", cpu_facing)
         
@@ -87,8 +88,8 @@ def take_action(req: ActionRequest):
         is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 12.0)
         effective_stack = min(engine.hero_stack, engine.cpu_stack)
 
-        hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=100)
-        hero_range_adv = engine.calc_range_advantage(engine.hero_hand, engine.board, iterations=100)
+        hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
+        hero_range_adv = EquityCalculator.calc_range_advantage(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
         
         eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
         realized_equity = hero_eq * eqr
@@ -211,7 +212,7 @@ def take_action(req: ActionRequest):
                 # If CPU acts first on the NEW street, we should theoretically calculate their move here immediately.
                 if not engine.is_hero_turn():
                      # CPU acts first on new street
-                     hero_eq_next, cpu_eq_next = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50)
+                     hero_eq_next, cpu_eq_next = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=50)
                      cpu_action_2, cpu_amount_2 = engine.cpu_decide(cpu_eq_next, "CHECK", 0) # Facing no bet
                      
                      if cpu_action_2 in ["BET", "RAISE"]:
@@ -233,7 +234,7 @@ def take_action(req: ActionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 def get_game_state(finished=False):
-    hero_eq, cpu_eq = engine.calc_equity_monte_carlo(engine.hero_hand, engine.board, iterations=50) 
+    hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=50) 
     realized_eq = min(1.0, max(0.0, hero_eq * Evaluator.get_eqr_modifier(engine.hero_position)))
     
     if finished and not engine.cpu_hand:
