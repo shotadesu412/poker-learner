@@ -179,14 +179,18 @@ class Evaluator:
         if not cards or len(cards) != 2: return ""
         r1 = Card.get_rank_int(cards[0])
         r2 = Card.get_rank_int(cards[1])
-        s1 = Card.get_suit_int(cards[0])
-        s2 = Card.get_suit_int(cards[1])
+        s1_int = Card.get_suit_int(cards[0])
+        s2_int = Card.get_suit_int(cards[1])
         ranks = "23456789TJQKA"
-        suits_str = "shdc"
+        
+        # Treys suit ints to string map
+        suit_map = {1: 's', 2: 'h', 4: 'd', 8: 'c'}
+        s1_char = suit_map.get(s1_int, '')
+        s2_char = suit_map.get(s2_int, '')
         
         # Exact hole cards check (e.g., AhKh)
-        c1_str = ranks[r1] + suits_str[s1]
-        c2_str = ranks[r2] + suits_str[s2]
+        c1_str = ranks[r1] + s1_char
+        c2_str = ranks[r2] + s2_char
         exact_str1 = c1_str + c2_str
         exact_str2 = c2_str + c1_str
         
@@ -200,7 +204,7 @@ class Evaluator:
         char2 = ranks[r2]
         if r1 == r2: return char1 + char2
         if r1 < r2: char1, char2 = char2, char1 # High rank first
-        suffix = "s" if s1 == s2 else "o"
+        suffix = "s" if s1_int == s2_int else "o"
         return char1 + char2 + suffix
 
     @staticmethod
@@ -754,12 +758,14 @@ class PokerEngine:
 
     def _normalize_range(self, weights):
         floor_val = 0.05
-        for k in weights:
+        # Ensure k is treated as key
+        for k in list(weights.keys()):
             if weights[k] < floor_val:
                  weights[k] = floor_val
         total = sum(weights.values())
-        for k in weights:
-            weights[k] /= total
+        if total > 0:
+            for k in list(weights.keys()):
+                weights[k] /= total
         return weights
 
     def update_range_dict(self, actor, action, action_amount=0):

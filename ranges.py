@@ -265,6 +265,10 @@ def parse_combo(combo_str):
                     if s1 != s2:
                         combos.append([rank1+s1, rank2+s2])
         return combos
+        
+    elif len(combo_str) == 4:
+        # e.g. "AhKh"
+        return [[combo_str[0:2], combo_str[2:4]]]
     
     return []
 
@@ -315,7 +319,19 @@ def sort_range_by_strength(range_dict, board=None, treys_evaluator=None):
             for c_str_list in combos:
                 if not any(c in dead_cards_str for c in c_str_list):
                     c_ints = [Card.new(c) for c in c_str_list]
-                    score = treys_evaluator.evaluate(board, c_ints)
+                    try:
+                        score = treys_evaluator.evaluate(board, c_ints)
+                    except TypeError as e:
+                        import json
+                        dump = {
+                            "board": board,
+                            "board_types": [str(type(x)) for x in board] if board else None,
+                            "c_ints": c_ints,
+                            "c_ints_types": [str(type(x)) for x in c_ints]
+                        }
+                        with open("error_dump.json", "w") as f:
+                            json.dump(dump, f, indent=2)
+                        raise e
                     if score < best_score:
                         best_score = score
             return best_score

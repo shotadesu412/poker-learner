@@ -129,7 +129,7 @@ class EquityCalculator:
         return hero_equity, cpu_equity
 
     @staticmethod
-    def calc_range_advantage(hero_range_dict, cpu_range_dict, board_cards, is_preflop=False, iterations=1000):
+    def calc_range_advantage(hero_cards, board_cards, hero_range_dict, cpu_range_dict, is_preflop=False, iterations=1000):
         if is_preflop:
             return 0.5
             
@@ -137,7 +137,7 @@ class EquityCalculator:
         ties = 0
         total_sims = 0
         
-        dead_cards_str = [Card.int_to_str(c) for c in board_cards]
+        dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
         
         for _ in range(iterations):
             temp_deck = Deck()

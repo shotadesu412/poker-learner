@@ -1,9 +1,12 @@
 Traceback (most recent call last):
-  File "C:\roker learner\app.py", line 89, in take_action
-    eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
-  File "C:\roker learner\poker_engine.py", line 229, in get_eqr_modifier
-    pi = Evaluator.calculate_pi(cards, board)
-  File "C:\roker learner\poker_engine.py", line 192, in calculate_pi
-    suits = [TreysEvaluator.get_suit_int(c) for c in cards + board]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: type object 'Evaluator' has no attribute 'get_suit_int'
+  File "C:\roker learner\app.py", line 92, in take_action
+    hero_range_adv = EquityCalculator.calc_range_advantage(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
+  File "C:\roker learner\equity.py", line 140, in calc_range_advantage
+    dead_cards_str = [Card.int_to_str(c) for c in board_cards]
+                      ~~~~~~~~~~~~~~~^^^
+  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\card.py", line 81, in int_to_str
+    rank_int = Card.get_rank_int(card_int)
+  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\card.py", line 87, in get_rank_int
+    return (card_int >> 8) & 0xF
+            ~~~~~~~~~^^~~
+TypeError: unsupported operand type(s) for >>: 'str' and 'int'
