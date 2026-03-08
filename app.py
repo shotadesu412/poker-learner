@@ -123,6 +123,8 @@ def take_action(req: ActionRequest):
                 hero_eq, call_amount, engine.pot_size,
                 hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=engine.hero_range_dict
             )
+            eval_result = eval_dict["evaluation"]
+            eval_reason = eval_dict["reason"]
             engine.place_bet("HERO", call_amount)
             
         elif action in ["BET", "RAISE"]:
@@ -138,6 +140,8 @@ def take_action(req: ActionRequest):
                     hero_eq, amount, engine.pot_size,
                     hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
                 )
+            eval_result = eval_dict["evaluation"]
+            eval_reason = eval_dict["reason"]
             engine.place_bet("HERO", amount)
             
         elif action == "CHECK":
@@ -153,6 +157,8 @@ def take_action(req: ActionRequest):
                 board=engine.board,
                 range_adv=hero_range_adv
             )
+            eval_result = eval_dict["evaluation"]
+            eval_reason = eval_dict["reason"]
         
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
