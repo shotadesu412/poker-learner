@@ -303,6 +303,7 @@ class Evaluator:
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "無料で見られる状況でのフォールドは完全なミスプレイです。"}
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
+        mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
         realized_equity = equity * eqr
         
@@ -315,6 +316,17 @@ class Evaluator:
         elif realized_equity >= e_req:
             result_eval = EVAL_MARGINAL
             result_reason = f"必要勝率({e_req*100:.1f}%)を満たしており({realized_equity*100:.1f}%)、フォールドは消極的すぎるかもしれません。"
+        elif realized_equity >= (e_req - 0.05):
+            # ▼ MDF考慮: 勝率がオッズに5%以内のマージナルスポット
+            # このハンドでフォールドが続くと相手の全ブラフが無条件に通ってしまう
+            result_eval = EVAL_MARGINAL
+            result_reason = (
+                f"オッズ（必要勝率{e_req*100:.1f}%）にはわずかに届きませんが（あなたの勝率: {realized_equity*100:.1f}%）、"
+                f"MDF（最小防衛頻度: {mdf*100:.0f}%）を考慮してください。"
+                f"このようなマージナルなスポットでフォールドが頻発すると、相手はどんな2枚でも"
+                f"ブラフをして無限に利益を得られる（エクスプロイトされる）危険性があります。"
+                f"ブラフキャッチャーとして一定頻度でコールを検討しましょう。"
+            )
         else:
             result_eval = EVAL_OPTIMAL
             result_reason = f"必要勝率({e_req*100:.1f}%)に対し実現勝率({realized_equity*100:.1f}%)が不足しているため、適切なフォールドです。"
@@ -322,6 +334,7 @@ class Evaluator:
         return {
             "ev": 0.0,  # Fold EV is always 0
             "req_eq": e_req,
+            "mdf": round(mdf, 3),
             "realized_eq": realized_equity,
             "evaluation": result_eval,
             "reason": result_reason
@@ -798,12 +811,18 @@ class PokerEngine:
     @staticmethod
     def calculate_theoretical_bluff_frequency(bet_size, pot):
         """
-        bet_size: 実際のベット額
-        pot: ベット前ポットサイズ
-        return: 理論ブラフ頻度（0〜1）
+        GTO理論に基づく適切なブラフ割合（Bluff-to-Value Ratio）を計算する。
+        相手のブラフキャッチャーをインディファレントにするための正しい数式:
+            GTO Bluff Ratio = Bet / (Pot + 2 * Bet)
+
+        ※ Bet / (Pot + Bet) は Alpha（必要フォールド頻度）であり別概念。
         """
-        if bet_size <= 0: return 0.0
-        return bet_size / (pot + bet_size)
+        if bet_size <= 0:
+            return 0.0
+        if pot + 2 * bet_size == 0:
+            return 0.0
+        return bet_size / (pot + 2 * bet_size)
+
 
     def generate_realized_cpu_hand(self):
         """ ショーダウン用に、現在のCPUレンジ（cpu_range_dict）とデッドカードを考慮して、

@@ -68,17 +68,123 @@ class EquityCalculator:
         return total_score / total_weight
 
     @staticmethod
+    def _parse_hand_ranks(cards):
+        """
+        2枚のカード（treys Card int）からランク整数のタプルを返す。
+        戻り値: (高ランク, 低ランク) の順。A=12, K=11, ... 2=0
+        """
+        r1 = Card.get_rank_int(cards[0])
+        r2 = Card.get_rank_int(cards[1])
+        return (max(r1, r2), min(r1, r2))
+
+    @staticmethod
+    def calculate_preflop_equity_approx(hero_cards, target_range_dict, dead_cards_str):
+        """
+        Chen Formulaによる誤った勝率計算を廃止し、
+        ポーカーの数理的対立構造（Matchup）に基づく近似エクイティを算出する。
+
+        対立パターン:
+          - ペア vs ペア      : 高ランクペアが約81%優位
+          - ペア vs 2枚の非ペア: ランク位置で54-70%
+          - 非ペア vs 非ペア   : ドミネイト/フリップ/キッカー差で30-70%
+        """
+        hero_r_high, hero_r_low = EquityCalculator._parse_hand_ranks(hero_cards)
+        is_hero_pair = (hero_r_high == hero_r_low)
+
+        total_equity = 0.0
+        total_weight = 0.0
+
+        for combo_str, weight in target_range_dict.items():
+            if weight <= 0.0:
+                continue
+            parsed = ranges.parse_combo(combo_str)
+            for specific_cards_str in parsed:
+                # デッドカードスキップ
+                if any(c in dead_cards_str for c in specific_cards_str):
+                    continue
+                try:
+                    vill_cards_int = [Card.new(c) for c in specific_cards_str]
+                except Exception:
+                    continue
+
+                vill_r_high, vill_r_low = EquityCalculator._parse_hand_ranks(vill_cards_int)
+                is_vill_pair = (vill_r_high == vill_r_low)
+
+                # --- Matchupパターン別エクイティ近似 ---
+                if is_hero_pair and is_vill_pair:
+                    # ペア vs ペア
+                    if hero_r_high > vill_r_high:
+                        matchup_eq = 0.81
+                    elif hero_r_high < vill_r_high:
+                        matchup_eq = 0.19
+                    else:
+                        matchup_eq = 0.50  # 同ランクペア（通常発生しない）
+
+                elif is_hero_pair and not is_vill_pair:
+                    # ペア vs 2枚の非ペア（コイントスに近い）
+                    if hero_r_high > vill_r_high:
+                        # ペアが両方のオーバーカードより上位
+                        matchup_eq = 0.70
+                    elif hero_r_high < vill_r_low:
+                        # ペアが両カードより下位（下位ペア）
+                        matchup_eq = 0.54
+                    else:
+                        # ペアが相手の2枚の間に挟まれている
+                        matchup_eq = 0.60
+
+                elif not is_hero_pair and is_vill_pair:
+                    # 非ペア vs 相手ペア（上記の逆）
+                    if vill_r_high > hero_r_high:
+                        matchup_eq = 1.0 - 0.70
+                    elif vill_r_high < hero_r_low:
+                        matchup_eq = 1.0 - 0.54
+                    else:
+                        matchup_eq = 1.0 - 0.60
+
+                else:
+                    # 非ペア vs 非ペア
+                    if hero_r_high == vill_r_high:
+                        # トップカード同値 → キッカー差
+                        if hero_r_low > vill_r_low:
+                            matchup_eq = 0.70   # キッカー優位ドミネイト
+                        elif hero_r_low < vill_r_low:
+                            matchup_eq = 0.30   # キッカー劣位ドミネイト
+                        else:
+                            matchup_eq = 0.50   # 完全同値
+                    elif hero_r_low == vill_r_high:
+                        # 下のカードに被りがある → 片側ドミネイト
+                        matchup_eq = 0.30
+                    elif vill_r_low == hero_r_high:
+                        # 逆方向の片側ドミネイト
+                        matchup_eq = 0.70
+                    elif hero_r_high > vill_r_high and hero_r_low > vill_r_low:
+                        # 両カードとも上位
+                        matchup_eq = 0.65
+                    elif hero_r_high < vill_r_high and hero_r_low < vill_r_low:
+                        # 両カードとも下位
+                        matchup_eq = 0.35
+                    else:
+                        # フリップ（典型例: AKo vs 22）
+                        matchup_eq = 0.50
+
+                total_equity += matchup_eq * weight
+                total_weight += weight
+
+        if total_weight <= 0:
+            return 0.50
+        return max(0.05, min(0.95, total_equity / total_weight))
+
+    @staticmethod
     def calc_equity_monte_carlo(hero_cards, board_cards, hero_range_dict, cpu_range_dict, target_actor="CPU", is_preflop=False, iterations=1000):
         if is_preflop:
             target_dict = cpu_range_dict if target_actor == "CPU" else hero_range_dict
             dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-            
-            hero_score = EquityCalculator.calculate_preflop_score(hero_cards)
-            cpu_score = EquityCalculator._calculate_range_preflop_score(target_dict, dead_cards_str)
-            
-            delta = hero_score - cpu_score
-            hero_equity = 0.5 + (delta * 0.02)
-            hero_equity = max(0.05, min(0.95, hero_equity))
+
+            # ▼ 修正: Chen FormulaのスコアベースEQ算出を廃止し
+            #         Matchupパターンに基づく近似エクイティを使用する。
+            hero_equity = EquityCalculator.calculate_preflop_equity_approx(
+                hero_cards, target_dict, dead_cards_str
+            )
             return hero_equity, 1.0 - hero_equity
 
         hero_wins = 0

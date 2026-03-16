@@ -51,3 +51,86 @@ def normalize_range(weights):
         for k in weights:
             weights[k] /= total
     return weights
+
+
+def filter_range_by_action(range_dict: dict, action_taken: str, board_cards: list = None) -> dict:
+    """
+    相手のアクション（RAISE/BET/CALL）に基づき、論理的に矛盾するハンドを
+    レンジから間引き（ウェイトを下げる）、ベイズ更新を行う。
+
+    - RAISE / LARGE_BET: 弱いハンドのウェイトを大幅削減
+      （レイズ/大きなベットをするのは強いハンドかブラフ。弱いハンドは通常コール/フォールド）
+    - CALL: ナッツ級ハンドのウェイトを削減
+      （通常ナッツはレイズするため、コールレンジにナッツが多すぎるのは非現実的）
+
+    引数:
+        range_dict: {combo_str: weight} の辞書
+        action_taken: "RAISE" / "LARGE_BET" / "CALL" / "BET" のいずれか
+        board_cards: 現在のボードカード（未使用だが将来の拡張のため引数として保持）
+
+    戻り値:
+        更新・正規化されたレンジ辞書
+    """
+    from treys import Card, Evaluator as TreysEvaluator
+    import ranges
+
+    evaluator = TreysEvaluator()
+    updated_range = {}
+
+    # ボードカードが存在しない（プリフロップ）場合はそのまま返す
+    if not board_cards or len(board_cards) < 3:
+        return dict(range_dict)
+
+    for combo_str, weight in range_dict.items():
+        if weight <= 0.0:
+            continue
+
+        new_weight = weight
+
+        try:
+            parsed = ranges.parse_combo(combo_str)
+            if not parsed:
+                updated_range[combo_str] = new_weight
+                continue
+
+            # 代表コンボの最初の1つでハンド強度を評価
+            sample_cards_str = parsed[0]
+            dead_str = [Card.int_to_str(c) for c in board_cards]
+            if any(c in dead_str for c in sample_cards_str):
+                updated_range[combo_str] = new_weight
+                continue
+
+            hand_cards = [Card.new(c) for c in sample_cards_str]
+            hand_score = evaluator.evaluate(list(board_cards), hand_cards)
+            # treys: 1=最強 (Royal Flush), 7462=最弱 (7-high)
+            # 強さのカテゴリを正規化 (0.0=最弱 ~ 1.0=最強)
+            strength = 1.0 - (hand_score / 7462.0)
+
+        except Exception:
+            updated_range[combo_str] = new_weight
+            continue
+
+        if action_taken in ("RAISE", "LARGE_BET"):
+            # レイズ/大きなベット → 弱いハンド（strength < 0.3）の確率を大幅削減
+            # ブラフの可能性を残すため 0 にはしない
+            if strength < 0.20:
+                new_weight *= 0.05   # ほぼ除外（完全空振り）
+            elif strength < 0.35:
+                new_weight *= 0.15   # 弱いハンドは基本コール/フォールド
+            # 強いハンドはそのまま
+
+        elif action_taken == "CALL":
+            # コール → ナッツ級（strength > 0.88）の確率を削減
+            # （強すぎる場合は普通レイズする。トラップの可能性は残す）
+            if strength > 0.88:
+                new_weight *= 0.20
+
+        if new_weight > 0:
+            updated_range[combo_str] = new_weight
+
+    # ウェイトが全て除外された場合は元のレンジを返す
+    if not updated_range:
+        return dict(range_dict)
+
+    return normalize_range(updated_range)
+
