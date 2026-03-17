@@ -94,8 +94,9 @@ def take_action(req: ActionRequest):
         is_3bet_pot = (engine.street == "PREFLOP" and engine.current_bet > 2.5) or (engine.street != "PREFLOP" and engine.pot_size > 12.0)
         effective_stack = min(engine.hero_stack, engine.cpu_stack)
 
-        hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
-        hero_range_adv = EquityCalculator.calc_range_advantage(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
+        is_preflop = (engine.street == "PREFLOP")
+        hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, is_preflop=is_preflop, iterations=100)
+        hero_range_adv = EquityCalculator.calc_range_advantage(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, is_preflop=is_preflop, iterations=100)
         
         eqr = Evaluator.get_eqr_modifier(engine.hero_position, engine.hero_hand, is_3bet_pot, engine.board, range_adv=hero_range_adv)
         realized_equity = hero_eq * eqr

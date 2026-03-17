@@ -256,21 +256,22 @@ class EquityCalculator:
                 drawn = temp_deck.draw(needed)
                 if not isinstance(drawn, list): drawn = [drawn]
                 sim_board.extend(drawn)
-                
-            hero_cards = range_utils.sample_range(hero_range_dict, dead_cards_str=dead_cards_str)
-            cpu_cards = range_utils.sample_range(cpu_range_dict, dead_cards_str=dead_cards_str)
+
+            # ▼ 修正: hero_cards（引数）をループ内の変数で上書きしないようリネーム
+            sampled_hero = range_utils.sample_range(hero_range_dict, dead_cards_str=dead_cards_str)
+            sampled_cpu  = range_utils.sample_range(cpu_range_dict,  dead_cards_str=dead_cards_str)
             
-            if not hero_cards or not cpu_cards:
+            if not sampled_hero or not sampled_cpu:
                  continue
                  
-            if any(c in sim_board for c in cpu_cards) or any(c in sim_board for c in hero_cards):
+            if any(c in sim_board for c in sampled_cpu) or any(c in sim_board for c in sampled_hero):
                  continue
-            if any(c in hero_cards for c in cpu_cards): # Collision between sampled hands
+            if any(c in sampled_hero for c in sampled_cpu):
                  continue
                  
             sim_board_tuple = tuple(sim_board)
-            hero_score = cached_evaluate(sim_board_tuple, tuple(hero_cards))
-            cpu_score = cached_evaluate(sim_board_tuple, tuple(cpu_cards))
+            hero_score = cached_evaluate(sim_board_tuple, tuple(sampled_hero))
+            cpu_score  = cached_evaluate(sim_board_tuple, tuple(sampled_cpu))
             
             if hero_score < cpu_score:
                 hero_wins += 1
@@ -284,3 +285,4 @@ class EquityCalculator:
             
         hero_equity = (hero_wins + ties / 2) / total_sims
         return hero_equity
+
