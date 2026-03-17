@@ -568,9 +568,27 @@ function handleCoachInputKeyPress(event) {
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // ページ再読み込み時、まず既存のゲーム状態を復元を試みる
+    try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+
+        if (data.has_hand_in_progress) {
+            // サーバー側でゲームが進行中 → 状態を復元してそのまま続行
+            currentState = data;
+            updateUI();
+            return;
+        }
+    } catch (e) {
+        // stateの取得に失敗した場合は新しくゲームを開始する
+        console.warn('Could not restore game state, starting new hand:', e);
+    }
+
+    // ゲームが進行中でない（未開始 or サーバー再起動後）→ 新規開始
     startHand();
 });
+
 
 // ============================================
 // Range Matrix Rendering

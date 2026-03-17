@@ -27,6 +27,18 @@ def serve_index():
 def test_sync():
     return {"status": "SYNCED"}
 
+@app.get("/api/state")
+def get_current_state():
+    """
+    現在のゲーム状態を返す。ページ再読み込み時に既存の手を復元するために使用。
+    hero_hand が空の場合（ゲーム未開始）は has_hand_in_progress=False を返す。
+    """
+    if not engine.hero_hand:
+        return {"has_hand_in_progress": False}
+    state = get_game_state()
+    state["has_hand_in_progress"] = True
+    return state
+
 # We'll use a single global engine instance for this MVP demo
 engine = PokerEngine()
 
