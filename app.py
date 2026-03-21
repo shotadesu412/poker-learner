@@ -130,19 +130,20 @@ def take_action(req: ActionRequest):
             
         elif action == "CALL":
             call_amount = hero_facing
-            engine.update_range_dict("HERO", "CALL", call_amount)
-            engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
+            # ▼ 評価を先に行い、その後レンジを更新する（順序重要）
             eval_dict = Evaluator.evaluate_call(
                 hero_eq, call_amount, engine.pot_size,
                 hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=engine.hero_range_dict
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
+            engine.update_range_dict("HERO", "CALL", call_amount)
+            engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
             engine.place_bet("HERO", call_amount)
             
         elif action in ["BET", "RAISE"]:
-            engine.update_range_dict("HERO", action, amount)
-            engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
+            # ▼ 評価を先に行い、その後レンジを更新する（順序重要）
+            # update_range_dict を先に呼ぶとKKなどがレンジから消えて誤評価になる
             if action == "RAISE":
                 eval_dict = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, engine.pot_size,
@@ -155,6 +156,8 @@ def take_action(req: ActionRequest):
                 )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
+            engine.update_range_dict("HERO", action, amount)
+            engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
             engine.place_bet("HERO", amount)
             
         elif action == "CHECK":
