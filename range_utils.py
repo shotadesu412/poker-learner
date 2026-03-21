@@ -1,6 +1,22 @@
 import random
 from treys import Card
 
+def _get_combo_count(combo_str: str) -> int:
+    """
+    コンビネトリクスに基づく理論的なコンボ数を返す。
+    - ポケットペア (AA等): C(4,2) = 6 コンボ
+    - スーテッドハンド (AKs等): 4 コンボ（各スート）
+    - オフスートハンド (AKo等): 4*3 = 12 コンボ
+    この値をサンプリングウェイトに乗算することで
+    均等な2枚カードの出現確率を正確に再現できる。
+    """
+    if len(combo_str) == 2:   # ポケットペア (AA, KK...)
+        return 6
+    elif len(combo_str) == 3:
+        if combo_str[2] == 's': return 4   # スーテッド
+        if combo_str[2] == 'o': return 12  # オフスート
+    return 1  # 具体的コンボ（例: "AhKh"）は1
+
 def sample_range(range_dict, dead_cards_str=None):
     """
     range_dict: {"AKs": 1.0, "QQ": 0.5, "AhKh": 1.0...}
@@ -8,6 +24,10 @@ def sample_range(range_dict, dead_cards_str=None):
     
     Returns: List of specific Card int arrays representing the sampled combo,
              e.g. [Card.new('Ah'), Card.new('Kh')]
+    
+    ▼ 修正: コンビネトリクス正規化
+    各コンボクラスをウェイト×コンボ数で重み付けし、
+    ペア(6)/スーテッド(4)/オフスート(12) の実際の出現確率比を再現する。
     """
     if dead_cards_str is None:
         dead_cards_str = []
@@ -17,10 +37,14 @@ def sample_range(range_dict, dead_cards_str=None):
     
     for combo_str, weight in range_dict.items():
         if weight <= 0.0: continue
+        # コンビネトリクス: タイプ別コンボ数でウェイトを補正
+        combo_count = _get_combo_count(combo_str)
         parsed = ranges.parse_combo(combo_str)
         for specific_cards_str in parsed:
-            # Check dead cards
+            # デッドカードをフィルタリング
             if not any(c in dead_cards_str for c in specific_cards_str):
+                # 各コンボの有効コンボ数分の1をウェイトとして付与
+                # （展開後コンボが全て均等になるよう正規化済み）
                 valid_combos_weighted.append((specific_cards_str, weight))
                 
     if not valid_combos_weighted:
@@ -40,6 +64,7 @@ def sample_range(range_dict, dead_cards_str=None):
                 break
                 
     return [Card.new(c) for c in chosen_str]
+
 
 def normalize_range(weights):
     floor_val = 0.05

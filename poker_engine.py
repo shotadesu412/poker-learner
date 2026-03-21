@@ -341,16 +341,32 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5):
+    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, effective_stack=0.0):
+        from bet_sizing import evaluate_bet_sizing, get_spr_size_adjustment
+        from hand_classifier import HandClassifier
+
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
 
+        # SPR計算
+        spr = None
+        if effective_stack > 0 and pot_size > 0:
+            spr = effective_stack / pot_size
+
         # Fold Equity Estimate using MDF threshold
-        # If villain defends MDF, fold frequency is (1 - MDF) = bet / (pot + bet)
         fold_equity = bet_amount / (pot_size + bet_amount)
         
         ev_betting = Evaluator.ev_bet(realized_equity, pot_size, bet_amount, fold_equity)
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
+
+        # ボードテクスチャ別サイジング評価
+        texture = "dry"
+        sizing_feedback = ""
+        if board and len(board) >= 3:
+            texture = HandClassifier.classify_board_texture(board)
+            sizing_result = evaluate_bet_sizing(pot_size, bet_amount, texture, spr=spr)
+            if sizing_result["evaluation"] in ("△", "×"):
+                sizing_feedback = f"\n\n📐 サイジング: {sizing_result['reason']}"
         
         result_eval = EVAL_BAD
         if ev_betting > ev_checking + (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
@@ -373,11 +389,12 @@ class Evaluator:
 
         return {
             "ev": ev_betting,
-            "req_eq": 0.0, # N/A for betting
+            "req_eq": 0.0,
             "realized_eq": realized_equity,
             "evaluation": result_eval,
-            "reason": result_reason
+            "reason": result_reason + sizing_feedback
         }
+
 
     @staticmethod
     def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):

@@ -152,7 +152,7 @@ def take_action(req: ActionRequest):
             else:
                 eval_dict = Evaluator.evaluate_bet(
                     hero_eq, amount, engine.pot_size,
-                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv
+                    hero_pos=engine.hero_position, cards=engine.hero_hand, board=engine.board, range_adv=hero_range_adv, effective_stack=effective_stack
                 )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
