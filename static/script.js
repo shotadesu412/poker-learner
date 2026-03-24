@@ -215,6 +215,7 @@ async function takeAction(actionType, amount = 0) {
     document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
 
     // Hide previous reason immediately on new action click
+    if (autoCloseReasonTimer) clearTimeout(autoCloseReasonTimer);
     const reasonArea = el('reason-area');
     if (reasonArea) {
         reasonArea.classList.remove('show');
@@ -377,6 +378,19 @@ function closeBetPanel() {
 }
 
 // Reason UI Feedback
+let autoCloseReasonTimer = null;
+
+function closeReasonArea() {
+    const reasonArea = el('reason-area');
+    if (reasonArea) {
+        reasonArea.classList.remove('show');
+        // CSS transition completion
+        setTimeout(() => {
+            reasonArea.classList.add('hidden');
+        }, 400);
+    }
+}
+
 function showReason(symbol, text) {
     const reasonArea = el('reason-area');
     const symbolSpn = el('reason-symbol');
@@ -405,6 +419,12 @@ function showReason(symbol, text) {
     setTimeout(() => {
         reasonArea.classList.add('show');
     }, 10);
+
+    // Auto-hide after 5 seconds to not block UI permanently
+    if (autoCloseReasonTimer) clearTimeout(autoCloseReasonTimer);
+    autoCloseReasonTimer = setTimeout(() => {
+        closeReasonArea();
+    }, 5000);
 }
 
 // Evaluation UI Feedback

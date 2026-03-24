@@ -93,8 +93,12 @@
     <!-- Action Reason Feedback -->
     <div id="reason-area" class="reason-area hidden">
         <div class="reason-header">
-            <span id="reason-symbol" class="reason-symbol"></span>
-            <span class="reason-title">アクション解説</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="reason-symbol" class="reason-symbol"></span>
+                <span class="reason-title">アクション解説</span>
+            </div>
+            <button class="close-btn" id="close-reason-btn" onclick="closeReasonArea()"
+                style="margin-left: auto; font-size: 1.2rem;">✕</button>
         </div>
         <div id="reason-text" class="reason-text"></div>
     </div>
