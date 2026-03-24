@@ -341,9 +341,9 @@ def ai_coach(req: AICoachRequest):
             api_messages.append({"role": msg.role, "content": msg.content})
 
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-nano",
             messages=api_messages,
-            max_completion_tokens=500,
+            max_completion_tokens=1000,
             temperature=0.7
         )
         
