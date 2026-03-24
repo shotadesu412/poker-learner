@@ -909,11 +909,26 @@ class PokerEngine:
             
             is_preflop = (self.street == "PREFLOP")
             if is_preflop:
-                if opponent_bet_size <= 4:
-                    raise_mult = PREFLOP_3BET["IP"] if self.is_hero_ip else PREFLOP_3BET["OOP"]
+                # --- RNG混合戦略による3-Bet判定 ---
+                # GTO_3BET_MATRIX からポジション対ポジションの適正3-Bet頻度を取得
+                cpu_is_ip = not self.is_hero_ip  # Heroがip → CPUはOOP
+                opener_pos = self.hero_position  # HeroがRFIした場合
+                cpu_pos = self.cpu_position
+
+                gto_matrix = getattr(ranges, "GTO_3BET_MATRIX", {})
+                situation_3bet_freq = gto_matrix.get(cpu_pos, {}).get(opener_pos, 0.10)
+                
+                # 3-Betサイズ: IP=3.0x、OOP=3.5x (GTO標準サイジング)
+                if cpu_is_ip:
+                    raise_mult = 3.0  # インポジション: コンパクトな3-Bet
                 else:
-                    raise_mult = random.choice([2.2, 2.5]) # 4-bet+ is smaller
-                base_raise_amount = opponent_bet_size * raise_mult
+                    raise_mult = 3.5  # アウトオブポジション: 大きめ3-Bet（SPR削減）
+                    
+                if opponent_bet_size > 4:
+                    raise_mult = random.choice([2.2, 2.5])  # 4-bet+ はより小さく
+                    
+                base_raise_amount = max(opponent_bet_size * raise_mult, opponent_bet_size + 2.0)
+
             else:
                 mult_table = RAISE_MULTIPLIER.get(self.street, RAISE_MULTIPLIER["FLOP"])
                 
@@ -970,17 +985,47 @@ class PokerEngine:
                 
             bluff_threshold = max(0.0, min(1.0, bluff_threshold))
             
-            if effective_equity >= e_req * 1.8 or (effective_equity < e_req * 0.5 and random.random() < bluff_threshold):
-                # Strong value raise
-                self.cpu_last_action_intent = "VALUE" if effective_equity >= e_req * 1.8 else "BLUFF"
-                return "RAISE", min(self.cpu_stack, base_raise_amount)
-            elif effective_equity >= e_req * 1.4:
-                self.cpu_last_action_intent = "VALUE"
-                return "RAISE", min(self.cpu_stack, base_raise_amount)
-            elif effective_equity >= e_req:
-                return "CALL", opponent_bet_size
+            # プリフロップとポストフロップで判定ロジックを分岐
+            if is_preflop:
+                # --- プリフロップ 3-Bet: RNG混合戦略 ---
+                # バリュー3-Bet (AA/KK/QQ/AKs等の強いハンド): 常時RAISE
+                if effective_equity >= e_req * 2.0:
+                    self.cpu_last_action_intent = "VALUE"
+                    return "RAISE", min(self.cpu_stack, base_raise_amount)
+                
+                # マージナルな3-Bet候補: situation_3bet_freqに基づくRNG判定
+                # effective_equity が十分あり、かつGTOマトリクスの頻度上限以内の場合のみRAISE
+                # 例: BB vs LJ open → situation_3bet_freq=0.056 → randはその確率でのみRAISE
+                elif effective_equity >= e_req * 1.3:
+                    if random.random() < situation_3bet_freq * 1.5:  # 若干余裕を持たせる
+                        self.cpu_last_action_intent = "VALUE"
+                        return "RAISE", min(self.cpu_stack, base_raise_amount)
+                    else:
+                        return "CALL", opponent_bet_size
+                
+                # 弱いハンドのブラフ3-Bet: さらに低確率 (ブロッカー系)
+                elif effective_equity < e_req * 0.6 and random.random() < situation_3bet_freq * 0.4:
+                    self.cpu_last_action_intent = "BLUFF"
+                    return "RAISE", min(self.cpu_stack, base_raise_amount)
+                
+                # コールする価値がある (オッズに合う)
+                elif effective_equity >= e_req:
+                    return "CALL", opponent_bet_size
+                else:
+                    return "FOLD", 0
             else:
-                return "FOLD", 0
+                # ポストフロップ: 既存ロジックを維持
+                if effective_equity >= e_req * 1.8 or (effective_equity < e_req * 0.5 and random.random() < bluff_threshold):
+                    # Strong value raise
+                    self.cpu_last_action_intent = "VALUE" if effective_equity >= e_req * 1.8 else "BLUFF"
+                    return "RAISE", min(self.cpu_stack, base_raise_amount)
+                elif effective_equity >= e_req * 1.4:
+                    self.cpu_last_action_intent = "VALUE"
+                    return "RAISE", min(self.cpu_stack, base_raise_amount)
+                elif effective_equity >= e_req:
+                    return "CALL", opponent_bet_size
+                else:
+                    return "FOLD", 0
         else:
             # CPU goes first or faces a check
             is_preflop_open = (self.street == "PREFLOP" and self.current_bet == 1.0)
