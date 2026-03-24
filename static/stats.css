@@ -1,0 +1,381 @@
+/* stats.css — 分析ページのスタイル（ゲーム画面と同系統のダークテーマ） */
+:root {
+    --bg-color: #1a1e1b;
+    --surface-color: #262c28;
+    --text-main: #e2e8e4;
+    --text-muted: #8c9b91;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-orange: #f59e0b;
+    --accent-purple: #8b5cf6;
+    --border-color: #3b423f;
+    --eval-optimal: #10b981;
+    --eval-good: #3b82f6;
+    --eval-marginal: #f59e0b;
+    --eval-bad: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+/* ヘッダー */
+.stats-header {
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.stats-header h1 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--accent-blue);
+}
+
+.back-btn {
+    background: rgba(59, 130, 246, .15);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* 期間フィルター */
+.period-bar {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px 0;
+    justify-content: center;
+}
+
+.period-btn {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.period-btn.active,
+.period-btn:hover {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+}
+
+/* コンテナ */
+.stats-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* セクションカード */
+.section-card {
+    background: var(--surface-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+/* GTO一致率ゲージ */
+.gto-gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.gto-score {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.gto-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.gauge-bar-wrap {
+    width: 100%;
+    height: 10px;
+    background: #111;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.gauge-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+    border-radius: 5px;
+    transition: width 0.8s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* スタッツバッジ */
+.stat-badges {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-badge {
+    background: rgba(0, 0, 0, .25);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-badge-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent-blue);
+}
+
+.stat-badge-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ポジション別テーブル */
+.pos-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.pos-table th {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pos-table td {
+    text-align: center;
+    padding: 9px 8px;
+    border-bottom: 1px solid rgba(59, 66, 63, .5);
+}
+
+.pos-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pos-name {
+    font-weight: bold;
+    color: var(--accent-orange);
+}
+
+.gto-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.gto-high {
+    background: rgba(16, 185, 129, .2);
+    color: var(--eval-optimal);
+}
+
+.gto-mid {
+    background: rgba(59, 130, 246, .2);
+    color: var(--accent-blue);
+}
+
+.gto-low {
+    background: rgba(239, 68, 68, .2);
+    color: var(--eval-bad);
+}
+
+/* ストリート別積み上げバー */
+.street-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.street-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.street-label {
+    width: 64px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.stacked-bar {
+    flex: 1;
+    height: 22px;
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #111;
+}
+
+.bar-seg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, .9);
+    transition: width 0.6s ease;
+}
+
+.bar-optimal {
+    background: var(--eval-optimal);
+}
+
+.bar-good {
+    background: var(--eval-good);
+}
+
+.bar-marginal {
+    background: var(--eval-marginal);
+}
+
+.bar-bad {
+    background: var(--eval-bad);
+}
+
+.bar-empty {
+    background: #222;
+    flex: 1;
+}
+
+.street-total {
+    width: 36px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* 凡例 */
+.eval-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    font-size: 0.78rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* リークファインダー */
+.leak-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.leak-item {
+    background: rgba(239, 68, 68, .08);
+    border: 1px solid rgba(239, 68, 68, .3);
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 4px solid var(--eval-bad);
+}
+
+.leak-item.marginal {
+    background: rgba(245, 158, 11, .08);
+    border-color: rgba(245, 158, 11, .3);
+    border-left-color: var(--eval-marginal);
+}
+
+.leak-desc {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.leak-meta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.leak-ev-loss {
+    color: var(--eval-bad);
+    font-weight: bold;
+}
+
+.no-data {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 24px;
+    font-size: 0.9rem;
+}
+
+/* スピナー */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

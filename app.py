@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -6,7 +6,9 @@ from poker_engine import PokerEngine, Evaluator
 from equity import EquityCalculator
 from treys import Card
 import os
+import uuid
 from openai import OpenAI
+import stats_logger
 
 app = FastAPI(title="Poker Evaluator MVP")
 
@@ -15,9 +17,15 @@ app = FastAPI(title="Poker Evaluator MVP")
 openai_api_key = os.environ.get("OPENAI_API_KEY", "")
 openai_client = OpenAI(api_key=openai_api_key)
 
+# Stats DB の初期化
+stats_logger.setup_db()
+
 # Make static dir
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 現在のセッション（ハンド）ID
+current_session_id: str = str(uuid.uuid4())
 
 @app.get("/")
 def serve_index():
@@ -55,9 +63,13 @@ class AICoachRequest(BaseModel):
 
 @app.get("/api/start_hand")
 def start_hand():
+  global current_session_id
   try:
     MAX_RETRIES = 50
     cpu_msg = ""
+    
+    # 新しいハンドのセッションIDを発行
+    current_session_id = str(uuid.uuid4())
     
     for _ in range(MAX_RETRIES):
         engine.start_new_hand()
@@ -126,7 +138,16 @@ def take_action(req: ActionRequest):
                 hero_eq, hero_facing, engine.pot_size, 
                 hero_pos=engine.hero_position, cards=engine.hero_hand, is_3bet_pot=is_3bet_pot, board=engine.board, range_adv=hero_range_adv
             )
-            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "metrics": eval_dict, "state": get_game_state(finished=True), "message": "You Folded"}
+            # EV損失を計算: チェック/コールのEVが高ければそれと比較
+            ev_fold = eval_dict.get("ev", 0.0)
+            ev_call_alt = Evaluator.ev_call(hero_eq, engine.pot_size, hero_facing) if hero_facing > 0 else 0.0
+            ev_loss_fold = max(0.0, ev_call_alt - ev_fold)
+            stats_logger.log_action(
+                session_id=current_session_id, street=engine.street, actor="HERO",
+                action="FOLD", amount=0.0, equity=realized_equity, pot_size=engine.pot_size,
+                hero_pos=engine.hero_position, evaluation=eval_dict["evaluation"], ev_loss=ev_loss_fold
+            )
+            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(finished=True), "message": "You Folded"}
             
         elif action == "CALL":
             call_amount = hero_facing
@@ -137,13 +158,20 @@ def take_action(req: ActionRequest):
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
+            ev_call_val = eval_dict.get("ev", 0.0)
+            ev_check_alt = Evaluator.ev_check(hero_eq, engine.pot_size)
+            ev_loss_call = max(0.0, ev_check_alt - ev_call_val) if ev_check_alt > ev_call_val else 0.0
             engine.update_range_dict("HERO", "CALL", call_amount)
             engine.record_action("HERO", "CALL", call_amount, realized_equity, engine.pot_size)
             engine.place_bet("HERO", call_amount)
+            stats_logger.log_action(
+                session_id=current_session_id, street=engine.street, actor="HERO",
+                action="CALL", amount=call_amount, equity=realized_equity, pot_size=engine.pot_size,
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_call
+            )
             
         elif action in ["BET", "RAISE"]:
             # ▼ 評価を先に行い、その後レンジを更新する（順序重要）
-            # update_range_dict を先に呼ぶとKKなどがレンジから消えて誤評価になる
             if action == "RAISE":
                 eval_dict = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, engine.pot_size,
@@ -156,9 +184,17 @@ def take_action(req: ActionRequest):
                 )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
+            ev_bet_val = eval_dict.get("ev", 0.0)
+            ev_check_alt2 = Evaluator.ev_check(hero_eq, engine.pot_size)
+            ev_loss_bet = max(0.0, ev_check_alt2 - ev_bet_val) if ev_check_alt2 > ev_bet_val else 0.0
             engine.update_range_dict("HERO", action, amount)
             engine.record_action("HERO", action, amount, realized_equity, engine.pot_size)
             engine.place_bet("HERO", amount)
+            stats_logger.log_action(
+                session_id=current_session_id, street=engine.street, actor="HERO",
+                action=action, amount=amount, equity=realized_equity, pot_size=engine.pot_size,
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_bet
+            )
             
         elif action == "CHECK":
             engine.update_range_dict("HERO", "CHECK", 0)
@@ -175,6 +211,14 @@ def take_action(req: ActionRequest):
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
+            ev_check_val = eval_dict.get("ev", 0.0)
+            ev_bet_alt = Evaluator.ev_bet(hero_eq, engine.pot_size, engine.pot_size * 0.66, fold_equity=0.3)
+            ev_loss_check = max(0.0, ev_bet_alt - ev_check_val) if ev_bet_alt > ev_check_val else 0.0
+            stats_logger.log_action(
+                session_id=current_session_id, street=engine.street, actor="HERO",
+                action="CHECK", amount=0.0, equity=realized_equity, pot_size=engine.pot_size,
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_check
+            )
         
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
@@ -351,3 +395,60 @@ def ai_coach(req: AICoachRequest):
         
     except Exception as e:
         return {"reply": f"コーチAPIでエラーが発生しました: {str(e)}"}
+
+
+# ==============================
+# Stats / Analytics API
+# ==============================
+
+@app.get("/stats")
+def serve_stats():
+    return FileResponse("static/stats.html")
+
+
+@app.get("/api/stats/overview")
+def stats_overview(period: str = Query("all", pattern="^(all|30d|7d|last)$")):
+    """全体サマリー: GTO一致率、VPIP、PFR、3-Bet率を返す"""
+    try:
+        return stats_logger.get_overview(period)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/position")
+def stats_position():
+    """ポジション別サマリーを返す"""
+    try:
+        return stats_logger.get_position_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/streets")
+def stats_streets():
+    """ストリート別評価分布（◎/◯/△/×の件数）を返す"""
+    try:
+        return stats_logger.get_street_eval_dist()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/leaks")
+def stats_leaks():
+    """EV損失が大きいシチュエーションTop5を返す"""
+    try:
+        return stats_logger.get_leaks()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/stats/reset")
+def stats_reset():
+    """統計データをすべてリセット（開発・デバッグ用）"""
+    try:
+        stats_logger.reset_all()
+        return {"status": "ok", "message": "統計データをリセットしました"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+

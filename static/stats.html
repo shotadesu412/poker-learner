@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>プレイ分析 | Poker Evaluator</title>
+    <link rel="stylesheet" href="/static/stats.css">
+</head>
+
+<body>
+
+    <!-- ヘッダー -->
+    <header class="stats-header">
+        <h1>📊 プレイ分析</h1>
+        <a href="/" class="back-btn">← ゲームに戻る</a>
+    </header>
+
+    <!-- 期間フィルター -->
+    <div class="period-bar">
+        <button class="period-btn active" data-period="all">全期間</button>
+        <button class="period-btn" data-period="30d">直近30日</button>
+        <button class="period-btn" data-period="7d">直近7日</button>
+        <button class="period-btn" data-period="last">直近1セッション</button>
+    </div>
+
+    <div id="loading-overlay" class="loading" style="display:none;">データ読み込み中...</div>
+
+    <main class="stats-container">
+
+        <!-- オーバービュー -->
+        <section class="section-card">
+            <div class="section-title">オーバービュー</div>
+
+            <div class="gto-gauge-wrap">
+                <div class="gto-score" id="gto-score">—%</div>
+                <div class="gto-label">GTO一致率 (◎+◯の割合)</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="gauge-bar" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="stat-badges">
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-vpip">—</div>
+                    <div class="stat-badge-label">VPIP<br>参加率</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-pfr">—</div>
+                    <div class="stat-badge-label">PFR<br>レイズ率</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-threebet">—</div>
+                    <div class="stat-badge-label">3-Bet率</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-actions">—</div>
+                    <div class="stat-badge-label">総アクション数</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-ev-loss" style="font-size:1.1rem;color:var(--accent-red)">—
+                    </div>
+                    <div class="stat-badge-label">平均EV損失</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-badge-value" id="stat-total-hands">—</div>
+                    <div class="stat-badge-label">推定ハンド数</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ポジション別分析 -->
+        <section class="section-card">
+            <div class="section-title">ポジション別分析</div>
+            <table class="pos-table">
+                <thead>
+                    <tr>
+                        <th>ポジション</th>
+                        <th>ハンド数</th>
+                        <th>VPIP</th>
+                        <th>PFR</th>
+                        <th>GTO一致率</th>
+                    </tr>
+                </thead>
+                <tbody id="pos-table-body">
+                    <tr>
+                        <td colspan="5" class="no-data">データを読み込んでいます...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ストリート別評価分布 -->
+        <section class="section-card">
+            <div class="section-title">ストリート別 アクション評価分布</div>
+            <div class="eval-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--eval-optimal)"></div> ◎ 最適
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--eval-good)"></div> ◯ 良好
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--eval-marginal)"></div> △ 要改善
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--eval-bad)"></div> × 問題あり
+                </div>
+            </div>
+            <div class="street-bars" id="street-bars">
+                <div class="loading">読み込み中...</div>
+            </div>
+        </section>
+
+        <!-- リークファインダー -->
+        <section class="section-card">
+            <div class="section-title">🔍 リークファインダー — EV損失Top5</div>
+            <div class="leak-list" id="leak-list">
+                <div class="loading">読み込み中...</div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/static/stats.js"></script>
+</body>
+
+</html>
