@@ -240,7 +240,7 @@ def take_action(req: ActionRequest):
                 street_closed_by_hero = False
             else:
                 # Normal call matches invested and closes street
-                street_closed_by_hero = (engine.hero_invested == engine.cpu_invested)
+                street_closed_by_hero = abs(engine.hero_invested - engine.cpu_invested) < 0.01
                 
         elif action == "CHECK":
             # If hero checks, it only closes the street if they are IN POSITION (acting last)
@@ -280,7 +280,7 @@ def take_action(req: ActionRequest):
         
         # Check if CPU acting resolved the street
         hero_facing_after_cpu = engine.current_bet - engine.hero_invested
-        if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu == 0) or street_closed_by_hero:
+        if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu < 0.01) or street_closed_by_hero:
             # 4. Advance Street
             if engine.street == "RIVER":
                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
@@ -340,13 +340,13 @@ def get_game_state(finished=False):
     
     return {
         "street": engine.street,
-        "potSize": engine.pot_size,
-        "heroStack": engine.hero_stack,
-        "cpuStack": engine.cpu_stack,
+        "potSize": round(engine.pot_size, 2),
+        "heroStack": round(engine.hero_stack, 2),
+        "cpuStack": round(engine.cpu_stack, 2),
         "heroPos": engine.hero_position,
         "cpuPos": engine.cpu_position,
-        "facingBet": engine.current_bet - engine.hero_invested,
-        "currentBet": engine.current_bet,
+        "facingBet": round(max(0.0, engine.current_bet - engine.hero_invested), 2),
+        "currentBet": round(engine.current_bet, 2),
         "heroHand": [Card.int_to_str(c) for c in engine.hero_hand],
         "cpuHand": [Card.int_to_str(c) for c in engine.cpu_hand] if finished else [],
         "board": [Card.int_to_str(c) for c in engine.board],

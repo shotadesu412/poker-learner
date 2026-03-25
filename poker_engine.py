@@ -656,19 +656,11 @@ class PokerEngine:
         if self.is_hero_turn():
              # Hero acts first
              self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action="open").copy()
-             if self.cpu_position == "BB":
-                 action_str = f"vs_{self.hero_position}"
-             else:
-                 action_str = "vs_open_call"
-             self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action=action_str).copy()
+             self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action="vs_open_call").copy()
         else:
              # CPU acts first
              self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action="open").copy()
-             if self.hero_position == "BB":
-                 action_str = f"vs_{self.cpu_position}"
-             else:
-                 action_str = "vs_open_call"
-             self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action=action_str).copy()
+             self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action="vs_open_call").copy()
         
         # Deduct from stacks if they are actually the blinds
         if self.hero_position == "SB":
@@ -839,7 +831,36 @@ class PokerEngine:
 
     def update_range_dict(self, actor, action, action_amount=0):
         current_dict = self.hero_range_dict if actor == "HERO" else self.cpu_range_dict
+        pos = self.hero_position if actor == "HERO" else self.cpu_position
         
+        # PREFLOP SPECIFIC OVERRIDES
+        if self.street == "PREFLOP":
+            num_raises = sum(1 for a in self.action_history if a["action"] in ["BET", "RAISE"])
+            if action in ["BET", "RAISE"]:
+                if num_raises == 0:
+                    new_dict = ranges.get_range_by_category(pos, action="open").copy()
+                elif num_raises == 1:
+                    new_dict = ranges.get_range_by_category(pos, action="3bet").copy()
+                else:
+                    new_dict = ranges.get_range_by_category(pos, action="4bet_bluff").copy()
+            elif action == "CALL":
+                if num_raises == 0:
+                    new_dict = ranges.get_range_by_category(pos, action="open").copy()
+                elif num_raises == 1:
+                    new_dict = ranges.get_range_by_category(pos, action="vs_open_call").copy()
+                else:
+                    new_dict = ranges.get_range_by_category(pos, action="vs_3bet_call").copy()
+            elif action == "FOLD":
+                new_dict = {k: 0.0 for k in current_dict.keys()}
+            else:
+                new_dict = current_dict
+
+            if actor == "HERO":
+                self.hero_range_dict = new_dict
+            else:
+                self.cpu_range_dict = new_dict
+            return
+            
         action_type = "CHECK" # default no-op essentially
         
         if action in ["BET", "RAISE"]:
