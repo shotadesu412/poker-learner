@@ -208,21 +208,68 @@ class Evaluator:
         return char1 + char2 + suffix
 
     @staticmethod
-    def evaluate_preflop_range(cards, hero_range_dict):
-        combo = Evaluator.get_combo_str(cards, hero_range_dict)
-
-        if combo not in hero_range_dict:
-            return "fold"
-
-        weight = hero_range_dict.get(combo, 0.0)
-
-        if weight >= 0.75:
-            return "play"
-
-        if weight > 0:
-            return "mix"
-
-        return "fold"
+    def evaluate_preflop_action_gto(cards, action_taken, hero_pos, is_3bet_pot, facing_bet, cpu_pos="SB"):
+        import ranges
+        from bet_sizing import EVAL_OPTIMAL, EVAL_GOOD, EVAL_MARGINAL, EVAL_BAD
+        
+        pos_ranges = ranges.RANGES.get(hero_pos, {})
+        
+        if facing_bet == 0:
+            call_range = pos_ranges.get("open", {})
+            raise_range = pos_ranges.get("open", {})
+            fold_msg = "オープン可能なハンドです。"
+        elif not is_3bet_pot:
+            if hero_pos == "BB":
+                # BBは相手のポジションによってコールレンジが変わるが、デフォルトとしてvs_open_callを使用
+                call_range = pos_ranges.get(f"vs_{cpu_pos}", pos_ranges.get("vs_open_call", {}))
+            else:
+                call_range = pos_ranges.get("vs_open_call", {})
+            raise_range = pos_ranges.get("vs_open_3bet", pos_ranges.get("3bet", {}))
+            fold_msg = "このポジションでのGTOレンジではフォールドが基本です。"
+        else:
+            call_range = pos_ranges.get("vs_3bet_call", {})
+            raise_range = pos_ranges.get("vs_3bet_4bet", pos_ranges.get("4bet_bluff", {}))
+            fold_msg = "3-Bet/4-Betに対してはフォールドが基本となるハンドです。"
+            
+        combo_str = Evaluator.get_combo_str(cards, ranges.ALL_HANDS_DICT)
+        reason_txt = ranges.get_hand_reason(combo_str)
+        
+        call_weight = call_range.get(combo_str, 0.0)
+        raise_weight = raise_range.get(combo_str, 0.0)
+        
+        # 評価判定
+        if action_taken == "CALL":
+            if call_weight > 0:
+                classification = ranges.classify_range(call_weight)
+                return "play", EVAL_GOOD, f"【{classification}】妥当なコールです。 {reason_txt}"
+            elif raise_weight > 0:
+                classification = ranges.classify_range(raise_weight)
+                return "fold", EVAL_BAD, f"【{classification}】コールではなくレイズ(3-Bet/4-Bet)すべき強いハンドです。 {reason_txt}"
+            else:
+                return "fold", EVAL_BAD, f"【FOLD】{fold_msg} {reason_txt}"
+                
+        elif action_taken == "RAISE":
+            if raise_weight > 0:
+                classification = ranges.classify_range(raise_weight)
+                return "play", EVAL_OPTIMAL, f"【{classification}】見事なレイズ(3-Bet/4-Bet)です。 {reason_txt}"
+            elif call_weight > 0:
+                classification = ranges.classify_range(call_weight)
+                return "mix", EVAL_MARGINAL, f"【{classification}】レイズではなくコールで参加すべきマージナルなハンドです。 {reason_txt}"
+            else:
+                return "fold", EVAL_BAD, f"【FOLD】{fold_msg} {reason_txt}\n(完全なブラフなら頻度に注意してください)"
+                
+        elif action_taken == "FOLD":
+            if raise_weight > 0.5:
+                # 明らかなプレミアム
+                return "mix", EVAL_BAD, f"【CORE】非常に強いプレミアムハンドです。フォールドは完全な悪手であり、レイズすべきです。 {reason_txt}"
+            elif call_weight > 0.5:
+                return "mix", EVAL_BAD, f"【CORE】十分にコールできる強いハンドです。フォールドはもったいないです。 {reason_txt}"
+            elif raise_weight > 0 or call_weight > 0:
+                return "play", EVAL_MARGINAL, f"【MIXED】プレイ可能なハンドですが、フォールドも混合戦略としてはあり得ます。 {reason_txt}"
+            else:
+                return "play", EVAL_OPTIMAL, f"【FOLD】正しいフォールドです。 {fold_msg}"
+                
+        return "play", EVAL_GOOD, reason_txt
 
     @staticmethod
     def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None):
@@ -231,31 +278,22 @@ class Evaluator:
             
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
-        if not board and hero_range_dict is not None:
-            decision = Evaluator.evaluate_preflop_range(cards, hero_range_dict)
-            
-            import ranges
-            combo_str = Evaluator.get_combo_str(cards, hero_range_dict)
-            weight = hero_range_dict.get(combo_str, 0.0)
-            classification = ranges.classify_range(weight)
-            feedback = ranges.get_preflop_feedback(classification)
-            reason = ranges.get_hand_reason(combo_str)
+        if not board:
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "CALL", hero_pos, is_3bet_pot, call_amount, cpu_pos=hero_range_dict.get("_cpu_pos", "SB") if hero_range_dict else "SB")
+            preflop_prefix = e_reason + "\n"
             
             if decision == "fold":
                 return {
                     "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
-                    "evaluation": EVAL_BAD, 
-                    "reason": f"【{classification}】{feedback} {reason}\n(このポジションのGTOレンジではフォールドが基本です。)"
+                    "evaluation": e_eval, 
+                    "reason": preflop_prefix
                 }
-            
             if decision == "mix":
                 return {
                     "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
-                    "evaluation": EVAL_MARGINAL, 
-                    "reason": f"【{classification}】{feedback} {reason}\n(このハンドはミックスレンジです。コールとフォールドが混在します。)"
+                    "evaluation": e_eval, 
+                    "reason": preflop_prefix
                 }
-            
-            preflop_prefix = f"【{classification}】{feedback} {reason}\n"
 
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
@@ -301,6 +339,22 @@ class Evaluator:
     def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
         if opponent_bet_size == 0:
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "無料で見られる状況でのフォールドは完全なミスプレイです。"}
+            
+        # PREFLOP RANGE CHECK
+        if not board:
+            import ranges
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "FOLD", hero_pos, is_3bet_pot, opponent_bet_size, cpu_pos="SB")
+            if decision == "mix": # FOLDing a good hand is bad
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
+                    "evaluation": e_eval, 
+                    "reason": e_reason
+                }
+            # Optional: if play and optimal (correct fold), you can just return the optimal directly
+            if decision == "play" and e_eval == EVAL_OPTIMAL:
+                return {
+                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": e_reason
+                }
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
         mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
@@ -400,31 +454,16 @@ class Evaluator:
     def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
-        if not board and hero_range_dict is not None:
-            decision = Evaluator.evaluate_preflop_range(cards, hero_range_dict)
+        if not board:
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "RAISE", hero_pos, is_3bet_pot=False, facing_bet=opponent_bet_size, cpu_pos=hero_range_dict.get("_cpu_pos", "SB") if hero_range_dict else "SB")
+            preflop_prefix = e_reason + "\n"
             
-            import ranges
-            combo_str = Evaluator.get_combo_str(cards, hero_range_dict)
-            weight = hero_range_dict.get(combo_str, 0.0)
-            classification = ranges.classify_range(weight)
-            feedback = ranges.get_preflop_feedback(classification)
-            reason = ranges.get_hand_reason(combo_str)
-            
-            if decision == "fold":
+            if decision == "fold" or decision == "mix":
                 return {
                     "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
-                    "evaluation": EVAL_BAD, 
-                    "reason": f"【{classification}】{feedback} {reason}\n(このポジションのGTOレンジではレイズすべきではないハンドです。)"
+                    "evaluation": e_eval, 
+                    "reason": preflop_prefix
                 }
-                
-            if decision == "mix":
-                return {
-                    "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
-                    "evaluation": EVAL_MARGINAL, 
-                    "reason": f"【{classification}】{feedback} {reason}\n(このハンドはミックスレンジです。稀にレイズが正当化されます。)"
-                }
-                
-            preflop_prefix = f"【{classification}】{feedback} {reason}\n"
                 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
         realized_equity = equity * eqr
