@@ -237,6 +237,14 @@ class EquityCalculator:
     @staticmethod
     def calc_range_advantage(hero_cards, board_cards, hero_range_dict, cpu_range_dict, is_preflop=False, iterations=1000):
         if is_preflop:
+            # 以前は常に0.5(五分五分)を返していたが、実際のハンド vs 相手レンジで近似する
+            # ヒーローの実カードと相手のレンジを比較してヒーローのエクイティを返す
+            if hero_cards and len(hero_cards) == 2:
+                dead_cards_str = [Card.int_to_str(c) for c in hero_cards]
+                hero_eq = EquityCalculator.calculate_preflop_equity_approx(
+                    hero_cards, cpu_range_dict, dead_cards_str
+                )
+                return max(0.20, min(0.80, hero_eq))
             return 0.5
             
         hero_wins = 0

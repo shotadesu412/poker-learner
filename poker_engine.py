@@ -5,7 +5,7 @@ import ranges
 
 from bet_sizing import (
     PREFLOP_OPENS, PREFLOP_3BET, BET_SIZES, RAISE_MULTIPLIER, 
-    TEXTURE_MULTIPLIER, POSITION_MULTIPLIER, SPR_MULTIPLIER,
+    TEXTURE_MULTIPLIER, BLUFF_FREQ_TEXTURE_MULTIPLIER, POSITION_MULTIPLIER, SPR_MULTIPLIER,
     EVAL_OPTIMAL, EVAL_GOOD, EVAL_MARGINAL, EVAL_BAD
 )
 from equity import EquityCalculator
@@ -893,8 +893,9 @@ class PokerEngine:
         hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_hand, self.board, self.hero_range_dict, self.cpu_range_dict, is_preflop=is_preflop, iterations=500)
         cpu_range_adv = 1.0 - hero_range_adv
 
-        # 疑似的な手札の強さを生成（レンジの強さ ± 30%のブレ）
-        effective_equity = cpu_range_adv + random.uniform(-0.3, 0.3)
+        # 疑似的な手札の強さを生成（レンジの強さ ± 10%のブレ）
+        # ±30%は水増しが大きすぎ、弱い手でもコールしてしまうため縮小
+        effective_equity = cpu_range_adv + random.uniform(-0.10, 0.10)
         effective_equity = max(0.01, min(0.99, effective_equity))
         
         if opponent_action in ["BET", "RAISE"]:
@@ -1014,17 +1015,28 @@ class PokerEngine:
                 else:
                     return "FOLD", 0
             else:
-                # ポストフロップ: 既存ロジックを維持
+                # ポストフロップ
                 if effective_equity >= e_req * 1.8 or (effective_equity < e_req * 0.5 and random.random() < bluff_threshold):
-                    # Strong value raise
+                    # 強いバリューまたはブラフレイズ
                     self.cpu_last_action_intent = "VALUE" if effective_equity >= e_req * 1.8 else "BLUFF"
                     return "RAISE", min(self.cpu_stack, base_raise_amount)
                 elif effective_equity >= e_req * 1.4:
                     self.cpu_last_action_intent = "VALUE"
                     return "RAISE", min(self.cpu_stack, base_raise_amount)
                 elif effective_equity >= e_req:
+                    # オッズに合う: 確実にコール
                     return "CALL", opponent_bet_size
+                elif effective_equity >= e_req * 0.85:
+                    # マージナルゾーン: MDF（最小防衛頻度）ベースで確率的にコール/フォールド
+                    # GTOではこのゾーンのハンドを一定頻度でディフェンスする必要がある
+                    mdf = self.evaluator.calculate_mdf(opponent_bet_size, self.pot_size)
+                    # ベットが大きいほどMDFが低く（相手に多くフォールドを許す）なるため自然な挙動
+                    if random.random() < mdf * 0.6:  # MDFの60%をコール閾値として使用
+                        return "CALL", opponent_bet_size
+                    else:
+                        return "FOLD", 0
                 else:
+                    # エクイティが大幅に不足: フォールド
                     return "FOLD", 0
         else:
             # CPU goes first or faces a check
@@ -1074,7 +1086,12 @@ class PokerEngine:
                 action_if_pass = "CHECK"
                 action_if_bet = "BET"
                 
-            ev_bet = self.evaluator.ev_bet(effective_equity, self.pot_size, ideal_bet_size, fold_equity=0.3)
+            # Fix #1: fold_equityを動的計算（alpha公式）に変更。固定0.3は不正確
+            fold_equity_est = ideal_bet_size / (self.pot_size + ideal_bet_size)
+            # Fix #4: ストリート別にレイズ頻度を設定（リバーは少ない）
+            street_raise_freq = {"FLOP": 0.12, "TURN": 0.08, "RIVER": 0.03}.get(self.street, 0.10)
+            ev_bet = self.evaluator.ev_bet(effective_equity, self.pot_size, ideal_bet_size,
+                                          fold_equity=fold_equity_est, villain_raise_freq=street_raise_freq)
             
             # Mathematical MDF Bluff constraint
             base_bluff_freq = self.calculate_theoretical_bluff_frequency(ideal_bet_size, self.pot_size)
@@ -1085,10 +1102,10 @@ class PokerEngine:
             else:
                 bluff_freq = base_bluff_freq * 1.05
                 
-            # Phase 14: Board Texture Scaling Heuristics
+            # Fix #3: ブラフ頻度にはベットサイズ用MULTIPLIERではなく専用乗数を使う
+            # ドライ→ブラフしやすい(1.20)、ウェット→純ブラフは危険(0.75)
             texture = self.classify_board_texture(self.board)
-            if texture in TEXTURE_MULTIPLIER:
-                 bluff_freq *= TEXTURE_MULTIPLIER[texture]
+            bluff_freq *= BLUFF_FREQ_TEXTURE_MULTIPLIER.get(texture, 1.0)
                 
             # Phase 15: Position Bluff Scaling Heuristics
             if self.is_hero_ip: # If Hero is IP, CPU is OOP
@@ -1109,8 +1126,20 @@ class PokerEngine:
                 
             bluff_freq = max(0.0, min(1.0, bluff_freq))
             
-            is_value_bet = ev_bet > ev_pass and effective_equity > 0.6 # Strict value
-            is_bluff_bet = effective_equity < 0.4 and random.random() < bluff_freq
+            # Fix #2: value/bluffの閾値をストリート別に設定
+            # フロップ: Cbet用に低め。リバー: ショーダウンバリューが必要なため高め
+            if self.street == "RIVER":
+                value_eq_threshold = 0.65
+                bluff_eq_threshold = 0.45  # ミスったドロー等も含む
+            elif self.street == "TURN":
+                value_eq_threshold = 0.62
+                bluff_eq_threshold = 0.42
+            else:  # FLOP
+                value_eq_threshold = 0.58  # フロップCbetは広いレンジで打てる
+                bluff_eq_threshold = 0.45  # セミブラフ（ドロー: 30-45%）を捕捉
+            
+            is_value_bet = ev_bet > ev_pass and effective_equity > value_eq_threshold
+            is_bluff_bet = effective_equity < bluff_eq_threshold and random.random() < bluff_freq
             
             # Additional logic for Preflop Limp (action_if_pass == "CALL")
             if action_if_pass == "CALL":
