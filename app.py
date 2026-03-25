@@ -268,6 +268,10 @@ def take_action(req: ActionRequest):
                      engine.place_bet("CPU", cpu_amount)
                  
                  cpu_msg = f"CPU {cpu_action}S {cpu_amount > 0 and str(round(cpu_amount, 1)) + 'bb' or ''}".strip()
+            elif cpu_action == "CHECK":
+                 engine.update_range_dict("CPU", "CHECK", 0)
+                 engine.record_action("CPU", "CHECK", 0, cpu_eq, engine.pot_size)
+                 cpu_msg = "CPU CHECKS"
         
         # Check if CPU acting resolved the street
         hero_facing_after_cpu = engine.current_bet - engine.hero_invested
