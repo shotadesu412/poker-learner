@@ -33,8 +33,8 @@ class Evaluator:
         return EVCalculator.ev_check(equity, pot_size)
 
     @staticmethod
-    def ev_bet(equity, pot_size, bet_amount, fold_equity):
-        return EVCalculator.ev_bet(equity, pot_size, bet_amount, fold_equity)
+    def ev_bet(equity, pot_size, bet_amount, fold_equity, villain_raise_freq=0.1):
+        return EVCalculator.ev_bet(equity, pot_size, bet_amount, fold_equity, villain_raise_freq)
     
     @staticmethod
     def calculate_alpha(bet_amount, pot_size):

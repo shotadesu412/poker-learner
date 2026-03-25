@@ -1,12 +1,21 @@
 Traceback (most recent call last):
-  File "C:\roker learner\app.py", line 92, in take_action
-    hero_range_adv = EquityCalculator.calc_range_advantage(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=100)
-  File "C:\roker learner\equity.py", line 140, in calc_range_advantage
-    dead_cards_str = [Card.int_to_str(c) for c in board_cards]
-                      ~~~~~~~~~~~~~~~^^^
-  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\card.py", line 81, in int_to_str
-    rank_int = Card.get_rank_int(card_int)
-  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\card.py", line 87, in get_rank_int
-    return (card_int >> 8) & 0xF
-            ~~~~~~~~~^^~~
-TypeError: unsupported operand type(s) for >>: 'str' and 'int'
+  File "C:\roker learner\app.py", line 301, in take_action
+    return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(), "cpuAction": cpu_action, "cpuMessage": cpu_msg}
+                                                                       ~~~~~~~~~~~~~~^^
+  File "C:\roker learner\app.py", line 309, in get_game_state
+    hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(engine.hero_hand, engine.board, engine.hero_range_dict, engine.cpu_range_dict, iterations=50)
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\roker learner\equity.py", line 220, in calc_equity_monte_carlo
+    hero_score = cached_evaluate(sim_board_tuple, tuple(hero_cards))
+  File "C:\roker learner\equity.py", line 12, in cached_evaluate
+    return _treys_evaluator.evaluate(list(board_tuple), list(hand_tuple))
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\evaluator.py", line 39, in evaluate
+    return self.hand_size_map[len(all_cards)](all_cards)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\evaluator.py", line 86, in _seven
+    score = self._five(combo)
+  File "C:\Users\F_sho\AppData\Local\Programs\Python\Python313\Lib\site-packages\treys\evaluator.py", line 58, in _five
+    return self.table.unsuited_lookup[prime]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+KeyError: 5106345
