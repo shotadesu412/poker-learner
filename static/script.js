@@ -3,6 +3,15 @@ let currentState = null;
 let currentBetPercent = 50;
 let isWaitingForAction = true;
 
+// Global settings loaded from localStorage
+let appSettings = JSON.parse(localStorage.getItem("poker_settings")) || {
+    showEquity: true,
+    showRange: true,
+    showFeedback: true,
+    speed: "normal"
+};
+const speedMult = appSettings.speed === "fast" ? 0.4 : 1.0;
+
 // AI Coach Global States
 let coachMessages = [];
 
@@ -123,6 +132,25 @@ function updateUI() {
         updateHTML('bluff-ratio-val', currentState.bluffRatio);
     }
 
+    // Apply visibility settings
+    document.querySelectorAll('.equity-display').forEach(el => {
+        if (!appSettings.showEquity) {
+            el.style.display = 'none';
+        } else {
+            // Restore default (empty means fallback to css rule or block)
+            el.style.display = '';
+        }
+    });
+
+    const rangesContainer = document.querySelector('.ranges-container');
+    if (rangesContainer) {
+        if (!appSettings.showRange) {
+            rangesContainer.style.display = 'none';
+        } else {
+            rangesContainer.style.display = 'flex'; // Default is usually flex
+        }
+    }
+
     renderCards('board-container', currentState.board, 5);
     renderCards('hero-cards', currentState.heroHand, 2);
 
@@ -200,7 +228,7 @@ async function startHand() {
         if (currentState.cpuMessage) {
             setTimeout(() => {
                 addEvaluationToHistory("", currentState.cpuMessage, "");
-            }, 500);
+            }, 500 * speedMult);
         }
     } catch (e) {
         console.error(e);
@@ -239,13 +267,13 @@ async function takeAction(actionType, amount = 0) {
             if (data.evaluation && data.reason) {
                 showReason(data.evaluation, data.reason);
             }
-        }, 800);
+        }, 800 * speedMult);
 
         // Render CPU response if exists
         if (data.cpuMessage) {
             setTimeout(() => {
                 addEvaluationToHistory("", data.cpuMessage, "eval-O");
-            }, 1000); // 1s delay to seem like CPU is "thinking" after evaluation
+            }, 1000 * speedMult); // 1s delay to seem like CPU is "thinking" after evaluation
         }
 
         // Update state
@@ -264,7 +292,7 @@ async function takeAction(actionType, amount = 0) {
             // Re-enable all buttons unconditionally; updateUI will handle hiding the main action area anyway
             document.querySelectorAll('.action-btn').forEach(b => b.disabled = false);
             updateUI();
-        }, 1200); // Prevent mashing during animations
+        }, 1200 * speedMult); // Prevent mashing during animations
     }
 }
 
@@ -413,6 +441,15 @@ function showReason(symbol, text) {
     reasonArea.style.borderLeftColor = colorVar; // LeftColorに戻す
     symbolSpn.style.color = textVar;
 
+    // Apply feedback visibility setting
+    if (!appSettings.showFeedback) {
+        textDiv.style.display = 'none';
+        document.querySelector('.reason-title').innerText = "アクション評価";
+    } else {
+        textDiv.style.display = 'block';
+        document.querySelector('.reason-title').innerText = "アクション解説";
+    }
+
     // Unhide and trigger animation
     reasonArea.classList.remove('hidden');
     // small reflow delay so CSS transforms engage
@@ -455,7 +492,7 @@ function showEvaluation(evalSymbol, actionName) {
     setTimeout(() => {
         popup.classList.remove('show');
         addEvaluationToHistory(evalSymbol, actionName, colorClass);
-    }, 800);
+    }, 800 * speedMult);
 }
 
 function addEvaluationToHistory(symbol, action, colorClass) {

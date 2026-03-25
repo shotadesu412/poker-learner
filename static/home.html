@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Learner</title>
+    <link rel="stylesheet" href="/static/home.css">
+</head>
+<body>
+    <div class="home-container">
+        <!-- Header -->
+        <header class="home-header">
+            <h1 class="logo-title">Poker<span>Learner</span></h1>
+            <p class="subtitle">GTO Based Poker AI Training</p>
+        </header>
+
+        <!-- Main Menu -->
+        <main class="menu-container">
+            <button class="menu-btn primary" onclick="location.href='/play'">
+                <span class="icon">♠️</span> ゲームスタート (Play)
+            </button>
+            <button class="menu-btn secondary" onclick="location.href='/stats'">
+                <span class="icon">📊</span> 分析データ (Stats)
+            </button>
+            <button class="menu-btn outline" id="settings-btn">
+                <span class="icon">⚙️</span> 設定 (Settings)
+            </button>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>ゲーム設定</h2>
+                <span class="close-btn" id="close-settings">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>エクイティ（勝率）の表示</label>
+                        <p>ゲーム中に自ハンドの勝率を表示します</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-equity" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>レンジバーの表示</label>
+                        <p>自分と相手のハンドレンジ強さをグラフで表示します</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-range" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>評価時の解説文（フィードバック）の表示</label>
+                        <p>アクションごとの詳細なGTO解説文を表示します（OFF時はアイコンのみ）</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-feedback" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>アニメーション速度</label>
+                        <p>カードの配布や評価表示のスピードを設定します</p>
+                    </div>
+                    <div class="speed-control">
+                        <input type="radio" id="speed-normal" name="speed" value="normal" checked>
+                        <label for="speed-normal">通常</label>
+                        <input type="radio" id="speed-fast" name="speed" value="fast">
+                        <label for="speed-fast">高速</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="save-btn" id="save-settings-btn">保存して閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/home.js"></script>
+</body>
+</html>

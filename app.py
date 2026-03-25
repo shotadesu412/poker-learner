@@ -28,6 +28,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 current_session_id: str = str(uuid.uuid4())
 
 @app.get("/")
+def serve_home():
+    return FileResponse("static/home.html")
+
+@app.get("/play")
 def serve_index():
     return FileResponse("static/index.html")
 
