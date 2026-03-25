@@ -64,6 +64,7 @@ class ChatMessage(BaseModel):
 
 class AICoachRequest(BaseModel):
     messages: list[ChatMessage]
+    user_id: str = "guest"
 
 @app.get("/api/start_hand")
 def start_hand():
@@ -399,7 +400,19 @@ def ai_coach(req: AICoachRequest):
             temperature=0.7
         )
         
-        return {"reply": response.choices[0].message.content}
+        reply_text = response.choices[0].message.content
+        
+        # スマホアプリ化向けの機能：AIコーチを使用したハンドの状況と回答をDBへ保存
+        # ユーザーによる最初のリクエスト（文脈が必要なメインのコーチング時）に限る
+        if len(req.messages) == 1:
+            stats_logger.save_ai_feedback(
+                user_id=req.user_id,
+                session_id=current_session_id,
+                hand_context=context_str,
+                ai_feedback=reply_text
+            )
+        
+        return {"reply": reply_text}
         
     except Exception as e:
         return {"reply": f"コーチAPIでエラーが発生しました: {str(e)}"}
@@ -448,6 +461,16 @@ def stats_leaks():
         return stats_logger.get_leaks()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/saved_hands")
+def stats_saved_hands(user_id: str = Query("")):
+    """指定したユーザーがAIコーチに相談したハンド履歴を返す"""
+    try:
+        return stats_logger.get_saved_hands(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.delete("/api/stats/reset")

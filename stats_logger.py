@@ -46,6 +46,17 @@ def setup_db():
             result      TEXT DEFAULT ''  -- WIN/LOSE/FOLD
         )
     """)
+    # AIコーチのハンド履歴・フィードバック保存テーブル
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS saved_hands (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id       TEXT    NOT NULL,
+            session_id    TEXT    NOT NULL,
+            timestamp     TEXT    NOT NULL,
+            hand_context  TEXT    NOT NULL,
+            ai_feedback   TEXT    NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -310,5 +321,57 @@ def reset_all():
     conn = _get_conn()
     conn.execute("DELETE FROM actions")
     conn.execute("DELETE FROM sessions")
+    conn.execute("DELETE FROM saved_hands")
     conn.commit()
     conn.close()
+
+# ==============================
+# ユーザーごとのAIコーチ履歴保存
+# ==============================
+
+def save_ai_feedback(user_id: str, session_id: str, hand_context: str, ai_feedback: str):
+    """AIコーチを使用したハンドの状況とフィードバックを保存する"""
+    conn = _get_conn()
+    conn.execute(
+        """INSERT INTO saved_hands
+           (user_id, session_id, timestamp, hand_context, ai_feedback)
+           VALUES (?, ?, ?, ?, ?)""",
+        (
+            user_id,
+            session_id,
+            datetime.now(timezone.utc).isoformat(),
+            hand_context,
+            ai_feedback
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+def get_saved_hands(user_id: str) -> list:
+    """特定のユーザーIDが保存したAIコーチのフィードバック履歴を新しい順に取得する"""
+    if not user_id:
+        return []
+        
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT session_id, timestamp, hand_context, ai_feedback
+        FROM saved_hands
+        WHERE user_id = ?
+        ORDER BY timestamp DESC
+        LIMIT 50
+        """,
+        (user_id,)
+    ).fetchall()
+    
+    saved = []
+    for r in rows:
+        saved.append({
+            "session_id": r["session_id"],
+            "timestamp": r["timestamp"],
+            "hand_context": r["hand_context"],
+            "ai_feedback": r["ai_feedback"]
+        })
+        
+    conn.close()
+    return saved

@@ -379,3 +379,70 @@ body {
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+/* AIコーチ履歴 */
+.ai-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ai-history-item {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ai-history-header {
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.ai-history-header:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.ai-history-date {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.ai-history-toggle {
+    font-size: 0.8rem;
+    color: var(--accent-blue);
+}
+
+.ai-history-body {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.ai-history-body.active {
+    display: block;
+}
+
+.ai-context-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    margin-bottom: 12px;
+}
+
+.ai-feedback-box {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--text-main);
+}

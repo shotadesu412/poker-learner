@@ -12,6 +12,13 @@ let appSettings = JSON.parse(localStorage.getItem("poker_settings")) || {
 };
 const speedMult = appSettings.speed === "fast" ? 0.4 : 1.0;
 
+// User ID for Saved Hands
+let currentUserId = localStorage.getItem("poker_user_id");
+if (!currentUserId) {
+    currentUserId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    localStorage.setItem("poker_user_id", currentUserId);
+}
+
 // AI Coach Global States
 let coachMessages = [];
 
@@ -563,7 +570,10 @@ async function requestCoachExplanation() {
             const response = await fetch('/api/ai_coach', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: coachMessages.filter(m => !m.isLoading) })
+                body: JSON.stringify({ 
+                    messages: coachMessages.filter(m => !m.isLoading),
+                    user_id: currentUserId
+                })
             });
             const data = await response.json();
 
@@ -600,7 +610,10 @@ async function sendCoachMessage() {
         const response = await fetch('/api/ai_coach', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: coachMessages.filter(m => !m.isLoading) })
+            body: JSON.stringify({ 
+                messages: coachMessages.filter(m => !m.isLoading),
+                user_id: currentUserId
+            })
         });
         const data = await response.json();
 
