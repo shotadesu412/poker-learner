@@ -114,14 +114,14 @@ class Evaluator:
         elif category in ["NUT_HAND", "STRONG_MADE"]:
             base_eqr += 0.05 # Strong made hands realize well
         elif category == "AIR" or category == "WEAK_MADE":
-            base_eqr -= 0.20 # Air and weak pairs under-realize
+            base_eqr -= 0.05 # (緩和) Air and weak pairs under-realize
         elif category == "WEAK_DRAW":
-            base_eqr -= 0.10
+            base_eqr -= 0.05 # (緩和) 
             
         if is_3bet_pot:
             # 3bet pots punish marginal/air hands even more heavily
             if category in ["MEDIUM_MADE", "WEAK_MADE", "WEAK_DRAW", "AIR"]:
-                base_eqr -= 0.15
+                base_eqr -= 0.05 # (緩和) 3bet pots margin penalty
                 
         # 3. SPR Convergence using SPR_MULTIPLIER categories
         if spr < 1.0:
@@ -241,33 +241,33 @@ class Evaluator:
         if action_taken == "CALL":
             if call_weight > 0:
                 classification = ranges.classify_range(call_weight)
-                return "play", EVAL_GOOD, f"【{classification}】妥当なコールです。 {reason_txt}"
+                return "play", EVAL_GOOD, f"【妥当】基本的なプレイです。 {reason_txt}"
             elif raise_weight > 0:
                 classification = ranges.classify_range(raise_weight)
-                return "fold", EVAL_BAD, f"【{classification}】コールではなくレイズ(3-Bet/4-Bet)すべき強いハンドです。 {reason_txt}"
+                return "fold", EVAL_BAD, f"【バリューの取り逃し】コールではなく、レイズ（上乗せ）してポットの主導権を握るべき非常に強いハンドです。 {reason_txt}"
             else:
-                return "fold", EVAL_BAD, f"【FOLD】{fold_msg} {reason_txt}"
+                return "fold", EVAL_BAD, f"【悪手】{fold_msg} {reason_txt}"
                 
         elif action_taken == "RAISE":
             if raise_weight > 0:
                 classification = ranges.classify_range(raise_weight)
-                return "play", EVAL_OPTIMAL, f"【{classification}】見事なレイズ(3-Bet/4-Bet)です。 {reason_txt}"
+                return "play", EVAL_OPTIMAL, f"【最適】見事なレイズ(3-Bet/4-Bet)です。主導権を握りましょう。 {reason_txt}"
             elif call_weight > 0:
                 classification = ranges.classify_range(call_weight)
-                return "mix", EVAL_MARGINAL, f"【{classification}】レイズではなくコールで参加すべきマージナルなハンドです。 {reason_txt}"
+                return "mix", EVAL_MARGINAL, f"【やや過剰】レイズではなくコールで参加すべきマージナルなハンドです。 {reason_txt}"
             else:
-                return "fold", EVAL_BAD, f"【FOLD】{fold_msg} {reason_txt}\n(完全なブラフなら頻度に注意してください)"
+                return "fold", EVAL_BAD, f"【悪手】{fold_msg} {reason_txt}\n(完全なブラフなら頻度に注意してください)"
                 
         elif action_taken == "FOLD":
             if raise_weight > 0.5:
                 # 明らかなプレミアム
-                return "mix", EVAL_BAD, f"【CORE】非常に強いプレミアムハンドです。フォールドは完全な悪手であり、レイズすべきです。 {reason_txt}"
+                return "mix", EVAL_BAD, f"【悪手】非常に強いプレミアムハンドです。フォールドせず、必ずレイズで参加しましょう。 {reason_txt}"
             elif call_weight > 0.5:
-                return "mix", EVAL_BAD, f"【CORE】十分にコールできる強いハンドです。フォールドはもったいないです。 {reason_txt}"
+                return "mix", EVAL_BAD, f"【フォールド過多】十分にコールできる強いハンドです。ここで簡単に降りてしまうと、相手にブラフの隙を与えてしまいます。 {reason_txt}"
             elif raise_weight > 0 or call_weight > 0:
-                return "play", EVAL_MARGINAL, f"【MIXED】プレイ可能なハンドですが、フォールドも混合戦略としてはあり得ます。 {reason_txt}"
+                return "play", EVAL_MARGINAL, f"【フォールド過多】プレイ可能なハンドを捨ててしまいました。頻繁に降りすぎると、相手のブラフの標的になります。 {reason_txt}"
             else:
-                return "play", EVAL_OPTIMAL, f"【FOLD】正しいフォールドです。 {fold_msg}"
+                return "play", EVAL_OPTIMAL, f"【最適】正しいフォールドです。 {fold_msg}"
                 
         return "play", EVAL_GOOD, reason_txt
 
@@ -313,19 +313,19 @@ class Evaluator:
         
         if ev_call_val > 0 and realized_equity < e_req * Evaluator.CALL_IMPLIED_ODDS_THRESHOLD:
             result_eval = EVAL_GOOD
-            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、深いSPR({spr:.1f})によるインプライドオッズでEV({ev_call_val:.1f})がプラスになる利益的なコールです。"
+            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、後のラウンドで大きく稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
         elif realized_equity >= e_req * Evaluator.CALL_OPTIMAL_THRESHOLD:
             result_eval = EVAL_OPTIMAL
-            result_reason += f"必要勝率({e_req*100:.1f}%)に対し、あなたの実現勝率({realized_equity*100:.1f}%)は十分高く、極めて利益的なコールです。"
+            result_reason += f"リスクに対して勝率({realized_equity*100:.1f}%)が十分に高く、極めて優位なコールです。"
         elif realized_equity >= e_req:
             result_eval = EVAL_GOOD
-            result_reason += f"必要勝率({e_req*100:.1f}%)を満たしており、利益的なコールです。"
+            result_reason += f"ベット額に対して見合う勝率({realized_equity*100:.1f}%)があり、妥当な防衛（コール）です。"
         elif realized_equity >= e_req * Evaluator.CALL_MARGINAL_THRESHOLD:
             result_eval = EVAL_MARGINAL
-            result_reason += f"必要勝率({e_req*100:.1f}%)にわずかに届いていません。ブラフキャッチ等の追加の理由が必要です。"
+            result_reason += f"勝率({realized_equity*100:.1f}%)がオッズにわずかに届いていません。相手のブラフをキャッチするなどの明確な理由がない限り、頻繁なコールは控えましょう。"
         else:
             result_eval = EVAL_BAD
-            result_reason += f"必要勝率({e_req*100:.1f}%)に対して実現勝率({realized_equity*100:.1f}%)が低すぎます。フォールドすべきです。"
+            result_reason += f"【リスク過多】このコールは長期的に見て損をします。相手のベット額が大きすぎるため、あなたのハンドが逆転して勝てる確率({realized_equity*100:.1f}%)と支払うチップの額が釣り合っていません。ここは我慢してフォールドするのが正解です。"
             
         return {
             "ev": ev_call_val,
@@ -366,24 +366,21 @@ class Evaluator:
         
         if realized_equity >= e_req * Evaluator.FOLD_OPTIMAL_THRESHOLD:
             result_eval = EVAL_BAD
-            result_reason = f"必要勝率({e_req*100:.1f}%)に対して実現勝率({realized_equity*100:.1f}%)が十分に高く、コールやレイズすべきでした。期待値マイナスです。"
+            result_reason = f"【リスク回避過多】十分に勝てる見込みがあるハンド({realized_equity*100:.1f}%)を捨ててしまいました。期待値の観点からマイナスのプレイであり、コールかレイズすべきでした。"
         elif realized_equity >= e_req:
             result_eval = EVAL_MARGINAL
-            result_reason = f"必要勝率({e_req*100:.1f}%)を満たしており({realized_equity*100:.1f}%)、フォールドは消極的すぎるかもしれません。"
+            result_reason = f"【フォールド過多】オッズに見合う勝率({realized_equity*100:.1f}%)を持っています。フォールドは消極的すぎるかもしれません。"
         elif realized_equity >= (e_req - 0.05):
             # ▼ MDF考慮: 勝率がオッズに5%以内のマージナルスポット
-            # このハンドでフォールドが続くと相手の全ブラフが無条件に通ってしまう
             result_eval = EVAL_MARGINAL
             result_reason = (
-                f"オッズ（必要勝率{e_req*100:.1f}%）にはわずかに届きませんが（あなたの勝率: {realized_equity*100:.1f}%）、"
-                f"MDF（最小防衛頻度: {mdf*100:.0f}%）を考慮してください。"
-                f"このようなマージナルなスポットでフォールドが頻発すると、相手はどんな2枚でも"
-                f"ブラフをして無限に利益を得られる（エクスプロイトされる）危険性があります。"
-                f"ブラフキャッチャーとして一定頻度でコールを検討しましょう。"
+                f"【レンジ無視 / フォールド過多】オッズにはわずかに届きませんが（あなたの勝率: {realized_equity*100:.1f}%）、"
+                f"十分にコールできる強さです。このような状況で毎回降りてしまうと、相手は弱いカードでも適当にベットするだけで簡単にポットを奪えるようになってしまいます。"
+                f"相手のブラフを防ぐために、このハンドは一定頻度でディフェンス（コール）すべきです。"
             )
         else:
             result_eval = EVAL_OPTIMAL
-            result_reason = f"必要勝率({e_req*100:.1f}%)に対し実現勝率({realized_equity*100:.1f}%)が不足しているため、適切なフォールドです。"
+            result_reason = f"逆転の確率({realized_equity*100:.1f}%)が低いため、無駄なチップの支払いを避ける適切なフォールドです。"
             
         return {
             "ev": 0.0,  # Fold EV is always 0
@@ -426,20 +423,20 @@ class Evaluator:
         if ev_betting > ev_checking + (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
-                result_reason = f"あなたに明確なレンジアドバンテージ(勝率優位)があるため、アグレッシブなベットが正当化されます。EV: {ev_betting:.1f}"
+                result_reason = f"【最適】あなたに明確な勝率優位があるため、アグレッシブなベットが正当化されます。主導権を握り続けましょう。"
             elif realized_equity < 0.35:
-                result_reason = f"勝率は低いですが、高いフォールドエクイティ(相手を降ろす確率)を利用した利益的なブラフベットです。EV: {ev_betting:.1f}"
+                result_reason = f"【最適】勝率は低いですが、相手を降ろす確率（フォールドエクイティ）を利用した利益的なブラフベットです。"
             else:
-                result_reason = f"チェックよりもベットの期待値が明確に上回る、バリューとプレッシャーを兼ね備えたアクションです。EV: {ev_betting:.1f}"
+                result_reason = f"【最適・バリュー】チェックよりもベットの期待値が明確に上回る、バリューとプレッシャーを兼ね備えた優れたアクションです。"
         elif ev_betting >= ev_checking:
             result_eval = EVAL_GOOD
-            result_reason = f"ベット期待値(EV: {ev_betting:.1f})がチェック(EV: {ev_checking:.1f})を上回っており、妥当なアクションです。"
+            result_reason = f"【妥当】ベットによる利益がチェックを上回っており、プレッシャーをかける妥当なアクションです。"
         elif ev_betting >= ev_checking - (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
             result_eval = EVAL_MARGINAL
-            result_reason = "ベットとチェックの期待値が拮抗しています。GTOにおいては、相手に読まれないよう頻度（乱数）でアクションを混ぜる（混合戦略）べきスポットです。"
+            result_reason = "【マージナル】ベットとチェックの期待値が拮抗しています。相手に手の内を読まれにくくするために、様々なアクションを混ぜて（混合戦略で）戦うべき状況です。"
         else:
             result_eval = EVAL_BAD
-            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})の方がベット(EV: {ev_betting:.1f})より高いため、ベットは避けるべきです。"
+            result_reason = f"【悪手】チェックして様子を見る方が期待値が高いため、無駄なチップを失う無理なベットは避けるべきです。"
 
         return {
             "ev": ev_betting,
@@ -479,20 +476,20 @@ class Evaluator:
         if ev_raising > ev_calling + (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
-                result_reason = preflop_prefix + f"あなたに明確なレンジアドバンテージ(勝率優位)があるため、アグレッシブなレイズが正当化されます。EV: {ev_raising:.1f}"
+                result_reason = preflop_prefix + f"【最適】あなたに明確な勝率優位があるため、アグレッシブなレイズが正当化されます。"
             elif realized_equity < 0.35:
-                result_reason = preflop_prefix + f"勝率は低いですが、高いフォールドエクイティ(相手を降ろす確率)を利用した利益的なブラフレイズです。EV: {ev_raising:.1f}"
+                result_reason = preflop_prefix + f"【最適】勝率は低いですが、相手を降ろす確率（フォールドエクイティ）を利用した利益的なブラフレイズです。"
             else:
-                result_reason = preflop_prefix + f"コールよりもレイズの期待値が明確に上回る、バリューとプレッシャーを兼ね備えたアクションです。EV: {ev_raising:.1f}"
+                result_reason = preflop_prefix + f"【最適・バリュー】コールよりもレイズの期待値が明確に上回る、バリューとプレッシャーを兼ね備えた優れたアクションです。"
         elif ev_raising >= ev_calling:
             result_eval = EVAL_GOOD
-            result_reason = preflop_prefix + f"レイズ(EV: {ev_raising:.1f})がコール(EV: {ev_calling:.1f})を上回っており、妥当な攻撃的アクションです。"
+            result_reason = preflop_prefix + f"【妥当】レイズの期待値がコールを上回っており、妥当な攻撃的アクションです。"
         elif ev_raising >= ev_calling - (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
             result_eval = EVAL_MARGINAL
-            result_reason = preflop_prefix + "レイズとコールの期待値が拮抗しています。GTOにおいては、相手に読まれないよう頻度（乱数）でアクションを混ぜる（混合戦略）べきスポットです。"
+            result_reason = preflop_prefix + "【マージナル】レイズとコールの期待値が拮抗しています。相手に読まれにくくするために、コールとレイズをランダムに混ぜるべき状況です。"
         else:
             result_eval = EVAL_BAD
-            result_reason = preflop_prefix + f"コール(EV: {ev_calling:.1f})の方がレイズ(EV: {ev_raising:.1f})よりも高いため、基本的にはコールかフォールドすべきです。"
+            result_reason = preflop_prefix + f"【悪手・リスク過多】レイズすることで逆に期待値が下がっています。基本的にはコールに留めるか、フォールドすべきです。"
 
         return {
             "ev": ev_raising,
@@ -524,18 +521,18 @@ class Evaluator:
         if ev_checking >= ev_betting_half_pot:
             result_eval = EVAL_OPTIMAL
             if range_adv < 0.45:
-                result_reason = "相手のレンジの方が強いため、ベットして無駄にチップを失うより、チェックでポットコントロールを図るのが最適です。"
+                result_reason = "【最適】相手のレンジの方が強いため、無駄にベットしてチップを失うより、チェックで被害を最小限に抑えるのが最善です。"
             else:
-                result_reason = f"ベット(EV: {ev_betting_half_pot:.1f})よりチェック(EV: {ev_checking:.1f})が高く、パッシブな進行が最善です。"
+                result_reason = f"【最適】今は無駄なリスクを避け、パッシブに様子を見るのがベストな選択です。"
         elif ev_checking >= ev_betting_half_pot * 0.8:
             result_eval = EVAL_GOOD
-            result_reason = f"チェックの期待値(EV: {ev_checking:.1f})は標準的です。ポットコントロールに適しています。"
+            result_reason = f"【妥当】チェックしてポットを小さく保つ（ポットコントロール）のは妥当な選択です。"
         elif ev_checking >= ev_betting_half_pot * 0.5:
             result_eval = EVAL_MARGINAL
-            result_reason = f"ベットすべき状況かもしれませんが、チェックも限定的に正当化されます。"
+            result_reason = f"【やや消極的】ベットしてプレッシャーをかけるべき状況かもしれませんが、チェックで様子を見るのも手です。"
         else:
             result_eval = EVAL_BAD
-            result_reason = f"ベット期待値(EV: {ev_betting_half_pot:.1f})が非常に高く、チェックは利益を逃す悪手です。"
+            result_reason = f"【バリューの取り逃し】あなたのハンドは非常に強い状態です。ここでチェックしてしまうと、本来勝てたはずのチップを取り逃してしまいます。強い役を持っている時は自分からベットして、相手からチップを引き出しましょう。"
 
         return {
             "ev": ev_checking,

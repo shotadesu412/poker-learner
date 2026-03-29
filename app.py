@@ -338,13 +338,21 @@ def get_game_state(finished=False):
         if tot <= 0: return {"strong": 0.33, "middle": 0.33, "weak": 0.34}
         return {"strong": round(s_weight/tot, 2), "middle": round(m_weight/tot, 2), "weak": round(w_weight/tot, 2)}
     
+    # CPUのポジション秘匿ロジック
+    # プリフロップかつCPUがまだアクションしていない場合は自分より後のポジションであるため「???」とする
+    display_cpu_pos = engine.cpu_position
+    if engine.street == "PREFLOP":
+        cpu_has_acted = any(a["actor"] == "CPU" for a in engine.action_history)
+        if not cpu_has_acted:
+            display_cpu_pos = "???"
+
     return {
         "street": engine.street,
         "potSize": round(engine.pot_size, 2),
         "heroStack": round(engine.hero_stack, 2),
         "cpuStack": round(engine.cpu_stack, 2),
         "heroPos": engine.hero_position,
-        "cpuPos": engine.cpu_position,
+        "cpuPos": display_cpu_pos,
         "facingBet": round(max(0.0, engine.current_bet - engine.hero_invested), 2),
         "currentBet": round(engine.current_bet, 2),
         "heroHand": [Card.int_to_str(c) for c in engine.hero_hand],
@@ -394,7 +402,7 @@ def ai_coach(req: AICoachRequest):
             api_messages.append({"role": msg.role, "content": msg.content})
 
         response = openai_client.chat.completions.create(
-            model="gpt-5.4-nano",
+            model="gpt-5.4-mini",
             messages=api_messages,
             max_completion_tokens=1000,
             temperature=0.7
@@ -415,6 +423,8 @@ def ai_coach(req: AICoachRequest):
         return {"reply": reply_text}
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"reply": f"コーチAPIでエラーが発生しました: {str(e)}"}
 
 

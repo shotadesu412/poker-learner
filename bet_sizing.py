@@ -74,20 +74,12 @@ EVAL_BAD = "×"
 
 def get_spr_size_adjustment(spr: float) -> float:
     """
-    SPR（スタック対ポット比）に応じてベットサイズの推奨値を補正する係数を返す。
-
-    3-Betポット（SPR 2〜4）: スタックが既に小さいため、小さなベットでリバーまでに
-    スタック全体を入れ切ることができる。大きなベットは過剰コミットを招く。
-
-    SPR < 2   : 全スタックのコミットを先頭から考慮。小さいベットが最適。
-    SPR 2〜4  : 3-Betポット相当。25〜50%ポットで十分コミットを作れる。
-    SPR 4〜8  : シングルレイズポット標準。通常サイズ。
-    SPR > 8   : ディープスタック。ブロックベットや大きなサイズを活用できる。
+    SPRによる過度なベットサイズ抑制を廃止し、より柔軟なサイズを許容する。
     """
     if spr < 2.0:
-        return 0.50   # 超低SPR: 非常に小さく打つ
+        return 1.00   # 超低SPRでもサイズの硬直的抑制を解除
     elif spr < 4.0:
-        return 0.65   # 3Betポット相当: 通常の65%サイズに縮小
+        return 1.00   # 3Betポット相当でも抑制を解除
     elif spr < 8.0:
         return 1.00   # 標準SPR: そのまま
     else:
@@ -98,13 +90,7 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
     """
     ユーザーが選択したベットサイズに対し、GTO理論に基づいた
     ボードテクスチャ別フィードバックを返す。
-
-    テクスチャ別推奨サイジング（レポートのヒューリスティクス表に準拠）:
-    ドライ・静的 (A83r等)   : 25〜33%ポット（高頻度・小サイズ）
-    ペアボード (KK5等)      : 25〜33%ポット（高頻度・小サイズ）
-    セミウェット (KJ4等)    : 33〜55%ポット（中頻度・中サイズ）
-    ウェット・動的 (986o等) : 55〜80%ポット（中〜低頻度・大サイズ）
-    モノトーン (Qc7c2c等)  : 20〜33%ポット（低頻度・小サイズ）
+    ※ 閾値を大幅に緩和し、ポラライズされた大きなベットも許容する。
     """
     if pot <= 0:
         return {"evaluation": EVAL_MARGINAL, "reason": "ポットサイズが不明のため評価できません。"}
@@ -118,13 +104,12 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
 
     # --- モノトーンボード (Qc7c2c等) ---
     if board_texture == "monotone":
-        if fraction > 0.45 * adjusted_threshold_multiplier:
+        if fraction > 0.75 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
                 "reason": (
                     f"モノトーンボードに対してベットサイズ({fraction*100:.0f}%ポット)が大きすぎます。"
-                    "同スート3枚のボードでは自分のレンジにフラッシュが少なく、相手のフラッシュを恐れて"
-                    "チェック頻度を高める必要があります。ベットする場合は20〜33%の小額でブロックベットが最適です。"
+                    "同スート3枚のボードではフラッシュの警戒が必要ですが、大きく打ちすぎる必要はありません。"
                 )
             }
         return {
@@ -138,14 +123,12 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
 
     # --- ペアボード (KK5, 884等) ---
     elif board_texture == "paired":
-        if fraction > 0.55 * adjusted_threshold_multiplier:
+        if fraction > 1.00 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
                 "reason": (
-                    f"ペアボードに対してベットサイズ({fraction*100:.0f}%ポット)が大きすぎます。"
-                    "このボードはどちらのレンジにもトリップスが含まれにくいため、"
-                    "大きなベットは強すぎるハンドを主張しすぎてコールされにくくなります。"
-                    "25〜33%の小額で高頻度にベットするのがGTOの基本です。"
+                    f"ペアボードでの極端なオーバーベット({fraction*100:.0f}%ポット)はリスクが高いです。"
+                    "通常は25〜33%の小額ベットが高頻度で使われますが、大きなサイズを打つ場合は強いポラライズレンジが必要です。"
                 )
             }
         return {
@@ -202,14 +185,12 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
 
     # --- ドライ・静的ボード (A83r, K72r等) ---
     else:  # dry
-        if fraction > 0.70 * adjusted_threshold_multiplier:
+        if fraction > 1.20 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
                 "reason": (
-                    f"ドライボードに対してベットサイズ({fraction*100:.0f}%ポット)が大きすぎます。"
-                    "このボードでは相手は役がなければサイズに関わらず降ります（フォールドEQの非弾力性）。"
-                    "大きく打つことで弱いハンドを逃し、強いハンドにのみコールされるリスクが高まります。"
-                    "25〜33%の少額ベットでレンジ全体の頻度を高め、ブラフ比率も維持しましょう。"
+                    f"ドライボードでの極端な巨大ベット({fraction*100:.0f}%ポット)です。"
+                    "ポラライズ効果は高いものの、相手のエアーハンドからのコールを得にくくなります。"
                 )
             }
         return {

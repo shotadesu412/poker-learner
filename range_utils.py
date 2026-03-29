@@ -10,12 +10,15 @@ def _get_combo_count(combo_str: str) -> int:
     この値をサンプリングウェイトに乗算することで
     均等な2枚カードの出現確率を正確に再現できる。
     """
-    if len(combo_str) == 2:   # ポケットペア (AA, KK...)
-        return 6
+    if len(combo_str) == 2:   # ポケットペア (AA, KK...) または オフペア (AK, QJ...)
+        if combo_str[0] == combo_str[1]:
+            return 6  # ペア
+        else:
+            return 16 # スート指定がないコネクタやハイカード
     elif len(combo_str) == 3:
         if combo_str[2] == 's': return 4   # スーテッド
         if combo_str[2] == 'o': return 12  # オフスート
-    return 1  # 具体的コンボ（例: "AhKh"）は1
+    return 1
 
 def sample_range(range_dict, dead_cards_str=None):
     """
