@@ -100,6 +100,9 @@ def start_hand():
             cpu_msg = f"CPU {cpu_action}S {bet_amount > 0 and str(round(bet_amount, 1)) + 'bb' or ''}".strip()
             break
 
+    hero_hand_str = ",".join([Card.int_to_str(c) for c in engine.hero_hand]) if engine.hero_hand else ""
+    stats_logger.start_session(current_session_id, engine.hero_position, hero_hand_str)
+
     state = get_game_state()
     if cpu_msg:
         state["cpuMessage"] = cpu_msg 
@@ -469,6 +472,15 @@ def stats_leaks():
     """EV損失が大きいシチュエーションTop5を返す"""
     try:
         return stats_logger.get_leaks()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/personal_range")
+def stats_personal_range(period: str = Query("all", pattern="^(all|30d|7d|last)$")):
+    """パーソナルプリフロップレンジ集計を返す"""
+    try:
+        return stats_logger.get_personal_range_stats(period)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

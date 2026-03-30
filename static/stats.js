@@ -21,18 +21,20 @@ async function loadAll(period) {
     showLoading(true);
     try {
         const userId = localStorage.getItem("poker_user_id") || "";
-        const [overview, position, streets, leaks, aiHistory] = await Promise.all([
+        const [overview, position, streets, leaks, aiHistory, personalRange] = await Promise.all([
             fetch(`/api/stats/overview?period=${period}`).then(r => r.json()),
             fetch("/api/stats/position").then(r => r.json()),
             fetch("/api/stats/streets").then(r => r.json()),
             fetch("/api/stats/leaks").then(r => r.json()),
             fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/personal_range?period=${period}`).then(r => r.json()),
         ]);
         renderOverview(overview);
         renderPosition(position);
         renderStreets(streets);
         renderLeaks(leaks);
         renderAiHistory(aiHistory);
+        renderPersonalRange(personalRange);
     } catch (e) {
         console.error("Stats API error:", e);
     }
@@ -177,3 +179,69 @@ window.toggleAiBody = function(index) {
         toggle.innerText = "▲ 閉じる";
     }
 };
+
+// ==============================
+// パーソナルプリフロップレンジ表
+// ==============================
+function renderPersonalRange(data) {
+    const grid = document.getElementById("personal-range-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    
+    if (!data || Object.keys(data).length === 0) {
+        grid.innerHTML = `<div class="no-data" style="grid-column: span 13">データがありません</div>`;
+        return;
+    }
+
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+    for (let r1 = 0; r1 < ranks.length; r1++) {
+        for (let r2 = 0; r2 < ranks.length; r2++) {
+            let comboName = "";
+            let type = "";
+
+            if (r1 === r2) {
+                comboName = ranks[r1] + ranks[r2];
+                type = "pair";
+            } else if (r1 < r2) {
+                comboName = ranks[r1] + ranks[r2] + "s";
+                type = "suited";
+            } else {
+                comboName = ranks[r2] + ranks[r1] + "o";
+                type = "offsuit";
+            }
+
+            const cellData = data[comboName] || { OPEN: 0, CALL: 0, "3BET": 0, FOLD: 0 };
+            const total = cellData.OPEN + cellData.CALL + cellData["3BET"] + cellData.FOLD;
+            
+            const cell = document.createElement('div');
+            cell.className = 'range-cell';
+            
+            if (total > 0) {
+                let maxAct = "FOLD";
+                let maxVal = cellData.FOLD;
+                for (const act of ["CALL", "OPEN", "3BET"]) {
+                    if (cellData[act] >= maxVal && cellData[act] > 0) {
+                        maxAct = act;
+                        maxVal = cellData[act];
+                    }
+                }
+                
+                let bgColor = "#444"; // default fold
+                if (maxAct === "3BET") bgColor = "rgba(239, 68, 68, 0.85)"; // Red
+                else if (maxAct === "OPEN") bgColor = "rgba(59, 130, 246, 0.85)"; // Blue
+                else if (maxAct === "CALL") bgColor = "rgba(16, 185, 129, 0.85)"; // Green
+                
+                cell.style.backgroundColor = bgColor;
+                cell.style.color = "white";
+                cell.innerHTML = `<span>${comboName}</span><span style="font-size:0.65rem;opacity:0.8;margin-top:2px;">${total}</span>`;
+            } else {
+                cell.style.backgroundColor = "#111"; // empty
+                cell.style.color = "#444";
+                cell.innerText = comboName;
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+}

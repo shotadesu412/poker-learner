@@ -43,6 +43,7 @@ def setup_db():
             session_id  TEXT PRIMARY KEY,
             started_at  TEXT NOT NULL,
             hero_pos    TEXT DEFAULT '',
+            hero_hand   TEXT DEFAULT '',
             result      TEXT DEFAULT ''  -- WIN/LOSE/FOLD
         )
     """)
@@ -97,11 +98,11 @@ def log_action(
     conn.close()
 
 
-def start_session(session_id: str, hero_pos: str):
+def start_session(session_id: str, hero_pos: str, hero_hand: str = ""):
     conn = _get_conn()
     conn.execute(
-        "INSERT OR IGNORE INTO sessions (session_id, started_at, hero_pos) VALUES (?, ?, ?)",
-        (session_id, datetime.now(timezone.utc).isoformat(), hero_pos),
+        "INSERT OR IGNORE INTO sessions (session_id, started_at, hero_pos, hero_hand) VALUES (?, ?, ?, ?)",
+        (session_id, datetime.now(timezone.utc).isoformat(), hero_pos, hero_hand),
     )
     conn.commit()
     conn.close()
@@ -375,3 +376,69 @@ def get_saved_hands(user_id: str) -> list:
         
     conn.close()
     return saved
+
+def _parse_hand_to_combo(hand_str: str) -> str:
+    if not hand_str or "," not in hand_str:
+        return ""
+    cards = hand_str.split(",")
+    if len(cards) != 2: return ""
+    r1, s1 = cards[0][0].upper(), cards[0][1].lower()
+    r2, s2 = cards[1][0].upper(), cards[1][1].lower()
+    rank_order = "AKQJT98765432"
+    if r1 == "T": r1 = "T"
+    idx1 = rank_order.find(r1)
+    idx2 = rank_order.find(r2)
+    if idx1 == -1 or idx2 == -1: return ""
+    if idx1 > idx2:
+        r1, r2 = r2, r1
+    combo = r1 + r2
+    if r1 == r2: return combo
+    elif s1 == s2: return combo + "s"
+    else: return combo + "o"
+
+def get_personal_range_stats(period: str = "all") -> dict:
+    pf = _period_filter(period)
+    conn = _get_conn()
+    rows = conn.execute(f"""
+        SELECT s.session_id, s.hero_hand, a.action, a.amount
+        FROM sessions s
+        JOIN actions a ON s.session_id = a.session_id
+        WHERE a.actor = 'HERO' AND a.street = 'PREFLOP' AND s.hero_hand != '' {pf}
+        ORDER BY s.session_id, a.id ASC
+    """).fetchall()
+    conn.close()
+    
+    session_actions = {}
+    for r in rows:
+        sid = r["session_id"]
+        action = r["action"]
+        amount = r["amount"]
+        if sid not in session_actions:
+            session_actions[sid] = {"hand": r["hero_hand"], "action": action, "amount": amount}
+        else:
+            curr_act = session_actions[sid]["action"]
+            if action in ["RAISE", "BET"]:
+                session_actions[sid] = {"hand": r["hero_hand"], "action": action, "amount": max(amount, session_actions[sid]["amount"])}
+            elif action == "CALL" and curr_act not in ["RAISE", "BET"]:
+                session_actions[sid] = {"hand": r["hero_hand"], "action": action, "amount": amount}
+            elif action == "FOLD" and curr_act not in ["RAISE", "BET", "CALL"]:
+                session_actions[sid] = {"hand": r["hero_hand"], "action": action, "amount": amount}
+
+    stats = {}
+    for sid, data in session_actions.items():
+        combo = _parse_hand_to_combo(data["hand"])
+        if not combo: continue
+        if combo not in stats:
+            stats[combo] = {"OPEN": 0, "CALL": 0, "3BET": 0, "FOLD": 0}
+        act = data["action"]
+        amt = data["amount"]
+        if act == "FOLD":
+            stats[combo]["FOLD"] += 1
+        elif act == "CALL":
+            stats[combo]["CALL"] += 1
+        elif act in ["RAISE", "BET"]:
+            if amt >= 4.0:
+                stats[combo]["3BET"] += 1
+            else:
+                stats[combo]["OPEN"] += 1
+    return stats
