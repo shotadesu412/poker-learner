@@ -34,7 +34,8 @@ def setup_db():
             pot_size    REAL    DEFAULT 0.0,
             hero_pos    TEXT    DEFAULT '',
             evaluation  TEXT    DEFAULT '',
-            ev_loss     REAL    DEFAULT 0.0
+            ev_loss     REAL    DEFAULT 0.0,
+            user_id     TEXT    DEFAULT ''
         )
     """)
     # セッションテーブル (ハンド単位のサマリー)
@@ -44,7 +45,8 @@ def setup_db():
             started_at  TEXT NOT NULL,
             hero_pos    TEXT DEFAULT '',
             hero_hand   TEXT DEFAULT '',
-            result      TEXT DEFAULT ''  -- WIN/LOSE/FOLD
+            result      TEXT DEFAULT '',
+            user_id     TEXT DEFAULT ''
         )
     """)
     # AIコーチのハンド履歴・フィードバック保存テーブル
@@ -58,6 +60,15 @@ def setup_db():
             ai_feedback   TEXT    NOT NULL
         )
     """)
+    # 既存テーブルにuser_id列がない場合のマイグレーション
+    try:
+        conn.execute("ALTER TABLE actions ADD COLUMN user_id TEXT DEFAULT ''")
+    except Exception:
+        pass  # 既に存在する場合は無視
+    try:
+        conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT DEFAULT ''")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
@@ -73,13 +84,14 @@ def log_action(
     hero_pos: str,
     evaluation: str = "",
     ev_loss: float = 0.0,
+    user_id: str = "",
 ):
     """アクションを1件記録する"""
     conn = _get_conn()
     conn.execute(
         """INSERT INTO actions
-           (session_id, timestamp, street, actor, action, amount, equity, pot_size, hero_pos, evaluation, ev_loss)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (session_id, timestamp, street, actor, action, amount, equity, pot_size, hero_pos, evaluation, ev_loss, user_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             session_id,
             datetime.now(timezone.utc).isoformat(),
@@ -92,17 +104,18 @@ def log_action(
             hero_pos,
             evaluation,
             ev_loss,
+            user_id,
         ),
     )
     conn.commit()
     conn.close()
 
 
-def start_session(session_id: str, hero_pos: str, hero_hand: str = ""):
+def start_session(session_id: str, hero_pos: str, hero_hand: str = "", user_id: str = ""):
     conn = _get_conn()
     conn.execute(
-        "INSERT OR IGNORE INTO sessions (session_id, started_at, hero_pos, hero_hand) VALUES (?, ?, ?, ?)",
-        (session_id, datetime.now(timezone.utc).isoformat(), hero_pos, hero_hand),
+        "INSERT OR IGNORE INTO sessions (session_id, started_at, hero_pos, hero_hand, user_id) VALUES (?, ?, ?, ?, ?)",
+        (session_id, datetime.now(timezone.utc).isoformat(), hero_pos, hero_hand, user_id),
     )
     conn.commit()
     conn.close()
@@ -137,16 +150,17 @@ def _period_filter(period: str) -> str:
 # 集計クエリ群
 # ==============================
 
-def get_overview(period: str = "all") -> dict:
+def get_overview(period: str = "all", user_id: str = "") -> dict:
     """
     GTO一致率、VPIP、PFR、3-Bet率を集計して返す。
     """
     pf = _period_filter(period)
+    uf = f"AND user_id = '{user_id}'" if user_id else ""
     conn = _get_conn()
 
     # 全HEROアクション数
     total = conn.execute(
-        f"SELECT COUNT(*) FROM actions WHERE actor='HERO' {pf}"
+        f"SELECT COUNT(*) FROM actions WHERE actor='HERO' {pf} {uf}"
     ).fetchone()[0]
 
     if total == 0:
@@ -162,37 +176,37 @@ def get_overview(period: str = "all") -> dict:
 
     # GTO一致率 (◎ or ◯)
     gto_match = conn.execute(
-        f"SELECT COUNT(*) FROM actions WHERE actor='HERO' AND evaluation IN ('◎','◯') {pf}"
+        f"SELECT COUNT(*) FROM actions WHERE actor='HERO' AND evaluation IN ('◎','◯') {pf} {uf}"
     ).fetchone()[0]
 
     # VPIP: プリフロップでCALL/BET/RAISEした割合
     pf_total_hands = conn.execute(
-        f"SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' {pf}"
+        f"SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' {pf} {uf}"
     ).fetchone()[0]
 
     vpip_hands = conn.execute(
         f"""SELECT COUNT(DISTINCT session_id) FROM actions
             WHERE actor='HERO' AND street='PREFLOP'
-            AND action IN ('CALL','BET','RAISE') {pf}"""
+            AND action IN ('CALL','BET','RAISE') {pf} {uf}"""
     ).fetchone()[0]
 
     # PFR: プリフロップでRAISE/BETした割合
     pfr_hands = conn.execute(
         f"""SELECT COUNT(DISTINCT session_id) FROM actions
             WHERE actor='HERO' AND street='PREFLOP'
-            AND action IN ('RAISE','BET') {pf}"""
+            AND action IN ('RAISE','BET') {pf} {uf}"""
     ).fetchone()[0]
 
-    # 3-Bet率: プリフロップでRAISEした中で、current_betが既にある状態（amount > 3.5 は3bet相当）
+    # 3-Bet率
     three_bet = conn.execute(
         f"""SELECT COUNT(*) FROM actions
             WHERE actor='HERO' AND street='PREFLOP'
-            AND action='RAISE' AND amount > 3.5 {pf}"""
+            AND action='RAISE' AND amount > 3.5 {pf} {uf}"""
     ).fetchone()[0]
 
     # 平均EV損失
     avg_ev_loss = conn.execute(
-        f"SELECT AVG(ev_loss) FROM actions WHERE actor='HERO' AND ev_loss > 0 {pf}"
+        f"SELECT AVG(ev_loss) FROM actions WHERE actor='HERO' AND ev_loss > 0 {pf} {uf}"
     ).fetchone()[0] or 0.0
 
     conn.close()
@@ -208,15 +222,16 @@ def get_overview(period: str = "all") -> dict:
     }
 
 
-def get_position_stats() -> list:
+def get_position_stats(user_id: str = "") -> list:
     """ポジション別 参加率・レイズ率・GTO一致率 を集計"""
     conn = _get_conn()
     positions = ["LJ", "HJ", "CO", "BTN", "SB", "BB"]
+    uf = f"AND user_id = '{user_id}'" if user_id else ""
     result = []
 
     for pos in positions:
         hands = conn.execute(
-            "SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=?",
+            f"SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=? {uf}",
             (pos,),
         ).fetchone()[0]
 
@@ -225,21 +240,21 @@ def get_position_stats() -> list:
             continue
 
         vpip = conn.execute(
-            "SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=? AND action IN ('CALL','BET','RAISE')",
+            f"SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=? AND action IN ('CALL','BET','RAISE') {uf}",
             (pos,),
         ).fetchone()[0]
 
         pfr = conn.execute(
-            "SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=? AND action IN ('RAISE','BET')",
+            f"SELECT COUNT(DISTINCT session_id) FROM actions WHERE actor='HERO' AND street='PREFLOP' AND hero_pos=? AND action IN ('RAISE','BET') {uf}",
             (pos,),
         ).fetchone()[0]
 
         total_eval = conn.execute(
-            "SELECT COUNT(*) FROM actions WHERE actor='HERO' AND hero_pos=? AND evaluation != ''",
+            f"SELECT COUNT(*) FROM actions WHERE actor='HERO' AND hero_pos=? AND evaluation != '' {uf}",
             (pos,),
         ).fetchone()[0]
         good_eval = conn.execute(
-            "SELECT COUNT(*) FROM actions WHERE actor='HERO' AND hero_pos=? AND evaluation IN ('◎','◯')",
+            f"SELECT COUNT(*) FROM actions WHERE actor='HERO' AND hero_pos=? AND evaluation IN ('◎','◯') {uf}",
             (pos,),
         ).fetchone()[0]
 
@@ -255,17 +270,18 @@ def get_position_stats() -> list:
     return result
 
 
-def get_street_eval_dist() -> dict:
+def get_street_eval_dist(user_id: str = "") -> dict:
     """ストリート別 評価分布（◎/◯/△/×の件数）を集計"""
     conn = _get_conn()
     streets = ["PREFLOP", "FLOP", "TURN", "RIVER"]
+    uf = f"AND user_id = '{user_id}'" if user_id else ""
     result = {}
 
     for st in streets:
         row = {}
         for ev in ["◎", "◯", "△", "×"]:
             count = conn.execute(
-                "SELECT COUNT(*) FROM actions WHERE actor='HERO' AND street=? AND evaluation=?",
+                f"SELECT COUNT(*) FROM actions WHERE actor='HERO' AND street=? AND evaluation=? {uf}",
                 (st, ev),
             ).fetchone()[0]
             row[ev] = count
@@ -275,17 +291,18 @@ def get_street_eval_dist() -> dict:
     return result
 
 
-def get_leaks() -> list:
-    """EV損失が大きいシチュエーションTop5を特定"""
+def get_leaks(user_id: str = "") -> list:
+    """ユーザーのEV損失が大きいシチュエーションTop5を特定"""
     conn = _get_conn()
+    uf = f"AND user_id = '{user_id}'" if user_id else ""
 
     rows = conn.execute(
-        """
+        f"""
         SELECT street, action, hero_pos, evaluation,
                AVG(ev_loss) as avg_ev_loss,
                COUNT(*) as cnt
         FROM actions
-        WHERE actor='HERO' AND ev_loss > 0.01 AND evaluation IN ('△','×')
+        WHERE actor='HERO' AND ev_loss > 0.01 AND evaluation IN ('△','×') {uf}
         GROUP BY street, action, hero_pos
         ORDER BY avg_ev_loss DESC
         LIMIT 5
@@ -396,14 +413,15 @@ def _parse_hand_to_combo(hand_str: str) -> str:
     elif s1 == s2: return combo + "s"
     else: return combo + "o"
 
-def get_personal_range_stats(period: str = "all") -> dict:
+def get_personal_range_stats(period: str = "all", user_id: str = "") -> dict:
     pf = _period_filter(period)
+    uf = f"AND a.user_id = '{user_id}'" if user_id else ""
     conn = _get_conn()
     rows = conn.execute(f"""
         SELECT s.session_id, s.hero_hand, a.action, a.amount
         FROM sessions s
         JOIN actions a ON s.session_id = a.session_id
-        WHERE a.actor = 'HERO' AND a.street = 'PREFLOP' AND s.hero_hand != '' {pf}
+        WHERE a.actor = 'HERO' AND a.street = 'PREFLOP' AND s.hero_hand != '' {pf} {uf}
         ORDER BY s.session_id, a.id ASC
     """).fetchall()
     conn.close()

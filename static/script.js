@@ -227,9 +227,15 @@ async function startHand() {
     if (el('coach-input')) el('coach-input').value = "";
 
     try {
-        const res = await fetch('/api/start_hand');
+        const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}`);
         currentState = await res.json();
         updateUI();
+
+        // ハンドカウンターをインクリメント & 広告チェック
+        incrementHandCount();
+        if (shouldShowHandAd()) {
+            showAdModal();
+        }
 
         // Render CPU's first action if they act before the player preflop
         if (currentState.cpuMessage) {
@@ -261,7 +267,7 @@ async function takeAction(actionType, amount = 0) {
         const res = await fetch('/api/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: actionType, amount: amount })
+            body: JSON.stringify({ action: actionType, amount: amount, user_id: currentUserId })
         });
         const data = await res.json();
 
@@ -552,6 +558,12 @@ function closeCoachArea() {
 }
 
 async function requestCoachExplanation() {
+    // AIコーチカウンターをインクリメント & 広告チェック
+    incrementCoachCount();
+    if (shouldShowCoachAd()) {
+        showAdModal();
+    }
+
     el('ai-coach-area').classList.remove('hidden');
     setTimeout(() => {
         el('ai-coach-area').classList.add('show');
@@ -728,4 +740,84 @@ function openRangeModal(player) {
 function closeRangeModal() {
     const modal = el('range-modal');
     if (modal) modal.classList.add('hidden');
+}
+
+// ============================================
+// 広告表示システム
+// ============================================
+const AD_HAND_INTERVAL = 50;     // 50ハンドごとに広告
+const AD_COACH_INTERVAL = 5;     // AIコーチ5回ごとに広告
+const AD_DURATION = 30;          // 30秒
+
+let adTimerInterval = null;
+
+function getHandCount() {
+    return parseInt(localStorage.getItem('poker_hand_count') || '0', 10);
+}
+
+function incrementHandCount() {
+    const count = getHandCount() + 1;
+    localStorage.setItem('poker_hand_count', count.toString());
+    return count;
+}
+
+function getCoachCount() {
+    return parseInt(localStorage.getItem('poker_coach_count') || '0', 10);
+}
+
+function incrementCoachCount() {
+    const count = getCoachCount() + 1;
+    localStorage.setItem('poker_coach_count', count.toString());
+    return count;
+}
+
+function shouldShowHandAd() {
+    const count = getHandCount();
+    return count > 0 && count % AD_HAND_INTERVAL === 0;
+}
+
+function shouldShowCoachAd() {
+    const count = getCoachCount();
+    return count > 0 && count % AD_COACH_INTERVAL === 0;
+}
+
+function showAdModal() {
+    const modal = el('ad-modal');
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    
+    let remaining = AD_DURATION;
+    const timerEl = el('ad-timer');
+    const countdownEl = el('ad-countdown');
+    const closeBtn = el('ad-close-btn');
+
+    closeBtn.disabled = true;
+    
+    if (timerEl) timerEl.textContent = remaining;
+    if (countdownEl) countdownEl.textContent = remaining;
+
+    if (adTimerInterval) clearInterval(adTimerInterval);
+    
+    adTimerInterval = setInterval(() => {
+        remaining--;
+        if (timerEl) timerEl.textContent = remaining;
+        if (countdownEl) countdownEl.textContent = remaining;
+
+        if (remaining <= 0) {
+            clearInterval(adTimerInterval);
+            adTimerInterval = null;
+            closeBtn.disabled = false;
+            closeBtn.innerHTML = '閉じる';
+        }
+    }, 1000);
+}
+
+function closeAdModal() {
+    const modal = el('ad-modal');
+    if (modal) modal.classList.add('hidden');
+    if (adTimerInterval) {
+        clearInterval(adTimerInterval);
+        adTimerInterval = null;
+    }
 }

@@ -843,3 +843,114 @@ body {
     /* Default empty color */
     user-select: none;
 }
+
+/* --- Ad Modal --- */
+.ad-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.92);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-modal-overlay.hidden {
+    display: none !important;
+}
+
+.ad-modal-content {
+    background: linear-gradient(145deg, #1a1e2e, #262c38);
+    border-radius: 16px;
+    width: 90vw;
+    max-width: 380px;
+    padding: 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    overflow: hidden;
+}
+
+.ad-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.ad-timer {
+    background: var(--accent-blue);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+.ad-modal-body {
+    padding: 30px 20px;
+}
+
+.ad-placeholder {
+    text-align: center;
+}
+
+.ad-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.ad-text {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.ad-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.ad-modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ad-close-btn {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ad-close-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ad-close-btn:not(:disabled) {
+    color: white;
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.ad-close-btn:not(:disabled):hover {
+    background: rgba(59, 130, 246, 0.3);
+}

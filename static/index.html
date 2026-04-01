@@ -37,8 +37,9 @@
         </div>
 
         <div class="hands-info">
-            <div class="hand-col">
+            <div class="hand-col" onclick="openRangeModal('HERO')" style="cursor: pointer;">
                 <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">Hero
+                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ表示)</span>
                 </div>
                 <div id="hero-cards" class="card-container">
                     <div class="empty-card"></div>
@@ -47,8 +48,9 @@
                 <div class="equity-display" style="margin-top: 5px;">Equity: <span id="equity-val">--</span>%</div>
             </div>
 
-            <div class="hand-col">
+            <div class="hand-col" onclick="openRangeModal('CPU')" style="cursor: pointer;">
                 <div style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">CPU
+                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ表示)</span>
                 </div>
                 <div id="cpu-cards" class="card-container">
                     <div class="face-down-card"></div>
@@ -165,6 +167,13 @@
                 <h3 id="range-modal-title">レンジ表</h3>
                 <button class="close-btn" onclick="closeRangeModal()">✕</button>
             </div>
+            <div class="range-legend" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; font-size: 0.75rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(59, 130, 246, 0.9);"></div> ペア</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(16, 185, 129, 0.9);"></div> スーテッド</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(245, 158, 11, 0.9);"></div> オフスート</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: #111;"></div> レンジ外</div>
+            </div>
+            <div style="text-align: center; margin-bottom: 5px; font-size: 0.7rem; color: #888;">※ 色の濃さ = 残存可能性（重み）</div>
             <div id="range-grid" class="range-grid">
                 <!-- 13x13 grid injected by JS -->
             </div>
@@ -174,7 +183,28 @@
     <!-- Modal Overlay -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeBetPanel()"></div>
 
-    <script src="/static/script.js?v=6"></script>
+    <!-- 広告モーダル -->
+    <div id="ad-modal" class="ad-modal-overlay hidden">
+        <div class="ad-modal-content">
+            <div class="ad-modal-header">
+                <span>📢 スポンサー広告</span>
+                <span id="ad-timer" class="ad-timer">30</span>
+            </div>
+            <div class="ad-modal-body">
+                <div class="ad-placeholder">
+                    <div class="ad-icon">🎰</div>
+                    <div class="ad-text">Poker Learner Premium</div>
+                    <div class="ad-sub">広告なしでプレイ！月額プランで全機能アンロック</div>
+                    <div style="margin-top: 15px; padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; color: white; font-weight: bold; font-size: 0.9rem;">詳しくはこちら →</div>
+                </div>
+            </div>
+            <div class="ad-modal-footer">
+                <button id="ad-close-btn" class="ad-close-btn" disabled onclick="closeAdModal()">閉じる (<span id="ad-countdown">30</span>秒)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=7"></script>
 </body>
 
 </html>

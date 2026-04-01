@@ -22,12 +22,12 @@ async function loadAll(period) {
     try {
         const userId = localStorage.getItem("poker_user_id") || "";
         const [overview, position, streets, leaks, aiHistory, personalRange] = await Promise.all([
-            fetch(`/api/stats/overview?period=${period}`).then(r => r.json()),
-            fetch("/api/stats/position").then(r => r.json()),
-            fetch("/api/stats/streets").then(r => r.json()),
-            fetch("/api/stats/leaks").then(r => r.json()),
+            fetch(`/api/stats/overview?period=${period}&user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/streets?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
             fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/personal_range?period=${period}`).then(r => r.json()),
+            fetch(`/api/stats/personal_range?period=${period}&user_id=${userId}`).then(r => r.json()),
         ]);
         renderOverview(overview);
         renderPosition(position);

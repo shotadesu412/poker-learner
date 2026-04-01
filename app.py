@@ -57,6 +57,7 @@ engine = PokerEngine()
 class ActionRequest(BaseModel):
     action: str
     amount: float = 0.0
+    user_id: str = ""
 
 class ChatMessage(BaseModel):
     role: str
@@ -67,7 +68,7 @@ class AICoachRequest(BaseModel):
     user_id: str = "guest"
 
 @app.get("/api/start_hand")
-def start_hand():
+def start_hand(user_id: str = Query("")):
   global current_session_id
   try:
     MAX_RETRIES = 50
@@ -101,7 +102,7 @@ def start_hand():
             break
 
     hero_hand_str = ",".join([Card.int_to_str(c) for c in engine.hero_hand]) if engine.hero_hand else ""
-    stats_logger.start_session(current_session_id, engine.hero_position, hero_hand_str)
+    stats_logger.start_session(current_session_id, engine.hero_position, hero_hand_str, user_id=user_id)
 
     state = get_game_state()
     if cpu_msg:
@@ -120,6 +121,7 @@ def take_action(req: ActionRequest):
     try:
         action = req.action.upper()
         amount = req.amount
+        user_id = req.user_id or ""
         
         # 1. Calc Equity
         # Determine if 3bet pot (heuristic based on standard sizings)
@@ -153,7 +155,8 @@ def take_action(req: ActionRequest):
             stats_logger.log_action(
                 session_id=current_session_id, street=engine.street, actor="HERO",
                 action="FOLD", amount=0.0, equity=realized_equity, pot_size=engine.pot_size,
-                hero_pos=engine.hero_position, evaluation=eval_dict["evaluation"], ev_loss=ev_loss_fold
+                hero_pos=engine.hero_position, evaluation=eval_dict["evaluation"], ev_loss=ev_loss_fold,
+                user_id=user_id
             )
             return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(finished=True), "message": "You Folded"}
             
@@ -175,7 +178,8 @@ def take_action(req: ActionRequest):
             stats_logger.log_action(
                 session_id=current_session_id, street=engine.street, actor="HERO",
                 action="CALL", amount=call_amount, equity=realized_equity, pot_size=engine.pot_size,
-                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_call
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_call,
+                user_id=user_id
             )
             
         elif action in ["BET", "RAISE"]:
@@ -201,7 +205,8 @@ def take_action(req: ActionRequest):
             stats_logger.log_action(
                 session_id=current_session_id, street=engine.street, actor="HERO",
                 action=action, amount=amount, equity=realized_equity, pot_size=engine.pot_size,
-                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_bet
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_bet,
+                user_id=user_id
             )
             
         elif action == "CHECK":
@@ -225,7 +230,8 @@ def take_action(req: ActionRequest):
             stats_logger.log_action(
                 session_id=current_session_id, street=engine.street, actor="HERO",
                 action="CHECK", amount=0.0, equity=realized_equity, pot_size=engine.pot_size,
-                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_check
+                hero_pos=engine.hero_position, evaluation=eval_result, ev_loss=ev_loss_check,
+                user_id=user_id
             )
         
         else:
@@ -397,6 +403,13 @@ def ai_coach(req: AICoachRequest):
 
 ダメなプレイには「ストーリーに無理がある」「レンジキャップされている」「一般論としてこのボードでそのサイズは打たない」など厳しく指摘し、良いプレイには「完璧なポラライズです」「見事なラインです」と評価してください。
 
+【重要な書式ルール】
+- Markdown記法のアスタリスク(*)は絶対に使わないでください。太字やイタリックも禁止です。
+- 箇条書きには「-」のみ使用してください。
+- 見出しや強調は【】で囲んでください（例: 【良い点】【改善点】）。
+- 番号付きリストは「1. 2. 3.」の形式で使ってください。
+- 簡潔かつ読みやすい文章を心がけてください。
+
 {context_str}"""
 
         # Prepend system prompt to user conversation
@@ -412,6 +425,10 @@ def ai_coach(req: AICoachRequest):
         )
         
         reply_text = response.choices[0].message.content
+        # ポストプロセス: * を除去して読みやすくする
+        import re
+        reply_text = re.sub(r'\*{1,3}([^*]+?)\*{1,3}', r'\1', reply_text)  # **太字** や *イタリック* を除去
+        reply_text = reply_text.replace('###', '').replace('##', '').replace('# ', '')  # Markdownヘッダーも除去
         
         # スマホアプリ化向けの機能：AIコーチを使用したハンドの状況と回答をDBへ保存
         # ユーザーによる最初のリクエスト（文脈が必要なメインのコーチング時）に限る
@@ -441,46 +458,46 @@ def serve_stats():
 
 
 @app.get("/api/stats/overview")
-def stats_overview(period: str = Query("all", pattern="^(all|30d|7d|last)$")):
+def stats_overview(period: str = Query("all", pattern="^(all|30d|7d|last)$"), user_id: str = Query("")):
     """全体サマリー: GTO一致率、VPIP、PFR、3-Bet率を返す"""
     try:
-        return stats_logger.get_overview(period)
+        return stats_logger.get_overview(period, user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats/position")
-def stats_position():
+def stats_position(user_id: str = Query("")):
     """ポジション別サマリーを返す"""
     try:
-        return stats_logger.get_position_stats()
+        return stats_logger.get_position_stats(user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats/streets")
-def stats_streets():
+def stats_streets(user_id: str = Query("")):
     """ストリート別評価分布（◎/◯/△/×の件数）を返す"""
     try:
-        return stats_logger.get_street_eval_dist()
+        return stats_logger.get_street_eval_dist(user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats/leaks")
-def stats_leaks():
+def stats_leaks(user_id: str = Query("")):
     """EV損失が大きいシチュエーションTop5を返す"""
     try:
-        return stats_logger.get_leaks()
+        return stats_logger.get_leaks(user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats/personal_range")
-def stats_personal_range(period: str = Query("all", pattern="^(all|30d|7d|last)$")):
+def stats_personal_range(period: str = Query("all", pattern="^(all|30d|7d|last)$"), user_id: str = Query("")):
     """パーソナルプリフロップレンジ集計を返す"""
     try:
-        return stats_logger.get_personal_range_stats(period)
+        return stats_logger.get_personal_range_stats(period, user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
