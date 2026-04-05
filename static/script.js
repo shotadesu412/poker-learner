@@ -651,9 +651,12 @@ function handleCoachInputKeyPress(event) {
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
+    // プリフロップ標準レンジをキャッシュ
+    fetchPreflopRanges();
+
     // ページ再読み込み時、まず既存のゲーム状態を復元を試みる
     try {
-        const res = await fetch('/api/state');
+        const res = await fetch(`/api/state?user_id=${encodeURIComponent(currentUserId)}`);
         const data = await res.json();
 
         if (data.has_hand_in_progress) {
@@ -676,14 +679,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Range Matrix Rendering
 // ============================================
 
+// プリフロップ標準レンジのキャッシュ
+let cachedPreflopRanges = null;
+
+async function fetchPreflopRanges() {
+    if (cachedPreflopRanges) return;
+    try {
+        const res = await fetch('/api/preflop_ranges');
+        cachedPreflopRanges = await res.json();
+    } catch (e) {
+        console.warn('preflop_ranges fetch failed:', e);
+    }
+}
+
+// 現在表示中のレンジモードを管理
+let rangeModalMode = 'hero'; // 'hero' | 'cpu' | 'compare' | 'preflop'
+
 function openRangeModal(player) {
     if (!currentState) return;
+    rangeModalMode = player === 'HERO' ? 'hero' : 'cpu';
+    renderRangeGrid();
+    el('range-modal').classList.remove('hidden');
+}
 
-    // Title update
-    el('range-modal-title').innerText = `${player} レンジ表`;
+function setRangeMode(mode) {
+    rangeModalMode = mode;
+    // ボタンのアクティブ状態を更新
+    ['btn-range-hero', 'btn-range-cpu', 'btn-range-compare', 'btn-range-preflop'].forEach(id => {
+        const btn = el(id);
+        if (btn) btn.classList.remove('active');
+    });
+    const modeMap = { hero: 'btn-range-hero', cpu: 'btn-range-cpu', compare: 'btn-range-compare', preflop: 'btn-range-preflop' };
+    if (el(modeMap[mode])) el(modeMap[mode]).classList.add('active');
+    renderRangeGrid();
+}
 
-    // Fetch appropriate range dict from current state
-    const rangeData = player === 'HERO' ? currentState.heroRangeRaw : currentState.cpuRangeRaw;
+function renderRangeGrid() {
+    if (!currentState) return;
+
+    const heroRange = currentState.heroRangeRaw || {};
+    const cpuRange = currentState.cpuRangeRaw || {};
+    const heroPos = currentState.heroPos || '';
+    const cpuPos = currentState.cpuPos || '';
+
+    // タイトル更新
+    const titleMap = {
+        hero: `Hero (${heroPos}) レンジ`,
+        cpu: `CPU (${cpuPos}) レンジ`,
+        compare: 'Hero vs CPU 比較',
+        preflop: `${heroPos} 標準GTOレンジ`
+    };
+    if (el('range-modal-title')) el('range-modal-title').innerText = titleMap[rangeModalMode] || 'レンジ表';
+
+    // プリフロップモードの標準レンジを選択
+    let stdRange = null;
+    if (rangeModalMode === 'preflop' && cachedPreflopRanges) {
+        stdRange = cachedPreflopRanges[heroPos] || null;
+    }
+
     const grid = el('range-grid');
     grid.innerHTML = "";
 
@@ -698,43 +751,107 @@ function openRangeModal(player) {
                 comboName = ranks[r1] + ranks[r2];
                 type = "pair";
             } else if (r1 < r2) {
-                // Top right triangle -> Suited
                 comboName = ranks[r1] + ranks[r2] + "s";
                 type = "suited";
             } else {
-                // Bottom left triangle -> Offsuit -> reversed to standard order e.g AKo not KAo
                 comboName = ranks[r2] + ranks[r1] + "o";
                 type = "offsuit";
             }
 
-            // Get weight from backend raw data
-            const weight = rangeData && rangeData[comboName] !== undefined ? rangeData[comboName] : 0.0;
+            const heroW = heroRange[comboName] !== undefined ? heroRange[comboName] : 0.0;
+            const cpuW = cpuRange[comboName] !== undefined ? cpuRange[comboName] : 0.0;
+            const stdW = stdRange && stdRange[comboName] !== undefined ? stdRange[comboName] : 0.0;
 
             const cell = document.createElement('div');
             cell.className = 'range-cell';
             cell.innerText = comboName;
 
-            // Highlight color base
-            let baseColor = "16, 185, 129"; // Green
-            if (type === "pair") baseColor = "59, 130, 246"; // Blue
-            else if (type === "suited") baseColor = "16, 185, 129"; // Green
-            else if (type === "offsuit") baseColor = "245, 158, 11"; // Orange
-
-            if (weight > 0) {
-                // Use opacity of the base color to denote freq/weight
-                cell.style.backgroundColor = `rgba(${baseColor}, ${weight})`;
-                // Slight bump to font visibility if dark
-                cell.style.color = "white";
-            } else {
-                cell.style.backgroundColor = "#111"; // empty
-                cell.style.color = "#444"; // dimmed outline
+            if (rangeModalMode === 'hero') {
+                // Hero レンジ表示
+                let baseColor = type === "pair" ? "59, 130, 246" : type === "suited" ? "16, 185, 129" : "245, 158, 11";
+                if (heroW > 0) {
+                    cell.style.backgroundColor = `rgba(${baseColor}, ${heroW})`;
+                    cell.style.color = "white";
+                } else {
+                    cell.style.backgroundColor = "#111";
+                    cell.style.color = "#444";
+                }
+            } else if (rangeModalMode === 'cpu') {
+                // CPU レンジ表示
+                let baseColor = type === "pair" ? "59, 130, 246" : type === "suited" ? "16, 185, 129" : "245, 158, 11";
+                if (cpuW > 0) {
+                    cell.style.backgroundColor = `rgba(${baseColor}, ${cpuW})`;
+                    cell.style.color = "white";
+                } else {
+                    cell.style.backgroundColor = "#111";
+                    cell.style.color = "#444";
+                }
+            } else if (rangeModalMode === 'compare') {
+                // Hero vs CPU 比較: 両方あれば紫、Heroのみ青、CPUのみオレンジ
+                const hasHero = heroW > 0;
+                const hasCpu = cpuW > 0;
+                if (hasHero && hasCpu) {
+                    // 両方 → 紫（オーバーラップ）
+                    const intensity = Math.max(heroW, cpuW);
+                    cell.style.backgroundColor = `rgba(139, 92, 246, ${intensity})`;
+                    cell.style.color = "white";
+                    cell.title = `Hero: ${Math.round(heroW*100)}% / CPU: ${Math.round(cpuW*100)}%`;
+                } else if (hasHero) {
+                    // Heroのみ → 青
+                    cell.style.backgroundColor = `rgba(59, 130, 246, ${heroW})`;
+                    cell.style.color = "white";
+                    cell.title = `Hero: ${Math.round(heroW*100)}% / CPU: なし`;
+                } else if (hasCpu) {
+                    // CPUのみ → オレンジ
+                    cell.style.backgroundColor = `rgba(245, 158, 11, ${cpuW})`;
+                    cell.style.color = "white";
+                    cell.title = `Hero: なし / CPU: ${Math.round(cpuW*100)}%`;
+                } else {
+                    cell.style.backgroundColor = "#111";
+                    cell.style.color = "#444";
+                }
+            } else if (rangeModalMode === 'preflop') {
+                // 標準GTOレンジ vs 実際のHeroレンジ
+                if (stdW > 0 && heroW > 0) {
+                    // 両方あり → 緑（GTO通り）
+                    cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.max(stdW, heroW)})`;
+                    cell.style.color = "white";
+                    cell.title = `GTO推奨: あり / あなたの実績: ${Math.round(heroW*100)}%`;
+                } else if (stdW > 0) {
+                    // GTOでは入るがプレイしていない → 赤（見逃し）
+                    cell.style.backgroundColor = `rgba(239, 68, 68, ${stdW * 0.7})`;
+                    cell.style.color = "white";
+                    cell.title = `GTO推奨: あり / あなたの実績: なし（アンダープレイ）`;
+                } else if (heroW > 0) {
+                    // GTOでは入らないがプレイした → 黄（過剰）
+                    cell.style.backgroundColor = `rgba(253, 224, 71, ${heroW * 0.8})`;
+                    cell.style.color = "#111";
+                    cell.title = `GTO推奨: なし / あなたの実績: ${Math.round(heroW*100)}%（オーバープレイ）`;
+                } else {
+                    cell.style.backgroundColor = "#111";
+                    cell.style.color = "#444";
+                }
             }
 
             grid.appendChild(cell);
         }
     }
 
-    el('range-modal').classList.remove('hidden');
+    // アクティブボタンの状態更新
+    const modeMap = { hero: 'btn-range-hero', cpu: 'btn-range-cpu', compare: 'btn-range-compare', preflop: 'btn-range-preflop' };
+    ['btn-range-hero', 'btn-range-cpu', 'btn-range-compare', 'btn-range-preflop'].forEach(id => {
+        const btn = el(id);
+        if (btn) btn.classList.remove('active');
+    });
+    if (el(modeMap[rangeModalMode])) el(modeMap[rangeModalMode]).classList.add('active');
+
+    // 凡例の切り替え
+    const legendNormal = el('range-legend-normal');
+    const legendCompare = el('range-legend-compare');
+    const legendPreflop = el('range-legend-preflop');
+    if (legendNormal) legendNormal.classList.toggle('hidden', rangeModalMode === 'compare' || rangeModalMode === 'preflop');
+    if (legendCompare) legendCompare.classList.toggle('hidden', rangeModalMode !== 'compare');
+    if (legendPreflop) legendPreflop.classList.toggle('hidden', rangeModalMode !== 'preflop');
 }
 
 function closeRangeModal() {

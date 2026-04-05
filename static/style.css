@@ -840,8 +840,64 @@ body {
     font-weight: bold;
     color: white;
     background-color: #111;
-    /* Default empty color */
     user-select: none;
+    cursor: pointer;
+    transition: outline 0.1s;
+}
+
+.range-cell:active {
+    outline: 2px solid white;
+}
+
+/* Range Mode Tabs */
+.range-mode-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    justify-content: center;
+}
+
+.range-tab-btn {
+    flex: 1;
+    padding: 5px 0;
+    font-size: 0.72rem;
+    font-weight: bold;
+    background: #111;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.range-tab-btn.active {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+/* Range Legend */
+.range-legend {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
+    flex-wrap: wrap;
+    color: var(--text-muted);
+}
+
+.range-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 
 /* --- Ad Modal --- */

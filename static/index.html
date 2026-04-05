@@ -167,13 +167,31 @@
                 <h3 id="range-modal-title">レンジ表</h3>
                 <button class="close-btn" onclick="closeRangeModal()">✕</button>
             </div>
-            <div class="range-legend" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; font-size: 0.75rem; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(59, 130, 246, 0.9);"></div> ペア</div>
-                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(16, 185, 129, 0.9);"></div> スーテッド</div>
-                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(245, 158, 11, 0.9);"></div> オフスート</div>
-                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 10px; height: 10px; border-radius: 2px; background: #111;"></div> レンジ外</div>
+            <!-- モード切り替えボタン -->
+            <div class="range-mode-tabs">
+                <button id="btn-range-hero" class="range-tab-btn active" onclick="setRangeMode('hero')">Hero</button>
+                <button id="btn-range-cpu" class="range-tab-btn" onclick="setRangeMode('cpu')">CPU</button>
+                <button id="btn-range-compare" class="range-tab-btn" onclick="setRangeMode('compare')">比較</button>
+                <button id="btn-range-preflop" class="range-tab-btn" onclick="setRangeMode('preflop')">GTO基準</button>
             </div>
-            <div style="text-align: center; margin-bottom: 5px; font-size: 0.7rem; color: #888;">※ 色の濃さ = 残存可能性（重み）</div>
+            <!-- 凡例 -->
+            <div id="range-legend-normal" class="range-legend">
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> ペア</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> スーテッド</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> オフスート</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: #333;"></div> 圏外</div>
+            </div>
+            <div id="range-legend-compare" class="range-legend hidden">
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> Heroのみ</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> CPUのみ</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(139, 92, 246, 0.9);"></div> 両方</div>
+            </div>
+            <div id="range-legend-preflop" class="range-legend hidden">
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> GTO一致</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(239, 68, 68, 0.7);"></div> アンダー</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(253, 224, 71, 0.8);"></div> オーバー</div>
+            </div>
+            <div style="text-align: center; margin-bottom: 5px; font-size: 0.7rem; color: #888;">※ 色の濃さ = 残存可能性（重み）　セルをタップで詳細</div>
             <div id="range-grid" class="range-grid">
                 <!-- 13x13 grid injected by JS -->
             </div>
