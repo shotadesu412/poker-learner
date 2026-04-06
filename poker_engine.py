@@ -598,24 +598,27 @@ class PokerEngine:
         self.board = []
         self.hero_hand = []
         self.cpu_hand = []
-        
+
         self.hero_position = "BTN"
         self.cpu_position = "BB"
-        
+
         # Initialize flat combinations mapped to their preflop starting equities
         self.hero_range_dict = ranges.get_range_by_category(self.hero_position, action="open").copy()
         self.cpu_range_dict = ranges.get_range_by_category(self.cpu_position, action="open").copy()
-        
+
         self.cpu_tendency = "BALANCED"
         self.POSITIONS = ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
-        
+
         self.hero_invested = 0.0
         self.cpu_invested = 0.0
         self.current_bet = 0.0
-        
+
         self.aggressor = None
         self.action_history = []
         self.cpu_last_action_intent = None
+
+        # ハンドカウンター（5回に1回レンジ内からハンドを選ぶ）
+        self.hand_count = 0
         
     def is_hero_turn(self):
         """ True if Hero acts, False if CPU acts. """
@@ -642,11 +645,12 @@ class PokerEngine:
         self.hero_invested = 0.0
         self.cpu_invested = 0.0
         self.cpu_hand = []
-        
+
         self.aggressor = None
         self.action_history = []
         self.cpu_last_action_intent = None
-        
+
+        self.hand_count += 1
         self.deal()
         
         # Reset ranges based on new randomized positions
@@ -687,17 +691,59 @@ class PokerEngine:
             "pot_size": pot_size
         })
 
+    def _pick_range_combo(self, pos):
+        """ポジションのGTOレンジから重み付きランダムでコンボを1つ選び (r1str, r2str, is_suited) を返す。失敗時None"""
+        try:
+            from ranges import position_ranges
+            pos_range = position_ranges.get(pos, {})
+            if not pos_range:
+                return None
+            combos = list(pos_range.items())
+            weights = [max(0.01, w) for _, w in combos]
+            chosen = random.choices(combos, weights=weights, k=1)[0][0]
+            suits_list = ['s', 'h', 'd', 'c']
+            if len(chosen) == 2:   # ペア e.g. "AA"
+                r = chosen[0]
+                s1, s2 = random.sample(suits_list, 2)
+                return (r + s1, r + s2)
+            elif chosen.endswith('s'):  # スーテッド e.g. "AKs"
+                r1, r2 = chosen[0], chosen[1]
+                suit = random.choice(suits_list)
+                return (r1 + suit, r2 + suit)
+            else:                  # オフスート e.g. "AKo"
+                r1, r2 = chosen[0], chosen[1]
+                s1, s2 = random.sample(suits_list, 2)
+                return (r1 + s1, r2 + s2)
+        except Exception:
+            return None
+
     def deal(self):
         """ 実際のカードを配布し、ポジションをランダム決定する """
         self.deck.shuffle()
         self.board = []
-        self.hero_hand = self.deck.draw(2)
-        
+
         # Randomize positions
         positions = list(self.POSITIONS)
         random.shuffle(positions)
         self.hero_position = positions[0]
         self.cpu_position = positions[1]
+
+        # 5回に1回はGTOレンジ内のハンドを強制配布
+        if self.hand_count > 0 and self.hand_count % 5 == 0:
+            combo = self._pick_range_combo(self.hero_position)
+            if combo:
+                try:
+                    c1 = Card.new(combo[0])
+                    c2 = Card.new(combo[1])
+                    if c1 in self.deck.cards and c2 in self.deck.cards and c1 != c2:
+                        self.deck.cards.remove(c1)
+                        self.deck.cards.remove(c2)
+                        self.hero_hand = [c1, c2]
+                        return
+                except Exception:
+                    pass
+
+        self.hero_hand = self.deck.draw(2)
         
     def place_bet(self, actor, amount):
         if amount <= 0: return

@@ -117,6 +117,8 @@ def start_hand(user_id: str = Query("")):
         if cpu_action in ["CALL", "BET", "RAISE"]:
             bet_amount = cpu_facing if cpu_action == "CALL" else cpu_amount
             eng.place_bet("CPU", bet_amount)
+            # アクション履歴に記録（これにより cpu_has_acted=True → ポジション表示される）
+            eng.record_action("CPU", cpu_action, bet_amount, 0.5, eng.pot_size)
             cpu_msg = f"CPU {cpu_action}S {bet_amount > 0 and str(round(bet_amount, 1)) + 'bb' or ''}".strip()
             break
 

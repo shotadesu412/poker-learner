@@ -20,6 +20,8 @@
             <div class="empty-card"></div>
             <div class="empty-card"></div>
         </div>
+        <!-- 履歴/ボード切り替えボタン -->
+        <button id="btn-toggle-history" class="toggle-history-btn" onclick="toggleHistoryBoard()">📋履歴</button>
     </div>
 
     <!-- Middle Area: Info -->
@@ -97,7 +99,14 @@
     <!-- Central Evaluation Popup -->
     <div id="eval-popup" class="eval-popup hidden">◎</div>
 
-    <!-- Action Reason Feedback -->
+    <!-- 評価ドロワーツマミ（アクションの上に表示） -->
+    <div id="eval-handle" class="eval-handle hidden" onclick="toggleReasonDrawer()">
+        <span id="handle-eval-symbol" class="handle-symbol">◎</span>
+        <span class="handle-label">評価詳細</span>
+        <span class="handle-arrow">▲</span>
+    </div>
+
+    <!-- 評価コメント ドロワー（ツマミで引き出す） -->
     <div id="reason-area" class="reason-area hidden">
         <div class="reason-header">
             <div style="display: flex; align-items: center; gap: 10px;">

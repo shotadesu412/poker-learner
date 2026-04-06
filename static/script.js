@@ -208,9 +208,33 @@ function updateUI() {
 }
 
 // Interaction
+// ボード / 履歴の表示切り替え
+let historyOnTop = false;
+function toggleHistoryBoard() {
+    historyOnTop = !historyOnTop;
+    const history = el('eval-history');
+    const boardArea = document.querySelector('.board-area');
+    if (historyOnTop) {
+        if (history) history.style.zIndex = '60';
+        if (boardArea) boardArea.style.zIndex = '10';
+        const btn = el('btn-toggle-history');
+        if (btn) btn.textContent = '📋→ボード';
+    } else {
+        if (history) history.style.zIndex = '10';
+        if (boardArea) boardArea.style.zIndex = '60';
+        const btn = el('btn-toggle-history');
+        if (btn) btn.textContent = '📋履歴';
+    }
+}
+
 async function startHand() {
     el('eval-history').innerHTML = "";
     el('message-area').classList.add('hidden');
+
+    // ツマミを非表示にしてリセット
+    const handle = el('eval-handle');
+    if (handle) handle.classList.add('hidden');
+    reasonDrawerOpen = false;
 
     // Hide reason box on new hand
     const reasonArea = el('reason-area');
@@ -255,13 +279,16 @@ async function takeAction(actionType, amount = 0) {
     // Disable buttons temporarily
     document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
 
-    // Hide previous reason immediately on new action click
+    // 前回の評価ドロワーを閉じる
     if (autoCloseReasonTimer) clearTimeout(autoCloseReasonTimer);
+    reasonDrawerOpen = false;
     const reasonArea = el('reason-area');
     if (reasonArea) {
         reasonArea.classList.remove('show');
         reasonArea.classList.add('hidden');
     }
+    const handle = el('eval-handle');
+    if (handle) handle.classList.add('hidden');
 
     try {
         const res = await fetch('/api/action', {
@@ -418,17 +445,40 @@ function closeBetPanel() {
     el('modal-overlay').classList.remove('active');
 }
 
-// Reason UI Feedback
+// Reason Drawer (ツマミ引き出し式)
 let autoCloseReasonTimer = null;
+let reasonDrawerOpen = false;
 
 function closeReasonArea() {
+    reasonDrawerOpen = false;
     const reasonArea = el('reason-area');
+    const handle = el('eval-handle');
     if (reasonArea) {
         reasonArea.classList.remove('show');
-        // CSS transition completion
-        setTimeout(() => {
-            reasonArea.classList.add('hidden');
-        }, 400);
+        setTimeout(() => reasonArea.classList.add('hidden'), 350);
+    }
+    // ツマミの矢印を下向きに
+    if (handle) handle.querySelector('.handle-arrow').textContent = '▲';
+}
+
+function openReasonArea() {
+    reasonDrawerOpen = true;
+    const reasonArea = el('reason-area');
+    const handle = el('eval-handle');
+    if (reasonArea) {
+        reasonArea.classList.remove('hidden');
+        setTimeout(() => reasonArea.classList.add('show'), 10);
+    }
+    if (handle) handle.querySelector('.handle-arrow').textContent = '▼';
+    if (autoCloseReasonTimer) clearTimeout(autoCloseReasonTimer);
+    autoCloseReasonTimer = setTimeout(() => closeReasonArea(), 8000);
+}
+
+function toggleReasonDrawer() {
+    if (reasonDrawerOpen) {
+        closeReasonArea();
+    } else {
+        openReasonArea();
     }
 }
 
@@ -436,13 +486,14 @@ function showReason(symbol, text) {
     const reasonArea = el('reason-area');
     const symbolSpn = el('reason-symbol');
     const textDiv = el('reason-text');
+    const handle = el('eval-handle');
+    const handleSymbol = el('handle-eval-symbol');
 
     if (!reasonArea) return;
 
     symbolSpn.innerText = symbol;
-    textDiv.innerHTML = linkifyGlossary(text); // 用語ツールチップ保持
+    textDiv.innerHTML = linkifyGlossary(text);
 
-    // Colorize based on eval mapping
     let colorVar = "var(--border-color)";
     let textVar = "white";
 
@@ -451,10 +502,20 @@ function showReason(symbol, text) {
     else if (symbol === "△") { colorVar = "var(--eval-marginal)"; textVar = "var(--eval-marginal)"; }
     else if (symbol === "×") { colorVar = "var(--eval-bad)"; textVar = "var(--eval-bad)"; }
 
-    reasonArea.style.borderLeftColor = colorVar; // LeftColorに戻す
+    reasonArea.style.borderLeftColor = colorVar;
     symbolSpn.style.color = textVar;
 
-    // Apply feedback visibility setting
+    // ツマミを更新・表示
+    if (handle) {
+        handle.classList.remove('hidden');
+        handle.style.borderColor = colorVar;
+        if (handleSymbol) {
+            handleSymbol.textContent = symbol;
+            handleSymbol.style.color = textVar;
+        }
+        handle.querySelector('.handle-arrow').textContent = '▲';
+    }
+
     if (!appSettings.showFeedback) {
         textDiv.style.display = 'none';
         document.querySelector('.reason-title').innerText = "アクション評価";
@@ -463,18 +524,10 @@ function showReason(symbol, text) {
         document.querySelector('.reason-title').innerText = "アクション解説";
     }
 
-    // Unhide and trigger animation
-    reasonArea.classList.remove('hidden');
-    // small reflow delay so CSS transforms engage
-    setTimeout(() => {
-        reasonArea.classList.add('show');
-    }, 10);
-
-    // Auto-hide after 5 seconds to not block UI permanently
-    if (autoCloseReasonTimer) clearTimeout(autoCloseReasonTimer);
-    autoCloseReasonTimer = setTimeout(() => {
-        closeReasonArea();
-    }, 5000);
+    // 評価後は閉じた状態でスタート（ツマミのみ表示）
+    reasonArea.classList.remove('show');
+    reasonArea.classList.add('hidden');
+    reasonDrawerOpen = false;
 }
 
 // Evaluation UI Feedback
@@ -579,22 +632,12 @@ async function requestCoachExplanation() {
         renderCoachChat();
 
         try {
-            const response = await fetch('/api/ai_coach', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    messages: coachMessages.filter(m => !m.isLoading),
-                    user_id: currentUserId
-                })
-            });
-            const data = await response.json();
-
-            // Remove loader, add real reply
+            const reply = await fetchCoachWithRetry(coachMessages.filter(m => !m.isLoading));
             coachMessages.pop();
-            coachMessages.push({ role: "assistant", content: data.reply });
+            coachMessages.push({ role: "assistant", content: reply });
         } catch (e) {
             coachMessages.pop();
-            coachMessages.push({ role: "assistant", content: "コーチに接続できませんでした。" });
+            coachMessages.push({ role: "assistant", content: "コーチに接続できませんでした。しばらく後に再試行してください。" });
         }
 
         renderCoachChat();
@@ -603,38 +646,50 @@ async function requestCoachExplanation() {
     el('btn-ai-coach').disabled = false;
 }
 
+// AIコーチAPIリクエスト（リトライ付き）
+async function fetchCoachWithRetry(messages, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒タイムアウト
+            const response = await fetch('/api/ai_coach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages, user_id: currentUserId }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.reply) return data.reply;
+            throw new Error('empty reply');
+        } catch (e) {
+            if (attempt === retries) throw e;
+            await new Promise(r => setTimeout(r, 1500 * (attempt + 1))); // 指数バックオフ
+        }
+    }
+}
+
 async function sendCoachMessage() {
     const input = el('coach-input');
     const text = input.value.trim();
     if (!text) return;
 
-    // Disable inputs
     input.value = "";
     input.disabled = true;
     el('btn-coach-send').disabled = true;
 
-    // Push User message
     coachMessages.push({ role: "user", content: text });
     coachMessages.push({ role: "assistant", isLoading: true });
     renderCoachChat();
 
     try {
-        const response = await fetch('/api/ai_coach', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                messages: coachMessages.filter(m => !m.isLoading),
-                user_id: currentUserId
-            })
-        });
-        const data = await response.json();
-
-        // Remove loader, add real reply
+        const reply = await fetchCoachWithRetry(coachMessages.filter(m => !m.isLoading));
         coachMessages.pop();
-        coachMessages.push({ role: "assistant", content: data.reply });
+        coachMessages.push({ role: "assistant", content: reply });
     } catch (e) {
         coachMessages.pop();
-        coachMessages.push({ role: "assistant", content: "送信に失敗しました。" });
+        coachMessages.push({ role: "assistant", content: "送信に失敗しました。再度お試しください。" });
     }
 
     input.disabled = false;
@@ -862,7 +917,7 @@ function closeRangeModal() {
 // ============================================
 // 広告表示システム
 // ============================================
-const AD_HAND_INTERVAL = 50;     // 50ハンドごとに広告
+const AD_HAND_INTERVAL = 30;     // 30ハンドごとに広告
 const AD_COACH_INTERVAL = 5;     // AIコーチ5回ごとに広告
 const AD_DURATION = 30;          // 30秒
 
