@@ -117,27 +117,7 @@ function updateUI() {
     updateHTML('cpu-pos', `(${currentState.cpuPos})`);
     updateHTML('equity-val', currentState.equity);
 
-    if (currentState.heroRange) {
-        el('hero-range-strong').style.width = `${currentState.heroRange.strong * 100}%`;
-        el('hero-range-strong').innerText = `${Math.round(currentState.heroRange.strong * 100)}%`;
-        el('hero-range-mid').style.width = `${currentState.heroRange.middle * 100}%`;
-        el('hero-range-mid').innerText = `${Math.round(currentState.heroRange.middle * 100)}%`;
-        el('hero-range-weak').style.width = `${currentState.heroRange.weak * 100}%`;
-        el('hero-range-weak').innerText = `${Math.round(currentState.heroRange.weak * 100)}%`;
-    }
-
-    if (currentState.cpuRange) {
-        el('cpu-range-strong').style.width = `${currentState.cpuRange.strong * 100}%`;
-        el('cpu-range-strong').innerText = `${Math.round(currentState.cpuRange.strong * 100)}%`;
-        el('cpu-range-mid').style.width = `${currentState.cpuRange.middle * 100}%`;
-        el('cpu-range-mid').innerText = `${Math.round(currentState.cpuRange.middle * 100)}%`;
-        el('cpu-range-weak').style.width = `${currentState.cpuRange.weak * 100}%`;
-        el('cpu-range-weak').innerText = `${Math.round(currentState.cpuRange.weak * 100)}%`;
-    }
-
-    if (currentState.bluffRatio !== undefined) {
-        updateHTML('bluff-ratio-val', currentState.bluffRatio);
-    }
+    // レンジバーは非表示のため更新不要（heroRangeRaw/cpuRangeRaw はレンジモーダルで使用）
 
     // Apply visibility settings
     document.querySelectorAll('.equity-display').forEach(el => {
