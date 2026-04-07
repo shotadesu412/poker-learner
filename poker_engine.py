@@ -619,6 +619,8 @@ class PokerEngine:
 
         # ハンドカウンター（5回に1回レンジ内からハンドを選ぶ）
         self.hand_count = 0
+        # ハンド終了フラグ（リロード時の状態復元に使用）
+        self.hand_finished = False
         
     def is_hero_turn(self):
         """ True if Hero acts, False if CPU acts. """
@@ -651,6 +653,7 @@ class PokerEngine:
         self.cpu_last_action_intent = None
 
         self.hand_count += 1
+        self.hand_finished = False
         self.deal()
         
         # Reset ranges based on new randomized positions

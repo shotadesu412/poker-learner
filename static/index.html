@@ -10,18 +10,16 @@
 
 <body>
 
-    <!-- Top Area: Board Cards -->
-    <div class="board-area">
+    <!-- Top Area: Board Cards（タップで履歴/ボード切り替え） -->
+    <div class="board-area" id="board-area" onclick="toggleHistoryBoard()">
         <div id="board-container" class="card-container">
-            <!-- Cards will be injected here -->
             <div class="empty-card"></div>
             <div class="empty-card"></div>
             <div class="empty-card"></div>
             <div class="empty-card"></div>
             <div class="empty-card"></div>
         </div>
-        <!-- 履歴/ボード切り替えボタン -->
-        <button id="btn-toggle-history" class="toggle-history-btn" onclick="toggleHistoryBoard()">📋履歴</button>
+        <div id="board-tap-hint" class="board-tap-hint">📋 履歴 / ボード</div>
     </div>
 
     <!-- Middle Area: Info -->
@@ -30,7 +28,7 @@
         <div class="pot-display">Pot: <span id="pot-size">0</span> bb</div>
 
         <div class="stacks-container">
-            <div class="stack">Hero <span id="hero-pos" style="color:var(--accent-blue);font-weight:bold;">(BTN)</span>:
+            <div class="stack">You <span id="hero-pos" style="color:var(--accent-blue);font-weight:bold;">(BTN)</span>:
                 <span id="hero-stack">100</span>bb
             </div>
             <div class="stack">CPU <span id="cpu-pos" style="color:var(--accent-orange);font-weight:bold;">(BB)</span>:
@@ -40,8 +38,8 @@
 
         <div class="hands-info">
             <div class="hand-col" onclick="openRangeModal('HERO')" style="cursor: pointer;">
-                <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">Hero
-                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ表示)</span>
+                <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">You
+                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ)</span>
                 </div>
                 <div id="hero-cards" class="card-container">
                     <div class="empty-card"></div>
@@ -52,36 +50,14 @@
 
             <div class="hand-col" onclick="openRangeModal('CPU')" style="cursor: pointer;">
                 <div style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">CPU
-                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ表示)</span>
+                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ)</span>
                 </div>
                 <div id="cpu-cards" class="card-container">
                     <div class="face-down-card"></div>
                     <div class="face-down-card"></div>
                 </div>
-                <!-- Placeholder for alignment -->
                 <div class="equity-display" style="margin-top: 5px; visibility: hidden;">Equity: --%</div>
             </div>
-        </div>
-
-        <!-- Range Visualizations -->
-        <div class="ranges-container">
-            <div class="range-box" onclick="openRangeModal('HERO')" style="cursor: pointer;">
-                <div class="range-label">Hero Range</div>
-                <div class="range-bar">
-                    <div id="hero-range-strong" class="range-segment strong" style="width: 15%">15%</div>
-                    <div id="hero-range-mid" class="range-segment mid" style="width: 35%">35%</div>
-                    <div id="hero-range-weak" class="range-segment weak" style="width: 50%">50%</div>
-                </div>
-            </div>
-            <div class="range-box" onclick="openRangeModal('CPU')" style="cursor: pointer;">
-                <div class="range-label">CPU Range</div>
-                <div class="range-bar">
-                    <div id="cpu-range-strong" class="range-segment strong" style="width: 15%">15%</div>
-                    <div id="cpu-range-mid" class="range-segment mid" style="width: 35%">35%</div>
-                    <div id="cpu-range-weak" class="range-segment weak" style="width: 50%">50%</div>
-                </div>
-            </div>
-            <div class="bluff-ratio">理論ブラフ上限: <span id="bluff-ratio-val">--</span>%</div>
         </div>
     </div>
 
@@ -178,7 +154,7 @@
             </div>
             <!-- モード切り替えボタン -->
             <div class="range-mode-tabs">
-                <button id="btn-range-hero" class="range-tab-btn active" onclick="setRangeMode('hero')">Hero</button>
+                <button id="btn-range-hero" class="range-tab-btn active" onclick="setRangeMode('hero')">You</button>
                 <button id="btn-range-cpu" class="range-tab-btn" onclick="setRangeMode('cpu')">CPU</button>
                 <button id="btn-range-compare" class="range-tab-btn" onclick="setRangeMode('compare')">比較</button>
                 <button id="btn-range-preflop" class="range-tab-btn" onclick="setRangeMode('preflop')">GTO基準</button>

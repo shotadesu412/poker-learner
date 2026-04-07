@@ -460,8 +460,13 @@ body {
     width: 100%;
 }
 
-/* Range Visualizations */
+/* Range Visualizations（非表示） */
 .ranges-container {
+    display: none !important;
+}
+
+/* 非表示中も DOM は残すが描画しない（旧コード互換） */
+.ranges-container-hidden {
     margin: 6px 0;
     padding: 8px;
     background: #1e2320;
@@ -576,20 +581,39 @@ body {
     opacity: 1;
 }
 
-/* 履歴/ボード切り替えボタン */
-.toggle-history-btn {
+/* ボードタップヒント */
+.board-tap-hint {
     position: absolute;
-    top: 6px;
+    bottom: 3px;
     right: 8px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    color: var(--accent-blue);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 3px 7px;
-    border-radius: 10px;
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.3);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* board-area をtappable化 */
+.board-area {
     cursor: pointer;
-    z-index: 20;
+}
+
+/* AIコーチ出力整形 */
+.coach-heading {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+    color: var(--accent-blue);
+}
+
+.coach-bullet {
+    color: var(--accent-green);
+    font-size: 0.8rem;
+}
+
+.coach-num {
+    color: var(--accent-orange);
+    font-weight: bold;
 }
 
 .reason-header {
@@ -1070,4 +1094,81 @@ body {
 
 .ad-close-btn:not(:disabled):hover {
     background: rgba(59, 130, 246, 0.3);
+}
+/* ============================================
+   小型機種向けメディアクエリ (max-height: 700px)
+   ============================================ */
+@media (max-height: 700px) {
+    .board-area {
+        min-height: 75px;
+        max-height: 16%;
+        padding: 5px 8px;
+    }
+    .card {
+        width: 44px;
+        height: 66px;
+        font-size: 0.88rem;
+    }
+    .empty-card, .face-down-card {
+        width: 44px;
+        height: 66px;
+    }
+    .info-area {
+        padding: 6px 12px;
+        gap: 6px;
+    }
+    .hands-info {
+        padding: 8px 15px;
+        gap: 20px;
+        margin-bottom: 4px;
+    }
+    .stacks-container {
+        font-size: 0.82rem;
+    }
+    .street-display {
+        font-size: 1rem;
+    }
+    .pot-display {
+        font-size: 0.85rem;
+    }
+    .action-btn {
+        padding: 8px 6px;
+        font-size: 0.88rem;
+        min-height: 40px;
+    }
+    .action-area {
+        padding: 7px 8px;
+        gap: 6px;
+        padding-bottom: max(env(safe-area-inset-bottom, 8px), 8px);
+    }
+    .action-row {
+        gap: 7px;
+    }
+    .eval-handle {
+        padding: 4px 15px;
+    }
+    .equity-display {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .card {
+        width: 38px;
+        height: 57px;
+        font-size: 0.78rem;
+    }
+    .empty-card, .face-down-card {
+        width: 38px;
+        height: 57px;
+    }
+    .action-btn {
+        padding: 6px 4px;
+        font-size: 0.82rem;
+        min-height: 36px;
+    }
+    .hands-info {
+        padding: 6px 10px;
+        gap: 15px;
+    }
 }

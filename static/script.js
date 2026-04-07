@@ -149,14 +149,7 @@ function updateUI() {
         }
     });
 
-    const rangesContainer = document.querySelector('.ranges-container');
-    if (rangesContainer) {
-        if (!appSettings.showRange) {
-            rangesContainer.style.display = 'none';
-        } else {
-            rangesContainer.style.display = 'flex'; // Default is usually flex
-        }
-    }
+    // レンジバーは非表示（設定から削除済み）
 
     renderCards('board-container', currentState.board, 5);
     renderCards('hero-cards', currentState.heroHand, 2);
@@ -208,23 +201,25 @@ function updateUI() {
 }
 
 // Interaction
-// ボード / 履歴の表示切り替え
-let historyOnTop = false;
-function toggleHistoryBoard() {
-    historyOnTop = !historyOnTop;
+// ボード / 履歴の表示切り替え（デフォルトは履歴が手前）
+let historyOnTop = true;
+function applyHistoryBoardZIndex() {
     const history = el('eval-history');
-    const boardArea = document.querySelector('.board-area');
+    const boardArea = el('board-area');
+    const hint = el('board-tap-hint');
     if (historyOnTop) {
         if (history) history.style.zIndex = '60';
         if (boardArea) boardArea.style.zIndex = '10';
-        const btn = el('btn-toggle-history');
-        if (btn) btn.textContent = '📋→ボード';
+        if (hint) hint.textContent = '▲ ボードを見る';
     } else {
         if (history) history.style.zIndex = '10';
         if (boardArea) boardArea.style.zIndex = '60';
-        const btn = el('btn-toggle-history');
-        if (btn) btn.textContent = '📋履歴';
+        if (hint) hint.textContent = '▲ 履歴を見る';
     }
+}
+function toggleHistoryBoard() {
+    historyOnTop = !historyOnTop;
+    applyHistoryBoardZIndex();
 }
 
 async function startHand() {
@@ -579,21 +574,37 @@ function addEvaluationToHistory(symbol, action, colorClass) {
 // AI Coach Chat integration
 // ============================================
 
+// AIコーチのテキストを読みやすいHTMLに変換
+function formatCoachText(text) {
+    if (!text) return '';
+    let html = text
+        // 【見出し】を太字ブロックに
+        .replace(/【([^】]+)】/g, '<strong class="coach-heading">【$1】</strong>')
+        // 番号付きリスト行
+        .replace(/^(\d+)\.\s+/gm, '<span class="coach-num">$1.</span> ')
+        // 箇条書き行（- で始まる）
+        .replace(/^-\s+/gm, '<span class="coach-bullet">▸</span> ')
+        // 改行を<br>に
+        .replace(/\n/g, '<br>');
+    return linkifyGlossary(html);
+}
+
 function renderCoachChat() {
     const chatContainer = el('coach-chat-history');
     chatContainer.innerHTML = "";
 
     coachMessages.forEach(msg => {
-        if (msg.role === "system") return; // Keep system hidden
+        if (msg.role === "system") return;
 
         const div = document.createElement('div');
         div.className = `chat-bubble ${msg.role === 'user' ? 'user' : 'assistant'}`;
 
         if (msg.isLoading) {
             div.innerHTML = `<span class="chat-loading">...</span>`;
+        } else if (msg.role === 'assistant') {
+            div.innerHTML = formatCoachText(msg.content);
         } else {
-            // Convert definitions into tooltips before insertion
-            div.innerHTML = linkifyGlossary(msg.content);
+            div.textContent = msg.content;
         }
 
         chatContainer.appendChild(div);
@@ -708,6 +719,8 @@ function handleCoachInputKeyPress(event) {
 document.addEventListener('DOMContentLoaded', async () => {
     // プリフロップ標準レンジをキャッシュ
     fetchPreflopRanges();
+    // 履歴をデフォルトで手前に
+    applyHistoryBoardZIndex();
 
     // ページ再読み込み時、まず既存のゲーム状態を復元を試みる
     try {
@@ -754,7 +767,9 @@ function openRangeModal(player) {
     if (!currentState) return;
     rangeModalMode = player === 'HERO' ? 'hero' : 'cpu';
     renderRangeGrid();
-    el('range-modal').classList.remove('hidden');
+    const modal = el('range-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');  // modal-overlay の display:none を解除
 }
 
 function setRangeMode(mode) {
@@ -911,7 +926,10 @@ function renderRangeGrid() {
 
 function closeRangeModal() {
     const modal = el('range-modal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.classList.add('hidden');
+    }
 }
 
 // ============================================

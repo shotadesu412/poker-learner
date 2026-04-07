@@ -62,10 +62,10 @@ def test_sync():
 def get_current_state(user_id: str = Query("")):
     """
     現在のゲーム状態を返す。ページ再読み込み時に既存の手を復元するために使用。
-    hero_hand が空の場合（ゲーム未開始）は has_hand_in_progress=False を返す。
+    hero_hand が空の場合またはハンド終了済みの場合は has_hand_in_progress=False を返す。
     """
     eng = _get_engine(user_id)
-    if not eng.hero_hand:
+    if not eng.hero_hand or eng.hand_finished:
         return {"has_hand_in_progress": False}
     state = get_game_state(eng)
     state["has_hand_in_progress"] = True
@@ -180,7 +180,10 @@ def take_action(req: ActionRequest):
                 hero_pos=eng.hero_position, evaluation=eval_dict["evaluation"], ev_loss=ev_loss_fold,
                 user_id=user_id
             )
-            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(eng, finished=True), "message": "You Folded"}
+            eng.hand_finished = True
+            # プリフロップのフォールドではCPUのハンドを公開しない
+            show_cpu = (eng.street != "PREFLOP")
+            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(eng, finished=True, show_cpu_hand=show_cpu), "message": "You Folded"}
 
         elif action == "CALL":
             call_amount = hero_facing
@@ -285,6 +288,7 @@ def take_action(req: ActionRequest):
             if cpu_action == "FOLD":
                  eng.update_range_dict("CPU", "FOLD", 0)
                  eng.record_action("CPU", "FOLD", 0, cpu_eq, eng.pot_size)
+                 eng.hand_finished = True
                  return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD"}
 
             if cpu_action in ["CALL", "BET", "RAISE"]:
@@ -308,6 +312,7 @@ def take_action(req: ActionRequest):
         if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu < 0.01) or street_closed_by_hero:
             # 4. Advance Street
             if eng.street == "RIVER":
+                eng.hand_finished = True
                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
 
             current_idx = eng.STREETS.index(eng.street)
@@ -328,6 +333,7 @@ def take_action(req: ActionRequest):
                           eng.record_action("CPU", "CHECK", 0, cpu_eq_next, eng.pot_size)
                           cpu_msg += f" | Next street CPU CHECKS"
             else:
+                eng.hand_finished = True
                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
 
         return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng), "cpuAction": cpu_action, "cpuMessage": cpu_msg}
@@ -337,11 +343,11 @@ def take_action(req: ActionRequest):
             f.write(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_game_state(eng: PokerEngine, finished=False):
+def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
     hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, iterations=50)
     realized_eq = min(1.0, max(0.0, hero_eq * Evaluator.get_eqr_modifier(eng.hero_position)))
 
-    if finished and not eng.cpu_hand:
+    if finished and show_cpu_hand and not eng.cpu_hand:
         eng.generate_realized_cpu_hand()
 
     def compress_range(r_dict):
@@ -377,7 +383,7 @@ def get_game_state(eng: PokerEngine, finished=False):
         "facingBet": round(max(0.0, eng.current_bet - eng.hero_invested), 2),
         "currentBet": round(eng.current_bet, 2),
         "heroHand": [Card.int_to_str(c) for c in eng.hero_hand],
-        "cpuHand": [Card.int_to_str(c) for c in eng.cpu_hand] if finished else [],
+        "cpuHand": [Card.int_to_str(c) for c in eng.cpu_hand] if (finished and show_cpu_hand) else [],
         "board": [Card.int_to_str(c) for c in eng.board],
         "equity": round(realized_eq * 100, 1),
         "heroRange": compress_range(eng.hero_range_dict),
