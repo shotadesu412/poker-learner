@@ -19,7 +19,7 @@ PREFLOP_3BET = {
 BET_SIZES = {
     "FLOP": {"small": 0.33, "medium": 0.50, "large": 0.75}, # Pot fraction (Requested GTO mainstream sizing)
     "TURN": {"small": 0.33, "medium": 0.66, "large": 1.00},
-    "RIVER": {"small": 0.50, "medium": 1.00, "large": 1.50}  # 1.5 = Overbet
+    "RIVER": {"small": 0.50, "medium": 0.75, "large": 1.00}  # River: standard GTO sizing (no overbet default)
 }
 
 RAISE_MULTIPLIER = { # Generalized Fallback postflop multi

@@ -169,7 +169,7 @@ def take_action(req: ActionRequest):
             eng.record_action("HERO", "FOLD", 0, realized_equity, eng.pot_size)
             eval_dict = Evaluator.evaluate_fold(
                 hero_eq, hero_facing, eng.pot_size,
-                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, range_adv=hero_range_adv
+                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, range_adv=hero_range_adv, street=eng.street
             )
             ev_fold = eval_dict.get("ev", 0.0)
             ev_call_alt = Evaluator.ev_call(hero_eq, eng.pot_size, hero_facing) if hero_facing > 0 else 0.0
@@ -189,7 +189,7 @@ def take_action(req: ActionRequest):
             call_amount = hero_facing
             eval_dict = Evaluator.evaluate_call(
                 hero_eq, call_amount, eng.pot_size,
-                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict
+                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, street=eng.street
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
@@ -210,12 +210,12 @@ def take_action(req: ActionRequest):
             if action == "RAISE":
                 eval_dict = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, eng.pot_size,
-                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict
+                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, street=eng.street
                 )
             else:
                 eval_dict = Evaluator.evaluate_bet(
                     hero_eq, amount, eng.pot_size,
-                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack
+                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack, street=eng.street
                 )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
@@ -243,7 +243,8 @@ def take_action(req: ActionRequest):
                 is_hero_ip=eng.is_hero_ip,
                 cards=eng.hero_hand,
                 board=eng.board,
-                range_adv=hero_range_adv
+                range_adv=hero_range_adv,
+                street=eng.street
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]

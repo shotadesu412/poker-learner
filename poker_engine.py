@@ -88,7 +88,7 @@ class Evaluator:
         return pi
 
     @staticmethod
-    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None, range_adv=0.5, spr=10.0):
+    def get_eqr_modifier(hero_pos, cards=None, is_3bet_pot=False, board=None, range_adv=0.5, spr=10.0, street=None):
         """
         Calculates EQR (Equity Realization) based on:
         1. Position (IP vs OOP)
@@ -159,8 +159,17 @@ class Evaluator:
         
         # Add basic PI
         pi = Evaluator.calculate_pi(cards, board)
-        
+
         final_eqr = base_eqr * pi
+
+        # Street-specific EQR bounds:
+        # River: no draws can complete, over-realization impossible → cap at 1.0, floor 0.50
+        # Turn: one card to come, draws still alive → cap at 1.15, floor 0.55
+        # Flop/Preflop: original wide bounds
+        if street == "RIVER":
+            return max(0.50, min(1.0, final_eqr))
+        elif street == "TURN":
+            return max(0.55, min(1.15, final_eqr))
         return max(0.65, min(1.25, final_eqr))
     
     @staticmethod
@@ -272,7 +281,7 @@ class Evaluator:
         return "play", EVAL_GOOD, reason_txt
 
     @staticmethod
-    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None):
+    def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None, street=None):
         if call_amount == 0:
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "チェック可能にも関わらずコール判定になりました。無料のカードは常に最適です。"}
             
@@ -296,9 +305,9 @@ class Evaluator:
                 }
 
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
         realized_equity = equity * eqr
-        
+
         spr = None
         if effective_stack > 0 and pot_size > 0:
             spr = effective_stack / pot_size
@@ -336,7 +345,7 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5):
+    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5, street=None):
         if opponent_bet_size == 0:
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "無料で見られる状況でのフォールドは完全なミスプレイです。"}
             
@@ -358,7 +367,7 @@ class Evaluator:
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
         mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv)
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
         realized_equity = equity * eqr
         
         result_eval = EVAL_OPTIMAL
@@ -392,11 +401,19 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, effective_stack=0.0):
+    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None):
         from bet_sizing import evaluate_bet_sizing, get_spr_size_adjustment
         from hand_classifier import HandClassifier
 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
+        # Street-dependent margin: River=0.15, Turn=0.10, Flop/Pre=0.05
+        if street == "RIVER":
+            margin_pct = 0.15
+        elif street == "TURN":
+            margin_pct = 0.10
+        else:
+            margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
+
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
         realized_equity = equity * eqr
 
         # SPR計算
@@ -420,7 +437,7 @@ class Evaluator:
                 sizing_feedback = f"\n\n📐 サイジング: {sizing_result['reason']}"
         
         result_eval = EVAL_BAD
-        if ev_betting > ev_checking + (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
+        if ev_betting > ev_checking + (margin_pct * pot_size):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
                 result_reason = f"【最適】あなたに明確な勝率優位があるため、アグレッシブなベットが正当化されます。主導権を握り続けましょう。"
@@ -431,7 +448,7 @@ class Evaluator:
         elif ev_betting >= ev_checking:
             result_eval = EVAL_GOOD
             result_reason = f"【妥当】ベットによる利益がチェックを上回っており、プレッシャーをかける妥当なアクションです。"
-        elif ev_betting >= ev_checking - (Evaluator.BET_OPTIMAL_MARGIN_PCT * pot_size):
+        elif ev_betting >= ev_checking - (margin_pct * pot_size):
             result_eval = EVAL_MARGINAL
             result_reason = "【マージナル】ベットとチェックの期待値が拮抗しています。相手に手の内を読まれにくくするために、様々なアクションを混ぜて（混合戦略で）戦うべき状況です。"
         else:
@@ -448,7 +465,7 @@ class Evaluator:
 
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None):
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, street=None):
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
@@ -462,18 +479,26 @@ class Evaluator:
                     "reason": preflop_prefix
                 }
                 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
+        # Street-dependent margin for raise evaluation
+        if street == "RIVER":
+            raise_margin_pct = 0.15
+        elif street == "TURN":
+            raise_margin_pct = 0.10
+        else:
+            raise_margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
+
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
         realized_equity = equity * eqr
 
         # Calculate fold equity dynamically via MDF.
         # FE = bet / (pot + bet)
         total_pot = pot_size + opponent_bet_size
         fold_equity = raise_amount / (total_pot + raise_amount)
-        
+
         ev_raising = Evaluator.ev_bet(realized_equity, total_pot, raise_amount, fold_equity)
         ev_calling = Evaluator.ev_call(realized_equity, pot_size, opponent_bet_size)
-        
-        if ev_raising > ev_calling + (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
+
+        if ev_raising > ev_calling + (raise_margin_pct * total_pot):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
                 result_reason = preflop_prefix + f"【最適】あなたに明確な勝率優位があるため、アグレッシブなレイズが正当化されます。"
@@ -484,7 +509,7 @@ class Evaluator:
         elif ev_raising >= ev_calling:
             result_eval = EVAL_GOOD
             result_reason = preflop_prefix + f"【妥当】レイズの期待値がコールを上回っており、妥当な攻撃的アクションです。"
-        elif ev_raising >= ev_calling - (Evaluator.BET_OPTIMAL_MARGIN_PCT * total_pot):
+        elif ev_raising >= ev_calling - (raise_margin_pct * total_pot):
             result_eval = EVAL_MARGINAL
             result_reason = preflop_prefix + "【マージナル】レイズとコールの期待値が拮抗しています。相手に読まれにくくするために、コールとレイズをランダムに混ぜるべき状況です。"
         else:
@@ -500,7 +525,7 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5):
+    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, street=None):
         if not has_initiative:
             if not is_hero_ip:
                 # OOP
@@ -509,7 +534,7 @@ class Evaluator:
                 # IP
                 return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"}
             
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv)
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
         realized_equity = equity * eqr
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
@@ -1232,14 +1257,16 @@ class PokerEngine:
                 
             bluff_freq = max(0.0, min(1.0, bluff_freq))
             
-            # Fix #2: value/bluffの閾値をストリート別に設定
-            # フロップ: Cbet用に低め。リバー: ショーダウンバリューが必要なため高め
+            # value/bluffの閾値をストリート別に設定
+            # リバー: ドロー完成なし→ブラフはGTO比率(~28%)のみ、バリューは高閾値
+            # ターン: 1枚残り→セミブラフ可だが閾値を引き上げ
+            # フロップ: Cbet用に低め
             if self.street == "RIVER":
                 value_eq_threshold = 0.65
-                bluff_eq_threshold = 0.45  # ミスったドロー等も含む
+                bluff_eq_threshold = 0.28  # リバーはGTO純ブラフ頻度のみ
             elif self.street == "TURN":
                 value_eq_threshold = 0.62
-                bluff_eq_threshold = 0.42
+                bluff_eq_threshold = 0.38  # ターン: セミブラフあるが締め気味
             else:  # FLOP
                 value_eq_threshold = 0.58  # フロップCbetは広いレンジで打てる
                 bluff_eq_threshold = 0.45  # セミブラフ（ドロー: 30-45%）を捕捉
