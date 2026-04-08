@@ -373,6 +373,31 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
         if not cpu_has_acted:
             display_cpu_pos = "???"
 
+    # ショーダウン勝敗判定
+    showdown_result = None
+    if finished and show_cpu_hand and eng.cpu_hand and eng.hero_hand and len(eng.board) >= 3:
+        try:
+            hero_score = eng.treys_evaluator.evaluate(eng.board, eng.hero_hand)
+            cpu_score  = eng.treys_evaluator.evaluate(eng.board, eng.cpu_hand)
+            hero_class = eng.treys_evaluator.get_rank_class(hero_score)
+            cpu_class  = eng.treys_evaluator.get_rank_class(cpu_score)
+            from treys import Evaluator as TreysEval
+            hero_hand_name = TreysEval.class_to_string(hero_class)
+            cpu_hand_name  = TreysEval.class_to_string(cpu_class)
+            if hero_score < cpu_score:
+                winner = "YOU"
+            elif cpu_score < hero_score:
+                winner = "CPU"
+            else:
+                winner = "TIE"
+            showdown_result = {
+                "winner": winner,
+                "heroHandName": hero_hand_name,
+                "cpuHandName": cpu_hand_name,
+            }
+        except Exception:
+            pass
+
     return {
         "street": eng.street,
         "potSize": round(eng.pot_size, 2),
@@ -386,6 +411,7 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
         "cpuHand": [Card.int_to_str(c) for c in eng.cpu_hand] if (finished and show_cpu_hand) else [],
         "board": [Card.int_to_str(c) for c in eng.board],
         "equity": round(realized_eq * 100, 1),
+        "showdownResult": showdown_result,
         "heroRange": compress_range(eng.hero_range_dict),
         "cpuRange": compress_range(eng.cpu_range_dict),
         "heroRangeRaw": dict(eng.hero_range_dict),

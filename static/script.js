@@ -239,7 +239,7 @@ async function startHand() {
         // Render CPU's first action if they act before the player preflop
         if (currentState.cpuMessage) {
             setTimeout(() => {
-                addEvaluationToHistory("", currentState.cpuMessage, "");
+                addEvaluationToHistory("", currentState.cpuMessage, "", "CPU", "PREFLOP");
             }, 500 * speedMult);
         }
     } catch (e) {
@@ -275,6 +275,7 @@ async function takeAction(actionType, amount = 0) {
 
         // Show evaluation animation
         const actionText = amount > 0 ? `${actionType} ${amount.toFixed(1)}bb` : actionType;
+        const actionStreet = currentState ? currentState.street : "";
         showEvaluation(data.evaluation || "", actionText);
 
         // Wait for the popup animation to vanish then show reason UI
@@ -287,14 +288,18 @@ async function takeAction(actionType, amount = 0) {
         // Render CPU response if exists
         if (data.cpuMessage) {
             setTimeout(() => {
-                addEvaluationToHistory("", data.cpuMessage, "eval-O");
-            }, 1000 * speedMult); // 1s delay to seem like CPU is "thinking" after evaluation
+                const cpuStreet = data.state ? data.state.street : actionStreet;
+                addEvaluationToHistory("", data.cpuMessage, "", "CPU", cpuStreet);
+            }, 1000 * speedMult);
         }
 
         // Update state
         currentState = data.state;
 
-        if (data.message) {
+        // ショーダウン勝敗表示
+        if (data.state && data.state.showdownResult) {
+            setTimeout(() => showShowdownResult(data.state.showdownResult), 400 * speedMult);
+        } else if (data.message) {
             el('message-area').innerText = data.message;
             el('message-area').classList.remove('hidden');
         }
@@ -510,44 +515,90 @@ function showEvaluation(evalSymbol, actionName) {
     const popup = el('eval-popup');
     popup.innerText = evalSymbol;
 
-    // Reset classes
     popup.className = "eval-popup";
-    let colorClass = "eval-X"; // Default fallback to prevent empty token error
+    let colorClass = "eval-X";
 
-    // Robust checking in case of encoding weirdness
-    if (!evalSymbol) {
-        colorClass = "eval-X";
-    } else if (evalSymbol.includes("◎")) {
-        colorClass = "eval-OO";
-    } else if (evalSymbol.includes("◯")) {
-        colorClass = "eval-O";
-    } else if (evalSymbol.includes("△")) {
-        colorClass = "eval-T";
-    } else if (evalSymbol.includes("×")) {
-        colorClass = "eval-X";
-    }
+    if (!evalSymbol) { colorClass = "eval-X"; }
+    else if (evalSymbol.includes("◎")) { colorClass = "eval-OO"; }
+    else if (evalSymbol.includes("◯")) { colorClass = "eval-O"; }
+    else if (evalSymbol.includes("△")) { colorClass = "eval-T"; }
+    else if (evalSymbol.includes("×")) { colorClass = "eval-X"; }
 
     popup.classList.add(colorClass);
     popup.classList.add('show');
 
     setTimeout(() => {
         popup.classList.remove('show');
-        addEvaluationToHistory(evalSymbol, actionName, colorClass);
+        const street = currentState ? currentState.street : "";
+        addEvaluationToHistory(evalSymbol, actionName, colorClass, "YOU", street);
     }, 800 * speedMult);
 }
 
-function addEvaluationToHistory(symbol, action, colorClass) {
+function addEvaluationToHistory(symbol, action, colorClass, actor, street) {
     const history = el('eval-history');
+    if (!history) return;
+
     const item = document.createElement('div');
     item.className = 'history-item';
-    const symbolHtml = symbol ? `<span class="${colorClass}">${symbol}</span>` : '';
-    item.innerHTML = `<span>${action}</span> ${symbolHtml}`;
-    history.prepend(item);
 
-    // limit history depth
-    if (history.children.length > 5) {
-        history.removeChild(history.lastChild);
+    // ストリートバッジ
+    const streetColors = { PREFLOP: "#6366f1", FLOP: "#10b981", TURN: "#f59e0b", RIVER: "#ef4444" };
+    const streetBg = streetColors[street] || "#555";
+    const streetHtml = street
+        ? `<span class="hist-street" style="background:${streetBg};">${street.substring(0,2)}</span>`
+        : `<span class="hist-street" style="background:#555;">--</span>`;
+
+    // アクター
+    const actorLabel = (actor === "YOU" || actor === "HERO")
+        ? `<span class="hist-actor you">You</span>`
+        : `<span class="hist-actor cpu">CPU</span>`;
+
+    // アクションテキスト
+    const actionHtml = `<span class="hist-action">${action}</span>`;
+
+    // 評価シンボル
+    const symbolHtml = symbol
+        ? `<span class="hist-eval ${colorClass}">${symbol}</span>`
+        : '';
+
+    item.innerHTML = `${streetHtml}${actorLabel}${actionHtml}${symbolHtml}`;
+    history.appendChild(item);  // 最新を末尾に追加（時系列順）
+
+    // 自動スクロールを末尾に
+    history.scrollTop = history.scrollHeight;
+
+    // 最大10件
+    while (history.children.length > 10) {
+        history.removeChild(history.firstChild);
     }
+}
+
+// ショーダウン結果を表示
+function showShowdownResult(result) {
+    if (!result) return;
+    const msgArea = el('message-area');
+    if (!msgArea) return;
+
+    let icon, label, colorStyle;
+    if (result.winner === "YOU") {
+        icon = "🏆"; label = "You Win!"; colorStyle = "color: var(--eval-optimal);";
+    } else if (result.winner === "CPU") {
+        icon = "💀"; label = "CPU Wins"; colorStyle = "color: var(--eval-bad);";
+    } else {
+        icon = "🤝"; label = "TIE"; colorStyle = "color: var(--text-muted);";
+    }
+
+    msgArea.innerHTML = `
+        <div class="showdown-banner" style="${colorStyle}">
+            <div class="showdown-icon">${icon}</div>
+            <div class="showdown-label">${label}</div>
+        </div>
+        <div class="showdown-hands">
+            <span class="showdown-you">You: ${result.heroHandName}</span>
+            <span class="showdown-vs">vs</span>
+            <span class="showdown-cpu">CPU: ${result.cpuHandName}</span>
+        </div>`;
+    msgArea.classList.remove('hidden');
 }
 
 // ============================================

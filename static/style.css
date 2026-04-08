@@ -410,26 +410,96 @@ body {
     opacity: 1;
 }
 
-.eval-history {
-    position: absolute;
-    top: 15px;
-    right: 15px;
+/* アクション履歴ログ（info-area 内インライン） */
+.eval-history-inline {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    align-items: flex-end;
+    gap: 3px;
+    max-height: 130px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px 6px;
+}
+
+.eval-history-inline:empty {
+    display: none;
 }
 
 .history-item {
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 2px solid transparent;
 }
+
+.hist-street {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: white;
+    min-width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.hist-actor {
+    font-weight: bold;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    min-width: 28px;
+}
+
+.hist-actor.you { color: var(--accent-blue); }
+.hist-actor.cpu { color: var(--accent-orange); }
+
+.hist-action {
+    flex: 1;
+    color: var(--text-main);
+    font-size: 0.78rem;
+}
+
+.hist-eval {
+    font-size: 0.9rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* ショーダウン結果バナー */
+.showdown-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    padding: 4px 0;
+}
+
+.showdown-icon { font-size: 1.6rem; }
+.showdown-label { font-size: 1.3rem; }
+
+.showdown-hands {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.showdown-you { color: var(--accent-blue); font-weight: bold; }
+.showdown-cpu { color: var(--accent-orange); font-weight: bold; }
+.showdown-vs  { color: var(--text-muted); }
 
 /* Colors for Evaluation symbols */
 .eval-O {
