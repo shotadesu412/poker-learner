@@ -23,7 +23,7 @@ if (!currentUserId) {
 let coachMessages = [];
 
 const POKER_GLOSSARY = {
-    "GTO": "Game Theory Optimalの略。\nお互いが最適な防衛戦略をとることで誰も搾取（負か）されない数学的最適戦略。",
+    "GTO": "Game Theory Optimalの略。\nお互いが最適な防衛戦略をとることで誰も搾取されない数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたヒューリスティックです。",
     "MDF": "Minimum Defense Frequency（最低防衛頻度）。\n相手のベットに対して自分が最低限コールやレイズで守るべきハンドの割合。",
     "SPR": "Stack to Pot Ratio（スタック対ポット比）。\n残りのスタック（チップ量）がポットに対してどれくらい大きいかを示す指標。",
     "ドンクベット": "自分にアグレッサー（イニシアチブ）がないのにOOPから先にベットすること。",
@@ -828,7 +828,7 @@ function renderRangeGrid() {
         hero: `Hero (${heroPos}) レンジ`,
         cpu: `CPU (${cpuPos}) レンジ`,
         compare: 'Hero vs CPU 比較',
-        preflop: `${heroPos} 標準GTOレンジ`
+        preflop: `${heroPos} 推奨レンジ`
     };
     if (el('range-modal-title')) el('range-modal-title').innerText = titleMap[rangeModalMode] || 'レンジ表';
 
@@ -912,22 +912,22 @@ function renderRangeGrid() {
                     cell.style.color = "#444";
                 }
             } else if (rangeModalMode === 'preflop') {
-                // 標準GTOレンジ vs 実際のHeroレンジ
+                // 推奨レンジ vs 実際のHeroレンジ
                 if (stdW > 0 && heroW > 0) {
-                    // 両方あり → 緑（GTO通り）
+                    // 両方あり → 緑（推奨通り）
                     cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.max(stdW, heroW)})`;
                     cell.style.color = "white";
-                    cell.title = `GTO推奨: あり / あなたの実績: ${Math.round(heroW*100)}%`;
+                    cell.title = `推奨: あり / あなたの実績: ${Math.round(heroW*100)}%`;
                 } else if (stdW > 0) {
-                    // GTOでは入るがプレイしていない → 赤（見逃し）
+                    // 推奨だがプレイしていない → 赤（見逃し）
                     cell.style.backgroundColor = `rgba(239, 68, 68, ${stdW * 0.7})`;
                     cell.style.color = "white";
-                    cell.title = `GTO推奨: あり / あなたの実績: なし（アンダープレイ）`;
+                    cell.title = `推奨: あり / あなたの実績: なし（少なめ）`;
                 } else if (heroW > 0) {
-                    // GTOでは入らないがプレイした → 黄（過剰）
+                    // 推奨外だがプレイした → 黄（過剰）
                     cell.style.backgroundColor = `rgba(253, 224, 71, ${heroW * 0.8})`;
                     cell.style.color = "#111";
-                    cell.title = `GTO推奨: なし / あなたの実績: ${Math.round(heroW*100)}%（オーバープレイ）`;
+                    cell.title = `推奨: なし / あなたの実績: ${Math.round(heroW*100)}%（多め）`;
                 } else {
                     cell.style.backgroundColor = "#111";
                     cell.style.color = "#444";

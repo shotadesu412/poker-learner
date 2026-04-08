@@ -187,11 +187,11 @@ def classify_range(weight):
 
 def get_preflop_feedback(classification):
     if classification == "CORE":
-        return "GTO理論上、このポジションと状況における標準的な参加レンジです。"
+        return "このポジションと状況における標準的な参加レンジです。"
     elif classification == "MIXED":
-        return "GTO理論上、混合戦略（頻度でプレイ）が推奨される境界線のハンドです。"
+        return "プレイするかどうか状況次第の境界線のハンドです。頻度でアクションを混ぜることが多いです。"
     else:
-        return "GTO理論上、プレイすべきではない（フォールド推奨の）ハンドです。"
+        return "このポジションでは参加しにくいハンドです。フォールドが無難な選択です。"
 
 def get_hand_reason(combo_str):
     if combo_str in ["A5s", "A4s", "A3s", "A2s", "K5s", "K4s"]:
