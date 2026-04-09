@@ -196,12 +196,6 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.equity-display {
-    font-size: 1rem;
-    font-weight: bold;
-    color: var(--accent-green);
-}
-
 /* Action Buttons */
 .action-row {
     display: flex;
@@ -1214,9 +1208,6 @@ body {
     }
     .eval-handle {
         padding: 4px 15px;
-    }
-    .equity-display {
-        font-size: 0.85rem;
     }
 }
 

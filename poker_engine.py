@@ -165,11 +165,14 @@ class Evaluator:
         # Street-specific EQR bounds:
         # River: no draws can complete, over-realization impossible → cap at 1.0, floor 0.50
         # Turn: one card to come, draws still alive → cap at 1.15, floor 0.55
-        # Flop/Preflop: original wide bounds
+        # Flop: two cards to come, draws can over-realize → cap at 1.20, floor 0.60
+        # Preflop: widest range, many streets to play → cap at 1.25, floor 0.65
         if street == "RIVER":
             return max(0.50, min(1.0, final_eqr))
         elif street == "TURN":
             return max(0.55, min(1.15, final_eqr))
+        elif street == "FLOP":
+            return max(0.60, min(1.20, final_eqr))
         return max(0.65, min(1.25, final_eqr))
     
     @staticmethod
@@ -378,13 +381,12 @@ class Evaluator:
         elif realized_equity >= e_req:
             result_eval = EVAL_MARGINAL
             result_reason = f"【フォールド過多】オッズに見合う勝率({realized_equity*100:.1f}%)を持っています。フォールドは消極的すぎるかもしれません。"
-        elif realized_equity >= (e_req - 0.05):
-            # ▼ MDF考慮: 勝率がオッズに5%以内のマージナルスポット
+        elif realized_equity >= (e_req - 0.02):
+            # ▼ MDF考慮: 勝率がオッズに2%以内のボーダーラインスポット
             result_eval = EVAL_MARGINAL
             result_reason = (
-                f"【レンジ無視 / フォールド過多】オッズにはわずかに届きませんが（あなたの勝率: {realized_equity*100:.1f}%）、"
-                f"十分にコールできる強さです。このような状況で毎回降りてしまうと、相手は弱いカードでも適当にベットするだけで簡単にポットを奪えるようになってしまいます。"
-                f"相手のブラフを防ぐために、このハンドは一定頻度でディフェンス（コール）すべきです。"
+                f"【ボーダーライン】オッズにわずかに届きません（あなたの勝率: {realized_equity*100:.1f}% / 必要: {e_req*100:.1f}%）。"
+                f"毎回フォールドすると相手に読まれやすくなるため、時にはコールも検討できます。"
             )
         else:
             result_eval = EVAL_OPTIMAL

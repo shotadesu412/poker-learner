@@ -5,7 +5,6 @@ let isWaitingForAction = true;
 
 // Global settings loaded from localStorage
 let appSettings = JSON.parse(localStorage.getItem("poker_settings")) || {
-    showEquity: true,
     showRange: true,
     showFeedback: true,
     speed: "normal"
@@ -115,19 +114,7 @@ function updateUI() {
     updateHTML('cpu-stack', currentState.cpuStack.toFixed(1));
     updateHTML('hero-pos', `(${currentState.heroPos})`);
     updateHTML('cpu-pos', `(${currentState.cpuPos})`);
-    updateHTML('equity-val', currentState.equity);
-
     // レンジバーは非表示のため更新不要（heroRangeRaw/cpuRangeRaw はレンジモーダルで使用）
-
-    // Apply visibility settings
-    document.querySelectorAll('.equity-display').forEach(el => {
-        if (!appSettings.showEquity) {
-            el.style.display = 'none';
-        } else {
-            // Restore default (empty means fallback to css rule or block)
-            el.style.display = '';
-        }
-    });
 
     // レンジバーは非表示（設定から削除済み）
 

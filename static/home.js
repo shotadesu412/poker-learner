@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Settings Management
     // ----------------------------
     const defaultSettings = {
-        showEquity: true,
         showRange: true,
         showFeedback: true,
         speed: "normal"
@@ -15,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentSettings = JSON.parse(localStorage.getItem("poker_settings")) || defaultSettings;
 
     // Elements
-    const toggleEquity = document.getElementById("toggle-equity");
     const toggleRange = document.getElementById("toggle-range");
     const toggleFeedback = document.getElementById("toggle-feedback");
     const speedNormal = document.getElementById("speed-normal");
@@ -24,7 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize UI with current settings
     function initSettingsUI() {
         if (!currentSettings) return;
-        toggleEquity.checked = currentSettings.showEquity !== false;
         toggleRange.checked = currentSettings.showRange !== false;
         toggleFeedback.checked = currentSettings.showFeedback !== false;
         
@@ -62,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Save Settings
     saveBtn.onclick = function() {
         currentSettings = {
-            showEquity: toggleEquity.checked,
             showRange: toggleRange.checked,
             showFeedback: toggleFeedback.checked,
             speed: speedNormal.checked ? "normal" : "fast"
