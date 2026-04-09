@@ -22,15 +22,44 @@ if (!currentUserId) {
 let coachMessages = [];
 
 const POKER_GLOSSARY = {
-    "GTO": "Game Theory Optimalの略。\nお互いが最適な防衛戦略をとることで誰も搾取されない数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたヒューリスティックです。",
-    "MDF": "Minimum Defense Frequency（最低防衛頻度）。\n相手のベットに対して自分が最低限コールやレイズで守るべきハンドの割合。",
-    "SPR": "Stack to Pot Ratio（スタック対ポット比）。\n残りのスタック（チップ量）がポットに対してどれくらい大きいかを示す指標。",
-    "ドンクベット": "自分にアグレッサー（イニシアチブ）がないのにOOPから先にベットすること。",
-    "ポラライズ": "極端に強いハンド（ナッツ級）と弱いハンド（ブラフ）の2極端なレンジでプレイすること。大きなベットサイズになる。",
-    "Cベット": "コンティニュエーション・ベット。\n前のストリートでアグレッサーだったプレイヤーが、フロップ以降でも継続して打つベット。",
-    "レンジアドバンテージ": "あなたのレンジ全体が持つ勝率が、相手のレンジの勝率よりも高い（有利な）状態。",
-    "エクイティ": "勝率のこと。そのハンドがポットを獲得できる確率の期待値。"
+    "GTO": "Game Theory Optimal の略。\nお互いが最適な防衛戦略をとることで誰も搾取されない、数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたものです。",
+    "MDF": "Minimum Defense Frequency（最低防衛頻度）の略。\n相手のベットに対して、自分が最低限コールやレイズで守るべき割合。この頻度より少ない守りでは相手のブラフが得をしてしまいます。",
+    "SPR": "Stack to Pot Ratio（スタック対ポット比）の略。\n残りのチップがポットの何倍かを示します。SPRが低いほど「オールインしやすい状況」になります。",
+    "EV": "Expected Value（期待値）の略。\nある選択を長期間繰り返したとき、平均的にどれだけ得するかを示します。EV+ならプラスの選択、EV-ならマイナスの選択です。",
+    "ポットオッズ": "コールに必要なチップに対して、ポットがどれだけ大きいかの割合。\n例：ポット100bbに50bbのコールなら33%の勝率があれば損益分岐点です。",
+    "フォールドエクイティ": "ベットやレイズで相手を降ろせる確率から得られる追加利益のこと。\nブラフが成立する根拠のひとつです。",
+    "ドンクベット": "前のストリートでベットしていなかった（アグレッサーでない）側が、先にベットすること。\n意外性はありますが、レンジが読まれやすくなるリスクもあります。",
+    "ポラライズ": "極端に強いハンドと弱いハンド（ブラフ）の2種類だけでプレイするレンジ構成のこと。\n大きなベットサイズに向いています。",
+    "Cベット": "コンティニュエーション・ベット（継続ベット）の略。\n前のストリートでレイズしたプレイヤーが、次のストリートでも続けてベットすること。",
+    "レンジアドバンテージ": "自分のレンジ全体の平均的な強さが、相手より高い状態。\nレンジ優位があるとベットやブラフが通りやすくなります。",
+    "エクイティ": "勝率のこと。\nそのハンドが最終的にポットを獲得できる確率を表します。"
 };
+
+// ==============================
+// 用語解説ポップアップ
+// ==============================
+function openGlossaryPopup(term, definition) {
+    document.getElementById('glossary-popup-term').textContent = term;
+    document.getElementById('glossary-popup-body').textContent = definition;
+    document.getElementById('glossary-overlay').classList.add('active');
+    document.getElementById('glossary-popup').classList.add('active');
+}
+
+function closeGlossaryPopup() {
+    document.getElementById('glossary-overlay').classList.remove('active');
+    document.getElementById('glossary-popup').classList.remove('active');
+}
+
+// イベント委譲：動的に生成された.glossary-termに対応
+document.addEventListener('click', function(e) {
+    const termEl = e.target.closest('.glossary-term');
+    if (termEl) {
+        e.stopPropagation();
+        const term = termEl.textContent;
+        const definition = POKER_GLOSSARY[term] || termEl.dataset.tooltip || '';
+        openGlossaryPopup(term, definition);
+    }
+});
 
 function linkifyGlossary(text) {
     if (!text) return text;

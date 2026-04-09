@@ -877,67 +877,78 @@ body {
     background-color: #2563eb;
 }
 
-/* --- Glossary Tooltip System --- */
+/* --- Glossary Term Link --- */
 .glossary-term {
     color: var(--accent-green);
     border-bottom: 1px dashed var(--accent-green);
-    cursor: help;
-    position: relative;
+    cursor: pointer;
     font-weight: bold;
 }
 
-/* Tooltip container structure leveraging data-attr */
-.glossary-term::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 120%;
-    /* Position above */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #111;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    white-space: pre-wrap;
-    width: 250px;
-    max-width: 80vw;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--accent-green);
-    z-index: 1000;
-
-    /* Default Hidden */
+/* --- Glossary Bottom Sheet Popup --- */
+.glossary-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 290;
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease-in-out;
     pointer-events: none;
-    /* Don't interrupt flow */
+    transition: opacity 0.2s ease;
 }
 
-/* Tooltip Arrow */
-.glossary-term::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 6px;
-    border-style: solid;
-    border-color: #111 transparent transparent transparent;
-    z-index: 1001;
-
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease-in-out;
-}
-
-/* Show on hover / active (mobile tap) */
-.glossary-term:hover::after,
-.glossary-term:hover::before,
-.glossary-term:active::after,
-.glossary-term:active::before {
+.glossary-overlay.active {
     opacity: 1;
-    visibility: visible;
+    pointer-events: auto;
+}
+
+.glossary-popup {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #2a312c;
+    border-top: 2px solid var(--accent-green);
+    border-radius: 16px 16px 0 0;
+    padding: 18px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 300;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 55vh;
+    overflow-y: auto;
+}
+
+.glossary-popup.active {
+    transform: translateY(0);
+}
+
+.glossary-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.glossary-popup-term {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--accent-green);
+}
+
+.glossary-popup-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+}
+
+.glossary-popup-body {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-main);
+    white-space: pre-wrap;
 }
 
 /* --- Range Matrix Modal --- */
