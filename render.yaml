@@ -9,3 +9,9 @@ services:
         value: 3.11.0
       - key: OPENAI_API_KEY
         sync: false
+      - key: POKER_DB_PATH
+        value: /data/poker_stats.db
+    disk:
+      name: poker-data
+      mountPath: /data
+      sizeGB: 1
