@@ -1,12 +1,22 @@
 // stats.js — 分析ページのデータ取得とUI描画ロジック
-const PERIOD_LABELS = { all: "全期間", "30d": "直近30日", "7d": "直近7日", last: "直近1セッション" };
 let currentPeriod = "all";
+let isPremium = false;
 
-// ==============================
-// 初期化
-// ==============================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    const userId = localStorage.getItem("poker_user_id") || "";
+
+    // サブスク状態を取得してからコンテンツをロード
+    try {
+        const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(userId)}`);
+        const data = await res.json();
+        isPremium = data.is_premium || false;
+    } catch (e) {
+        isPremium = false;
+    }
+
+    applyPremiumGates();
     loadAll(currentPeriod);
+
     document.querySelectorAll(".period-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             currentPeriod = btn.dataset.period;
@@ -17,22 +27,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+function applyPremiumGates() {
+    const lockIds = ["lock-position", "lock-leaks", "lock-ai-history", "lock-hand-history"];
+    lockIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isPremium ? "none" : "flex";
+    });
+}
+
 async function loadAll(period) {
     showLoading(true);
+    const userId = localStorage.getItem("poker_user_id") || "";
     try {
-        const userId = localStorage.getItem("poker_user_id") || "";
-        const [overview, position, streets, leaks, aiHistory] = await Promise.all([
+        const [overview, streets] = await Promise.all([
             fetch(`/api/stats/overview?period=${period}&user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
             fetch(`/api/stats/streets?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
         ]);
         renderOverview(overview);
-        renderPosition(position);
         renderStreets(streets);
-        renderLeaks(leaks);
-        renderAiHistory(aiHistory);
+
+        if (isPremium) {
+            const [position, leaks, aiHistory, handHistory] = await Promise.all([
+                fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
+                fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
+                fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
+                fetch(`/api/stats/hand_history?user_id=${userId}`).then(r => r.json()),
+            ]);
+            renderPosition(position);
+            renderLeaks(leaks);
+            renderAiHistory(aiHistory);
+            renderHandHistory(handHistory);
+        }
     } catch (e) {
         console.error("Stats API error:", e);
     }
@@ -84,17 +109,13 @@ function renderStreets(data) {
         const d = data[st] || { "◎": 0, "◯": 0, "△": 0, "×": 0 };
         const total = d["◎"] + d["◯"] + d["△"] + d["×"];
         const pct = (n) => total > 0 ? Math.round(n / total * 100) : 0;
-
         const oo = pct(d["◎"]), o = pct(d["◯"]), t = pct(d["△"]), x = pct(d["×"]);
-
         const seg = (w, cls, label) => w > 0
             ? `<div class="bar-seg ${cls}" style="width:${w}%">${w > 8 ? label : ""}</div>`
             : "";
-
         const barHTML = total > 0
             ? seg(oo, "bar-optimal", "◎") + seg(o, "bar-good", "◯") + seg(t, "bar-marginal", "△") + seg(x, "bar-bad", "×")
             : `<div class="bar-empty"></div>`;
-
         return `<div class="street-row">
             <div class="street-label">${labels[st]}</div>
             <div class="stacked-bar">${barHTML}</div>
@@ -112,26 +133,18 @@ function renderLeaks(leaks) {
         container.innerHTML = `<div class="no-data">目立ったミスは見つかりませんでした</div>`;
         return;
     }
+    const actionLabel = { FOLD: "フォールド", CALL: "コール", BET: "ベット", RAISE: "レイズ", CHECK: "チェック" };
     container.innerHTML = leaks.map((lk, i) => {
         const isMarginal = lk.evaluation === "△";
-        const actionLabel = {
-            FOLD: "フォールド", CALL: "コール", BET: "ベット",
-            RAISE: "レイズ", CHECK: "チェック"
-        }[lk.action] || lk.action;
         return `<div class="leak-item ${isMarginal ? "marginal" : ""}">
             <div class="leak-desc">${i + 1}. ${lk.description}</div>
             <div class="leak-meta">
                 <span>${lk.pos} / ${lk.street}</span>
-                <span>${actionLabel} × ${lk.count}回</span>
+                <span>${actionLabel[lk.action] || lk.action} × ${lk.count}回</span>
                 <span class="leak-ev-loss">平均損失 -${lk.avg_ev_loss.toFixed(2)} bb</span>
             </div>
         </div>`;
     }).join("");
-}
-
-function showLoading(on) {
-    const el = document.getElementById("loading-overlay");
-    if (el) el.style.display = on ? "block" : "none";
 }
 
 // ==============================
@@ -143,14 +156,11 @@ function renderAiHistory(historyData) {
         container.innerHTML = `<div class="no-data">AIコーチに相談した履歴はまだありません</div>`;
         return;
     }
-
     container.innerHTML = historyData.map((h, i) => {
         const dt = new Date(h.timestamp);
         const dateStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const firstLine = h.hand_context.split('\\n')[1] || h.hand_context.split('\\n')[0];
-
         return `<div class="ai-history-item">
-            <div class="ai-history-header" onclick="toggleAiBody(${i})">
+            <div class="ai-history-header" onclick="toggleCollapse('ai-body-${i}', 'ai-toggle-${i}')">
                 <span style="font-weight:bold;">ハンド ${historyData.length - i} <span class="ai-history-date">(${dateStr})</span></span>
                 <span class="ai-history-toggle" id="ai-toggle-${i}">▼ 詳細を見る</span>
             </div>
@@ -162,14 +172,55 @@ function renderAiHistory(historyData) {
     }).join("");
 }
 
-window.toggleAiBody = function(index) {
-    const body = document.getElementById(`ai-body-${index}`);
-    const toggle = document.getElementById(`ai-toggle-${index}`);
-    if (body.classList.contains('active')) {
-        body.classList.remove('active');
-        toggle.innerText = "▼ 詳細を見る";
-    } else {
-        body.classList.add('active');
-        toggle.innerText = "▲ 閉じる";
+// ==============================
+// ハンド履歴
+// ==============================
+function renderHandHistory(hands) {
+    const container = document.getElementById("hand-history-list");
+    if (!hands || hands.length === 0) {
+        container.innerHTML = `<div class="no-data">ハンド履歴がまだありません</div>`;
+        return;
     }
-};
+    const evalIcon = { "◎": "◎", "◯": "◯", "△": "△", "×": "×" };
+    const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
+    const actionLabel = { FOLD: "フォールド", CALL: "コール", BET: "ベット", RAISE: "レイズ", CHECK: "チェック" };
+
+    container.innerHTML = hands.map((h, i) => {
+        const dt = new Date(h.date);
+        const dateStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const cards = h.hole_cards || "??";
+        const pos = h.position || "?";
+        const actionsHtml = (h.actions || []).map(a => {
+            const cls = evalClass[a.evaluation] || "";
+            const lbl = actionLabel[a.action] || a.action;
+            const amt = a.amount > 0 ? ` ${a.amount.toFixed(1)}bb` : "";
+            return `<span class="hh-action ${cls}">[${a.street.slice(0,2)}] ${lbl}${amt}</span>`;
+        }).join(" ");
+
+        return `<div class="hh-item">
+            <div class="hh-header" onclick="toggleCollapse('hh-body-${i}', 'hh-toggle-${i}')">
+                <span class="hh-cards">${cards}</span>
+                <span class="hh-pos">${pos}</span>
+                <span class="hh-date">${dateStr}</span>
+                <span class="hh-toggle" id="hh-toggle-${i}">▼</span>
+            </div>
+            <div class="hh-body" id="hh-body-${i}">
+                <div class="hh-actions">${actionsHtml || "アクションなし"}</div>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+function toggleCollapse(bodyId, toggleId) {
+    const body = document.getElementById(bodyId);
+    const toggle = document.getElementById(toggleId);
+    if (!body) return;
+    const isOpen = body.classList.contains('active');
+    body.classList.toggle('active', !isOpen);
+    if (toggle) toggle.textContent = isOpen ? "▼ 詳細を見る" : "▲ 閉じる";
+}
+
+function showLoading(on) {
+    const el = document.getElementById("loading-overlay");
+    if (el) el.style.display = on ? "block" : "none";
+}

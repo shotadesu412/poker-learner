@@ -86,9 +86,10 @@ class AICoachRequest(BaseModel):
     user_id: str = "guest"
 
 @app.get("/api/start_hand")
-def start_hand(user_id: str = Query("")):
+def start_hand(user_id: str = Query(""), spot: bool = Query(False)):
   try:
     eng = _get_engine(user_id)
+    eng.spot_mode = spot
     MAX_RETRIES = 50
     cpu_msg = ""
 
@@ -591,3 +592,79 @@ def get_preflop_ranges():
         return position_ranges
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================
+# サブスクリプション API
+# ==============================
+
+class VerifyPurchaseRequest(BaseModel):
+    user_id: str
+    purchase_token: str
+    product_id: str = ""
+
+@app.get("/api/subscription")
+def get_subscription(user_id: str = Query("")):
+    if not user_id:
+        return {"is_premium": False}
+    return {"is_premium": stats_logger.get_subscription_status(user_id)}
+
+@app.post("/api/subscription/verify_purchase")
+def verify_purchase(req: VerifyPurchaseRequest):
+    """
+    Google Play Billing の購入トークンを検証してプレミアムを有効化する。
+    TODO: Google Play Developer API での実トークン検証を実装する。
+    """
+    if not req.purchase_token or not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id と purchase_token が必要です")
+
+    # TODO: Google Play Developer API でトークンを検証する
+    # 現時点ではトークンの存在をもって有効とみなす
+    stats_logger.activate_premium(req.user_id, req.purchase_token)
+    return {"success": True, "is_premium": True}
+
+@app.post("/api/subscription/cancel")
+def cancel_subscription(user_id: str = Query("")):
+    """サブスク解約時にWebhookから呼ばれる想定（将来実装）"""
+    if user_id:
+        stats_logger.deactivate_premium(user_id)
+    return {"success": True}
+
+
+# ==============================
+# ハンド履歴 API
+# ==============================
+
+@app.get("/api/stats/hand_history")
+def hand_history(user_id: str = Query(""), limit: int = Query(30)):
+    try:
+        return stats_logger.get_hand_history(user_id, limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================
+# TWA / PWA サポート
+# ==============================
+
+@app.get("/.well-known/assetlinks.json")
+def assetlinks():
+    """
+    TWA (Trusted Web Activity) 用の Digital Asset Links。
+    Google Play Console でリリースキーの SHA-256 を取得後に更新すること。
+    """
+    import json
+    links = [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "com.pokerlearner.app",
+                "sha256_cert_fingerprints": [
+                    "TODO: REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+                ]
+            }
+        }
+    ]
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=links)

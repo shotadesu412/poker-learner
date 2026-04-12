@@ -447,4 +447,109 @@ body {
     color: var(--text-main);
 }
 
-
+
+/* --- プレミアムゲート --- */
+.premium-section {
+    position: relative;
+}
+.premium-lock {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 30, 27, 0.88);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+.premium-lock-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.premium-lock-icon {
+    font-size: 2rem;
+}
+.premium-lock-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+.pro-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+/* --- ハンド履歴 --- */
+.hand-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.hh-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.hh-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+.hh-header:hover {
+    background: rgba(255,255,255,0.03);
+}
+.hh-cards {
+    font-weight: bold;
+    color: var(--accent-blue);
+    min-width: 60px;
+}
+.hh-pos {
+    color: var(--accent-orange);
+    font-weight: bold;
+    min-width: 36px;
+}
+.hh-date {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    flex: 1;
+}
+.hh-toggle {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+.hh-body {
+    display: none;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+}
+.hh-body.active {
+    display: block;
+}
+.hh-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.hh-action {
+    font-size: 0.78rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+}
+.hh-action.eval-optimal { border-color: var(--eval-optimal); color: var(--eval-optimal); }
+.hh-action.eval-good    { border-color: var(--eval-good);    color: var(--eval-good); }
+.hh-action.eval-marginal{ border-color: var(--eval-marginal);color: var(--eval-marginal); }
+.hh-action.eval-bad     { border-color: var(--eval-bad);     color: var(--eval-bad); }

@@ -757,8 +757,9 @@ class PokerEngine:
         self.hero_position = positions[0]
         self.cpu_position = positions[1]
 
-        # 5回に1回はGTOレンジ内のハンドを強制配布
-        if self.hand_count > 0 and self.hand_count % 5 == 0:
+        # スポット練習モード: 常にGTOレンジ内のハンドを配布
+        force_range = getattr(self, 'spot_mode', False) or (self.hand_count > 0 and self.hand_count % 5 == 0)
+        if force_range:
             combo = self._pick_range_combo(self.hero_position)
             if combo:
                 try:

@@ -5,18 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>プレイ分析 | Poker Evaluator</title>
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/stats.css">
 </head>
 
 <body>
 
-    <!-- ヘッダー -->
     <header class="stats-header">
         <h1>プレイ分析</h1>
         <a href="/" class="back-btn">← 戻る</a>
     </header>
 
-    <!-- 期間フィルター -->
     <div class="period-bar">
         <button class="period-btn active" data-period="all">全期間</button>
         <button class="period-btn" data-period="30d">直近30日</button>
@@ -28,10 +27,9 @@
 
     <main class="stats-container">
 
-        <!-- 総合スコア -->
+        <!-- 総合スコア（無料） -->
         <section class="section-card">
             <div class="section-title">総合スコア</div>
-
             <div class="gto-gauge-wrap">
                 <div class="gto-score" id="gto-score">—%</div>
                 <div class="gto-label">正解率（良い選択の割合）</div>
@@ -39,7 +37,6 @@
                     <div class="gauge-bar" id="gauge-bar" style="width:0%"></div>
                 </div>
             </div>
-
             <div class="stat-badges">
                 <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-vpip">—</div>
@@ -54,38 +51,29 @@
                     <div class="stat-badge-label">練習回数</div>
                 </div>
                 <div class="stat-badge">
-                    <div class="stat-badge-value" id="stat-ev-loss" style="font-size:1.1rem;color:var(--accent-red)">—
-                    </div>
+                    <div class="stat-badge-value" id="stat-ev-loss" style="font-size:1.1rem;color:var(--accent-red)">—</div>
                     <div class="stat-badge-label">平均損失 (bb)</div>
                 </div>
             </div>
         </section>
 
-        <!-- ストリート別評価分布 -->
+        <!-- ストリート別分布（無料） -->
         <section class="section-card">
             <div class="section-title">ストリート別 正解・ミスの割合</div>
             <div class="eval-legend">
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:var(--eval-optimal)"></div> ◎ 最適
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:var(--eval-good)"></div> ◯ 良好
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:var(--eval-marginal)"></div> △ 要改善
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:var(--eval-bad)"></div> × ミス
-                </div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-optimal)"></div> ◎ 最適</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-good)"></div> ◯ 良好</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-marginal)"></div> △ 要改善</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-bad)"></div> × ミス</div>
             </div>
             <div class="street-bars" id="street-bars">
                 <div class="loading">読み込み中...</div>
             </div>
         </section>
 
-        <!-- ポジション別正解率 -->
-        <section class="section-card">
-            <div class="section-title">ポジション別 正解率</div>
+        <!-- ポジション別正解率（有料） -->
+        <section class="section-card premium-section">
+            <div class="section-title">ポジション別 正解率 <span class="pro-badge">PRO</span></div>
             <table class="pos-table">
                 <thead>
                     <tr>
@@ -95,26 +83,56 @@
                     </tr>
                 </thead>
                 <tbody id="pos-table-body">
-                    <tr>
-                        <td colspan="3" class="no-data">データを読み込んでいます...</td>
-                    </tr>
+                    <tr><td colspan="3" class="no-data">読み込み中...</td></tr>
                 </tbody>
             </table>
-        </section>
-
-        <!-- リークファインダー -->
-        <section class="section-card">
-            <div class="section-title">よくあるミス Top5</div>
-            <div class="leak-list" id="leak-list">
-                <div class="loading">読み込み中...</div>
+            <div class="premium-lock" id="lock-position">
+                <div class="premium-lock-content">
+                    <div class="premium-lock-icon">🔒</div>
+                    <div class="premium-lock-text">プレミアムプランで解放</div>
+                </div>
             </div>
         </section>
 
-        <!-- AIコーチ履歴 -->
-        <section class="section-card">
-            <div class="section-title">AIコーチ フィードバック履歴</div>
+        <!-- よくあるミス（有料） -->
+        <section class="section-card premium-section">
+            <div class="section-title">よくあるミス Top5 <span class="pro-badge">PRO</span></div>
+            <div class="leak-list" id="leak-list">
+                <div class="loading">読み込み中...</div>
+            </div>
+            <div class="premium-lock" id="lock-leaks">
+                <div class="premium-lock-content">
+                    <div class="premium-lock-icon">🔒</div>
+                    <div class="premium-lock-text">プレミアムプランで解放</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AIコーチ履歴（有料） -->
+        <section class="section-card premium-section">
+            <div class="section-title">AIコーチ フィードバック履歴 <span class="pro-badge">PRO</span></div>
             <div class="ai-history-list" id="ai-history-list">
                 <div class="loading">読み込み中...</div>
+            </div>
+            <div class="premium-lock" id="lock-ai-history">
+                <div class="premium-lock-content">
+                    <div class="premium-lock-icon">🔒</div>
+                    <div class="premium-lock-text">プレミアムプランで解放</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ハンド履歴（有料） -->
+        <section class="section-card premium-section">
+            <div class="section-title">ハンド履歴 <span class="pro-badge">PRO</span></div>
+            <div class="hand-history-list" id="hand-history-list">
+                <div class="loading">読み込み中...</div>
+            </div>
+            <div class="premium-lock" id="lock-hand-history">
+                <div class="premium-lock-content">
+                    <div class="premium-lock-icon">🔒</div>
+                    <div class="premium-lock-text">プレミアムプランで解放</div>
+                </div>
             </div>
         </section>
 

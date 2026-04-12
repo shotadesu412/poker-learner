@@ -60,11 +60,20 @@ def setup_db():
             ai_feedback   TEXT    NOT NULL
         )
     """)
+    # サブスクリプションテーブル
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            user_id        TEXT PRIMARY KEY,
+            is_premium     INTEGER DEFAULT 0,
+            purchase_token TEXT DEFAULT '',
+            activated_at   TEXT DEFAULT ''
+        )
+    """)
     # 既存テーブルにuser_id列がない場合のマイグレーション
     try:
         conn.execute("ALTER TABLE actions ADD COLUMN user_id TEXT DEFAULT ''")
     except Exception:
-        pass  # 既に存在する場合は無視
+        pass
     try:
         conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT DEFAULT ''")
     except Exception:
@@ -393,6 +402,86 @@ def get_saved_hands(user_id: str) -> list:
         
     conn.close()
     return saved
+
+
+# ==============================
+# サブスクリプション管理
+# ==============================
+
+def get_subscription_status(user_id: str) -> bool:
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT is_premium FROM subscriptions WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+    return bool(row and row["is_premium"])
+
+
+def activate_premium(user_id: str, purchase_token: str = "") -> None:
+    conn = _get_conn()
+    conn.execute("""
+        INSERT INTO subscriptions (user_id, is_premium, purchase_token, activated_at)
+        VALUES (?, 1, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            is_premium = 1,
+            purchase_token = excluded.purchase_token,
+            activated_at = excluded.activated_at
+    """, (user_id, purchase_token, datetime.now(timezone.utc).isoformat()))
+    conn.commit()
+    conn.close()
+
+
+def deactivate_premium(user_id: str) -> None:
+    conn = _get_conn()
+    conn.execute(
+        "UPDATE subscriptions SET is_premium = 0 WHERE user_id = ?", (user_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+# ==============================
+# ハンド履歴
+# ==============================
+
+def get_hand_history(user_id: str, limit: int = 30) -> list:
+    conn = _get_conn()
+    sessions = conn.execute("""
+        SELECT session_id, started_at, hero_pos, hero_hand, result
+        FROM sessions
+        WHERE user_id = ?
+        ORDER BY started_at DESC
+        LIMIT ?
+    """, (user_id, limit)).fetchall()
+
+    result = []
+    for s in sessions:
+        actions = conn.execute("""
+            SELECT street, actor, action, amount, evaluation
+            FROM actions
+            WHERE session_id = ? AND actor = 'HERO'
+            ORDER BY id ASC
+        """, (s["session_id"],)).fetchall()
+
+        result.append({
+            "session_id": s["session_id"],
+            "date": s["started_at"],
+            "position": s["hero_pos"],
+            "hole_cards": s["hero_hand"],
+            "result": s["result"],
+            "actions": [
+                {
+                    "street": a["street"],
+                    "action": a["action"],
+                    "amount": a["amount"],
+                    "evaluation": a["evaluation"],
+                }
+                for a in actions
+            ],
+        })
+
+    conn.close()
+    return result
 
 def _parse_hand_to_combo(hand_str: str) -> str:
     if not hand_str or "," not in hand_str:

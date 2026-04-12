@@ -18,6 +18,20 @@ if (!currentUserId) {
     localStorage.setItem("poker_user_id", currentUserId);
 }
 
+// サブスクリプション状態
+let isPremium = false;
+let isSpotMode = false;
+
+async function loadSubscriptionStatus() {
+    try {
+        const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`);
+        const data = await res.json();
+        isPremium = data.is_premium || false;
+    } catch (e) {
+        isPremium = false;
+    }
+}
+
 // AI Coach Global States
 let coachMessages = [];
 
@@ -242,7 +256,8 @@ async function startHand() {
     if (el('coach-input')) el('coach-input').value = "";
 
     try {
-        const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}`);
+        const spotParam = isSpotMode ? "&spot=true" : "";
+        const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`);
         currentState = await res.json();
         updateUI();
 
@@ -764,6 +779,8 @@ function handleCoachInputKeyPress(event) {
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
+    // サブスク状態を先に取得
+    await loadSubscriptionStatus();
     // プリフロップ標準レンジをキャッシュ
     fetchPreflopRanges();
     // 履歴をデフォルトで手前に
@@ -1019,6 +1036,7 @@ function shouldShowCoachAd() {
 }
 
 function showAdModal() {
+    if (isPremium) return; // プレミアムユーザーは広告スキップ
     const modal = el('ad-modal');
     if (!modal) return;
 
@@ -1057,4 +1075,22 @@ function closeAdModal() {
         clearInterval(adTimerInterval);
         adTimerInterval = null;
     }
+}
+
+// ==============================
+// スポット練習モード
+// ==============================
+function toggleSpotMode() {
+    if (!isPremium) {
+        alert('スポット練習はプレミアムプランの機能です。');
+        return;
+    }
+    isSpotMode = !isSpotMode;
+    const btn = el('btn-spot-mode');
+    if (btn) {
+        btn.classList.toggle('spot-active', isSpotMode);
+        btn.textContent = isSpotMode ? 'スポット練習 ON' : 'スポット練習';
+    }
+    // モードを切り替えたら即座に新しいハンドを開始
+    startHand();
 }

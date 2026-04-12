@@ -1242,3 +1242,14 @@ body {
         gap: 15px;
     }
 }
+
+/* スポット練習ボタン */
+.btn-spot {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid #8b5cf6;
+    color: #8b5cf6;
+}
+.btn-spot.spot-active {
+    background: #8b5cf6;
+    color: #fff;
+}

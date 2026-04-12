@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Poker Evaluator</title>
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 
@@ -111,6 +112,8 @@
         <button class="action-btn btn-primary full-width" onclick="startHand()">次のハンドへ (Next Hand)</button>
         <button class="action-btn btn-secondary full-width" id="btn-ai-coach" onclick="requestCoachExplanation()"
             style="margin-top: 10px;"> AIコーチに相談する</button>
+        <button class="action-btn btn-spot full-width" id="btn-spot-mode" onclick="toggleSpotMode()"
+            style="margin-top: 8px;">🎯 スポット練習</button>
     </div>
 
     <!-- AI Coach Chat Area -->
