@@ -307,7 +307,7 @@ async function takeAction(actionType, amount = 0) {
         // Show evaluation animation
         const actionText = amount > 0 ? `${actionType} ${amount.toFixed(1)}bb` : actionType;
         const actionStreet = currentState ? currentState.street : "";
-        showEvaluation(data.evaluation || "", actionText);
+        showEvaluation(data.evaluation || "", actionText, actionStreet);
 
         // Wait for the popup animation to vanish then show reason UI
         setTimeout(() => {
@@ -542,7 +542,7 @@ function showReason(symbol, text) {
 }
 
 // Evaluation UI Feedback
-function showEvaluation(evalSymbol, actionName) {
+function showEvaluation(evalSymbol, actionName, street) {
     const popup = el('eval-popup');
     popup.innerText = evalSymbol;
 
@@ -560,7 +560,6 @@ function showEvaluation(evalSymbol, actionName) {
 
     setTimeout(() => {
         popup.classList.remove('show');
-        const street = currentState ? currentState.street : "";
         addEvaluationToHistory(evalSymbol, actionName, colorClass, "YOU", street);
     }, 800 * speedMult);
 }
@@ -813,6 +812,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // プリフロップ標準レンジのキャッシュ
 let cachedPreflopRanges = null;
+let standaloneRangePos = 'BTN'; // スタンドアロン（ゲーム外）プリフロップモード用ポジション
 
 async function fetchPreflopRanges() {
     if (cachedPreflopRanges) return;
@@ -833,7 +833,38 @@ function openRangeModal(player) {
     renderRangeGrid();
     const modal = el('range-modal');
     modal.classList.remove('hidden');
-    modal.classList.add('active');  // modal-overlay の display:none を解除
+    modal.classList.add('active');
+}
+
+function openPreflopRangeModal() {
+    rangeModalMode = 'preflop';
+    ['btn-range-hero', 'btn-range-cpu', 'btn-range-compare', 'btn-range-preflop'].forEach(id => {
+        const btn = el(id);
+        if (btn) btn.classList.remove('active');
+    });
+    if (el('btn-range-preflop')) el('btn-range-preflop').classList.add('active');
+    updateStandalonePosSelector();
+    renderRangeGrid();
+    const modal = el('range-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
+}
+
+function setStandalonePos(pos) {
+    standaloneRangePos = pos;
+    document.querySelectorAll('.standalone-pos-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.standalone-pos-btn[data-pos="${pos}"]`);
+    if (btn) btn.classList.add('active');
+    renderRangeGrid();
+}
+
+function updateStandalonePosSelector() {
+    const sel = el('standalone-pos-selector');
+    if (!sel) return;
+    sel.style.display = (!currentState && rangeModalMode === 'preflop') ? 'flex' : 'none';
+    document.querySelectorAll('.standalone-pos-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.pos === standaloneRangePos);
+    });
 }
 
 function setRangeMode(mode) {
@@ -845,16 +876,23 @@ function setRangeMode(mode) {
     });
     const modeMap = { hero: 'btn-range-hero', cpu: 'btn-range-cpu', compare: 'btn-range-compare', preflop: 'btn-range-preflop' };
     if (el(modeMap[mode])) el(modeMap[mode]).classList.add('active');
+    const sel = el('standalone-pos-selector');
+    if (sel) sel.style.display = (!currentState && mode === 'preflop') ? 'flex' : 'none';
     renderRangeGrid();
 }
 
 function renderRangeGrid() {
-    if (!currentState) return;
+    // スタンドアロン（ゲーム外）プリフロップモードを許可
+    if (!currentState && rangeModalMode !== 'preflop') return;
 
-    const heroRange = currentState.heroRangeRaw || {};
-    const cpuRange = currentState.cpuRangeRaw || {};
-    const heroPos = currentState.heroPos || '';
-    const cpuPos = currentState.cpuPos || '';
+    const heroRange = currentState ? (currentState.heroRangeRaw || {}) : {};
+    const cpuRange = currentState ? (currentState.cpuRangeRaw || {}) : {};
+    const heroPos = currentState ? (currentState.heroPos || '') : standaloneRangePos;
+    const cpuPos = currentState ? (currentState.cpuPos || '') : '';
+
+    // スタンドアロン時はポジション選択を表示
+    const sel = el('standalone-pos-selector');
+    if (sel) sel.style.display = (!currentState && rangeModalMode === 'preflop') ? 'flex' : 'none';
 
     // タイトル更新
     const titleMap = {

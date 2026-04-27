@@ -288,6 +288,7 @@ def take_action(req: ActionRequest):
             cpu_action, cpu_amount = eng.cpu_decide(cpu_eq, action, cpu_facing)
 
             if cpu_action == "FOLD":
+                 eng.generate_realized_cpu_hand()   # レンジを0にする前に生成する
                  eng.update_range_dict("CPU", "FOLD", 0)
                  eng.record_action("CPU", "FOLD", 0, cpu_eq, eng.pot_size)
                  eng.hand_finished = True

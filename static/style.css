@@ -1035,6 +1035,22 @@ body {
     border-color: var(--accent-blue);
 }
 
+/* Standalone position selector buttons */
+.standalone-pos-btn {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    background: #1a1a2e;
+    color: #aaa;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.standalone-pos-btn.active {
+    background: var(--accent-green, #10b981);
+    color: white;
+    border-color: var(--accent-green, #10b981);
+}
+
 /* Range Legend */
 .range-legend {
     display: flex;

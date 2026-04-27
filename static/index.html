@@ -70,6 +70,10 @@
     <a href="/"
         style="position:absolute;top:12px;left:12px;background:rgba(59,130,246,.15);border:1px solid #3b82f6;color:#3b82f6;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;text-decoration:none;z-index:50;">
         ホーム</a>
+    <!-- レンジ表ボタン（常時表示） -->
+    <button onclick="openPreflopRangeModal()"
+        style="position:absolute;top:12px;right:12px;background:rgba(16,185,129,.15);border:1px solid #10b981;color:#10b981;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;cursor:pointer;z-index:50;">
+        レンジ表</button>
 
     <!-- Central Evaluation Popup -->
     <div id="eval-popup" class="eval-popup hidden">◎</div>
@@ -159,6 +163,15 @@
                 <button id="btn-range-cpu" class="range-tab-btn" onclick="setRangeMode('cpu')">CPU</button>
                 <button id="btn-range-compare" class="range-tab-btn" onclick="setRangeMode('compare')">比較</button>
                 <button id="btn-range-preflop" class="range-tab-btn" onclick="setRangeMode('preflop')">推奨レンジ</button>
+            </div>
+            <!-- スタンドアロン時のポジション選択（ゲーム外で推奨レンジを見るとき） -->
+            <div id="standalone-pos-selector" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 0; justify-content:center;">
+                <button class="standalone-pos-btn" data-pos="LJ" onclick="setStandalonePos('LJ')">LJ(UTG)</button>
+                <button class="standalone-pos-btn" data-pos="HJ" onclick="setStandalonePos('HJ')">HJ</button>
+                <button class="standalone-pos-btn" data-pos="CO" onclick="setStandalonePos('CO')">CO</button>
+                <button class="standalone-pos-btn active" data-pos="BTN" onclick="setStandalonePos('BTN')">BTN</button>
+                <button class="standalone-pos-btn" data-pos="SB" onclick="setStandalonePos('SB')">SB</button>
+                <button class="standalone-pos-btn" data-pos="BB" onclick="setStandalonePos('BB')">BB</button>
             </div>
             <!-- 凡例 -->
             <div id="range-legend-normal" class="range-legend">

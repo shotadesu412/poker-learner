@@ -321,22 +321,29 @@ class Evaluator:
         
         result_eval = EVAL_BAD
         result_reason = preflop_prefix
-        
-        if ev_call_val > 0 and realized_equity < e_req * Evaluator.CALL_IMPLIED_ODDS_THRESHOLD:
-            result_eval = EVAL_GOOD
-            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、後のラウンドで大きく稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
-        elif realized_equity >= e_req * Evaluator.CALL_OPTIMAL_THRESHOLD:
+
+        # equity が高い順に判定する（低equity + implied odds が高equity より良い評価になる逆転を防ぐ）
+        if realized_equity >= e_req * Evaluator.CALL_OPTIMAL_THRESHOLD:
             result_eval = EVAL_OPTIMAL
             result_reason += f"リスクに対して勝率({realized_equity*100:.1f}%)が十分に高く、極めて優位なコールです。"
         elif realized_equity >= e_req:
             result_eval = EVAL_GOOD
             result_reason += f"ベット額に対して見合う勝率({realized_equity*100:.1f}%)があり、妥当な防衛（コール）です。"
         elif realized_equity >= e_req * Evaluator.CALL_MARGINAL_THRESHOLD:
+            if ev_call_val > 0:
+                # オッズにわずかに届かないが、インプライドオッズでプラスEV
+                result_eval = EVAL_GOOD
+                result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにわずかに届いていませんが、後のラウンドで稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
+            else:
+                result_eval = EVAL_MARGINAL
+                result_reason += f"勝率({realized_equity*100:.1f}%)がオッズに届いていません。相手のブラフをキャッチするなどの明確な理由がない限り、頻繁なコールは控えましょう。"
+        elif ev_call_val > 0:
+            # 大きくオッズに届かないが、強いインプライドオッズ（強いドロー等）でプラスEV
             result_eval = EVAL_MARGINAL
-            result_reason += f"勝率({realized_equity*100:.1f}%)がオッズにわずかに届いていません。相手のブラフをキャッチするなどの明確な理由がない限り、頻繁なコールは控えましょう。"
+            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、後のラウンドで大きく稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
         else:
             result_eval = EVAL_BAD
-            result_reason += f"【見送り推奨】相手のベット額に対してハンドの強さが見合っていない可能性があります。フォールドも選択肢として検討してみましょう。"
+            result_reason += f"【見送り推奨】相手のベット額に対してハンドの強さが見合っていません。フォールドも選択肢として検討してみましょう。"
             
         return {
             "ev": ev_call_val,
@@ -527,38 +534,50 @@ class Evaluator:
 
     @staticmethod
     def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, street=None):
-        if not has_initiative:
-            if not is_hero_ip:
-                # OOP
-                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "ポジション不利（OOP）でアグレッサーでもない場合、まずチェックして相手のアクションを見てからディフェンスするのが基本です。"}
-            else:
-                # IP
-                return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "相手が攻撃権を放棄したため、ポットコントロールのためにチェックバックして次のカードを無料で見にいくのは有効な選択です。"}
+        if not has_initiative and not is_hero_ip:
+            # OOP で先にチェック: 標準的なパッシブプレイ（ドンクベットは上級者向け）
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_GOOD, "reason": "ポジション不利（OOP）でアグレッサーでもない場合、まずチェックして相手のアクションを見てからディフェンスするのが基本です。"}
+        # IP かつ no-initiative（相手がチェック → ヒーローにベット/チェックバックの選択権）は
+        # has_initiative=True と同様に EV 評価へ。強いハンドでのチェックバックを正しく罰する。
             
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
         realized_equity = equity * eqr
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
-        # Compare vs half-pot bet
+        # 強いハンドは EV 比較に依らず直接評価（バリューミスは常に BAD）
+        if realized_equity >= 0.65:
+            return {
+                "ev": ev_checking,
+                "req_eq": 0.0,
+                "realized_eq": realized_equity,
+                "evaluation": EVAL_BAD,
+                "reason": "【バリューの取り逃し】非常に強いハンドです。チェックすると相手に無料でカードを見せてしまいます。バリューベットして相手からチップを引き出しましょう。"
+            }
+
+        # Compare vs half-pot bet using realistic fold equity.
+        # alpha (= bet/(pot+bet) = 1/3 for half-pot) は理論的最低折たたみ率であり、
+        # これを fold_equity に使うと ev_check/ev_bet の比が equity に関わらず
+        # 常に約 0.833 の定数になってしまい、閾値の 0.8/0.5 に全く引っかからない。
+        # 実際の折たたみ率 55% を使うことで equity に応じた正しい差別化が可能になる。
         half_pot = pot_size / 2.0
-        fold_equity = half_pot / (pot_size + half_pot)
+        fold_equity = 0.55
         ev_betting_half_pot = Evaluator.ev_bet(realized_equity, pot_size, half_pot, fold_equity)
-        
+
         if ev_checking >= ev_betting_half_pot:
             result_eval = EVAL_OPTIMAL
             if range_adv < 0.45:
                 result_reason = "【推奨】相手のレンジが強い可能性が高いため、チェックでポットを抑えるのが無難な選択です。"
             else:
-                result_reason = f"【推奨】チェックして様子を見るのが良い選択です。無駄なリスクを避けられます。"
-        elif ev_checking >= ev_betting_half_pot * 0.8:
+                result_reason = "【推奨】チェックして様子を見るのが良い選択です。無駄なリスクを避けられます。"
+        elif ev_checking >= ev_betting_half_pot * 0.75:
             result_eval = EVAL_GOOD
-            result_reason = f"【妥当】チェックしてポットを小さく保つ（ポットコントロール）のは妥当な選択です。"
-        elif ev_checking >= ev_betting_half_pot * 0.5:
+            result_reason = "【妥当】チェックしてポットを小さく保つ（ポットコントロール）のは妥当な選択です。"
+        elif ev_checking >= ev_betting_half_pot * 0.55:
             result_eval = EVAL_MARGINAL
-            result_reason = f"【やや消極的】ベットしてプレッシャーをかけるべき状況かもしれませんが、チェックで様子を見るのも手です。"
+            result_reason = "【やや消極的】ベットしてプレッシャーをかけるべき状況かもしれませんが、チェックで様子を見るのも手です。"
         else:
             result_eval = EVAL_BAD
-            result_reason = f"【バリューの取り逃し】あなたのハンドは非常に強い状態です。ここでチェックしてしまうと、本来勝てたはずのチップを取り逃してしまいます。強い役を持っている時は自分からベットして、相手からチップを引き出しましょう。"
+            result_reason = "【ブラフの機会損失】ハンドは弱いですが、ベットすることで相手を降ろせる可能性（フォールドエクイティ）があります。この状況でチェックするとフォールドエクイティを無駄にしています。"
 
         return {
             "ev": ev_checking,
@@ -642,6 +661,7 @@ class PokerEngine:
         self.aggressor = None
         self.action_history = []
         self.cpu_last_action_intent = None
+        self.cpu_effective_equity = None  # cpu_decide()でサンプリングした実効エクイティ（ショーダウン手選択に使用）
 
         # ハンドカウンター（5回に1回レンジ内からハンドを選ぶ）
         self.hand_count = 0
@@ -677,6 +697,7 @@ class PokerEngine:
         self.aggressor = None
         self.action_history = []
         self.cpu_last_action_intent = None
+        self.cpu_effective_equity = None
 
         self.hand_count += 1
         self.hand_finished = False
@@ -724,7 +745,9 @@ class PokerEngine:
         """ポジションのGTOレンジから重み付きランダムでコンボを1つ選び (r1str, r2str, is_suited) を返す。失敗時None"""
         try:
             from ranges import position_ranges
-            pos_range = position_ranges.get(pos, {})
+            # PokerEngine の POSITIONS は "UTG" だが position_ranges のキーは "LJ"
+            pos_alias = {"UTG": "LJ"}.get(pos, pos)
+            pos_range = position_ranges.get(pos_alias, {})
             if not pos_range:
                 return None
             combos = list(pos_range.items())
@@ -758,7 +781,7 @@ class PokerEngine:
         self.cpu_position = positions[1]
 
         # スポット練習モード: 常にGTOレンジ内のハンドを配布
-        force_range = getattr(self, 'spot_mode', False) or (self.hand_count > 0 and self.hand_count % 5 == 0)
+        force_range = getattr(self, 'spot_mode', False) or (self.hand_count > 0 and self.hand_count % 4 == 0)
         if force_range:
             combo = self._pick_range_combo(self.hero_position)
             if combo:
@@ -976,41 +999,87 @@ class PokerEngine:
 
     def generate_realized_cpu_hand(self):
         """ ショーダウン用に、現在のCPUレンジ（cpu_range_dict）とデッドカードを考慮して、
-            確率に基づいた特定の物理的なハンド（Card int配列）を1つ確定させる。
+            cpu_effective_equity（その手で実際に意思決定した強さ）に近いハンドを選択する。
+            これにより「フォールドしたCPUは弱いハンドだった」が自然に再現される。
         """
-        dead_cards = [Card.int_to_str(c) for c in self.hero_hand] + [Card.int_to_str(c) for c in self.board]
-        valid_combos_weighted = []
+        dead_cards = set(Card.int_to_str(c) for c in self.hero_hand) | set(Card.int_to_str(c) for c in self.board)
+        valid_combos = []
         for combo_str, weight in self.cpu_range_dict.items():
-            if weight <= 0.0: continue
+            if weight <= 0.0:
+                continue
             parsed = ranges.parse_combo(combo_str)
             for specific_cards in parsed:
                 if not any(c in dead_cards for c in specific_cards):
-                    valid_combos_weighted.append((specific_cards, weight))
-        
-        if not valid_combos_weighted:
-            self.cpu_hand = []
-            return
-            
-        if self.cpu_last_action_intent == "BLUFF":
-            cutoff = len(valid_combos_weighted) // 2
-            if cutoff > 0:
-                valid_combos_weighted = valid_combos_weighted[cutoff:]
-            
-        import random
-        total_weight = sum(w for _, w in valid_combos_weighted)
-        
-        if total_weight <= 0:
-            chosen_str = random.choice(valid_combos_weighted)[0]
+                    valid_combos.append((specific_cards, weight))
+
+        if not valid_combos:
+            # フォールバック: ウェイトが全滅（FOLD更新後など）した場合、
+            # CPUポジションのオープンレンジから非デッドカードのコンボを平等に使う
+            from ranges import position_ranges
+            fallback_range = position_ranges.get(self.cpu_position, {})
+            for combo_str in fallback_range:
+                parsed = ranges.parse_combo(combo_str)
+                for specific_cards in parsed:
+                    if not any(c in dead_cards for c in specific_cards):
+                        valid_combos.append((specific_cards, 1.0))
+            if not valid_combos:
+                self.cpu_hand = []
+                return
+
+        target_eq = getattr(self, 'cpu_effective_equity', None)
+
+        if target_eq is not None and len(self.board) >= 3:
+            # 各コンボをtreysでスコアリングし、エクイティを正規化
+            scored = []
+            for specific_cards, weight in valid_combos:
+                try:
+                    hand_ints = [Card.new(c) for c in specific_cards]
+                    score = self.treys_evaluator.evaluate(self.board, hand_ints)
+                    scored.append((specific_cards, weight, score))
+                except Exception:
+                    scored.append((specific_cards, weight, 5000))
+
+            # treys: スコアが低いほど強い(1=ロイヤルフラッシュ, 7462=最弱)
+            # 正規化: 強いほど1.0に近い値になるよう反転
+            scores_only = [s for _, _, s in scored]
+            min_s, max_s = min(scores_only), max(scores_only)
+            score_range = max(1, max_s - min_s)
+
+            def to_norm_eq(treys_score):
+                return 1.0 - (treys_score - min_s) / score_range
+
+            # target_eqに最も近い上位20%のコンボを候補とし、その中でweight加重サンプリング
+            scored_by_dist = sorted(scored, key=lambda x: abs(to_norm_eq(x[2]) - target_eq))
+            top_n = max(1, len(scored_by_dist) // 5)
+            candidates = scored_by_dist[:top_n]
+
+            total_w = sum(w for _, w, _ in candidates)
+            if total_w <= 0:
+                chosen_str = candidates[0][0]
+            else:
+                r = random.uniform(0, total_w)
+                cum = 0.0
+                chosen_str = candidates[0][0]
+                for combo, w, _ in candidates:
+                    cum += w
+                    if r <= cum:
+                        chosen_str = combo
+                        break
         else:
-            r = random.uniform(0, total_weight)
-            cum = 0.0
-            chosen_str = valid_combos_weighted[-1][0]
-            for combo, weight in valid_combos_weighted:
-                cum += weight
-                if r <= cum:
-                    chosen_str = combo
-                    break
-                    
+            # ボードなし or target_eq未設定: weight加重ランダム選択
+            total_weight = sum(w for _, w in valid_combos)
+            if total_weight <= 0:
+                chosen_str = random.choice(valid_combos)[0]
+            else:
+                r = random.uniform(0, total_weight)
+                cum = 0.0
+                chosen_str = valid_combos[-1][0]
+                for combo, w in valid_combos:
+                    cum += w
+                    if r <= cum:
+                        chosen_str = combo
+                        break
+
         self.cpu_hand = [Card.new(c) for c in chosen_str]
 
 
@@ -1026,10 +1095,20 @@ class PokerEngine:
         hero_range_adv = EquityCalculator.calc_range_advantage(self.hero_hand, self.board, self.hero_range_dict, self.cpu_range_dict, is_preflop=is_preflop, iterations=500)
         cpu_range_adv = 1.0 - hero_range_adv
 
-        # 疑似的な手札の強さを生成（レンジの強さ ± 10%のブレ）
-        # ±30%は水増しが大きすぎ、弱い手でもコールしてしまうため縮小
-        effective_equity = cpu_range_adv + random.uniform(-0.10, 0.10)
-        effective_equity = max(0.01, min(0.99, effective_equity))
+        # ボード対応ハンドシミュレーション:
+        # cpu_equity（MCで算出したレンジ平均エクイティ）を基準に、
+        # 今回CPUが保持しているハンドの強さを正規分布でサンプリングする。
+        # これにより「レンジ平均は高くても今回の手は弱い」というフォールドが自然に発生する。
+        # ストリートが進むほど分散を大きくし、リバーでは強弱の差が最大化する。
+        street_variance = {"PREFLOP": 0.08, "FLOP": 0.14, "TURN": 0.17, "RIVER": 0.20}.get(self.street, 0.14)
+        board_variance_bonus = 0.0
+        if self.board:
+            _tex = self.classify_board_texture(self.board)
+            board_variance_bonus = {"wet": 0.06, "monotone": 0.08, "paired": 0.05, "semi_wet": 0.03, "dry": 0.00}.get(_tex, 0.00)
+        effective_equity = random.gauss(cpu_equity, street_variance + board_variance_bonus)
+        effective_equity = max(0.05, min(0.95, effective_equity))
+        # ショーダウン手選択のために保存（最後のアクションの値が使われる）
+        self.cpu_effective_equity = effective_equity
         
         if opponent_action in ["BET", "RAISE"]:
             # CPU faces a bet
@@ -1083,8 +1162,8 @@ class PokerEngine:
                     mult = mult_table["large"] if random.random() < large_prob else mult_table["medium"]
                 else: # Bluff or min
                     mult = mult_table["small"]
-                # Postflop sizing strictly matches multi base
-                base_raise_amount = opponent_bet_size * mult
+                # Postflop sizing strictly matches multi base (minimum: 2x opponent bet)
+                base_raise_amount = max(opponent_bet_size * mult, opponent_bet_size * 2.0)
             
             # Mathematical MDF Bluff Generation vs Raising
             base_bluff_freq = self.calculate_theoretical_bluff_frequency(base_raise_amount, self.pot_size + opponent_bet_size)
@@ -1123,7 +1202,7 @@ class PokerEngine:
             if is_preflop:
                 # --- プリフロップ 3-Bet: RNG混合戦略 ---
                 # バリュー3-Bet (AA/KK/QQ/AKs等の強いハンド): 常時RAISE
-                if effective_equity >= e_req * 2.0:
+                if effective_equity >= e_req * 2.5:
                     self.cpu_last_action_intent = "VALUE"
                     return "RAISE", min(self.cpu_stack, base_raise_amount)
                 
@@ -1149,15 +1228,13 @@ class PokerEngine:
                     return "FOLD", 0
             else:
                 # ポストフロップ
-                if effective_equity >= e_req * 1.8 or (effective_equity < e_req * 0.5 and random.random() < bluff_threshold):
-                    # 強いバリューまたはブラフレイズ
+                if effective_equity >= e_req * 2.2 or (effective_equity < e_req * 0.65 and random.random() < bluff_threshold):
+                    # 強いバリューまたはブラフ/セミブラフレイズ
                     self.cpu_last_action_intent = "VALUE" if effective_equity >= e_req * 1.8 else "BLUFF"
-                    return "RAISE", min(self.cpu_stack, base_raise_amount)
-                elif effective_equity >= e_req * 1.4:
-                    self.cpu_last_action_intent = "VALUE"
                     return "RAISE", min(self.cpu_stack, base_raise_amount)
                 elif effective_equity >= e_req:
                     # オッズに合う: 確実にコール
+                    self.cpu_last_action_intent = "CALL"
                     return "CALL", opponent_bet_size
                 elif effective_equity >= e_req * 0.85:
                     # マージナルゾーン: MDF（最小防衛頻度）ベースで確率的にコール/フォールド
@@ -1165,11 +1242,14 @@ class PokerEngine:
                     mdf = self.evaluator.calculate_mdf(opponent_bet_size, self.pot_size)
                     # ベットが大きいほどMDFが低く（相手に多くフォールドを許す）なるため自然な挙動
                     if random.random() < mdf * 0.6:  # MDFの60%をコール閾値として使用
+                        self.cpu_last_action_intent = "CALL"
                         return "CALL", opponent_bet_size
                     else:
+                        self.cpu_last_action_intent = "FOLD"
                         return "FOLD", 0
                 else:
                     # エクイティが大幅に不足: フォールド
+                    self.cpu_last_action_intent = "FOLD"
                     return "FOLD", 0
         else:
             # CPU goes first or faces a check
@@ -1259,36 +1339,44 @@ class PokerEngine:
                 
             bluff_freq = max(0.0, min(1.0, bluff_freq))
             
-            # value/bluffの閾値をストリート別に設定
-            # リバー: ドロー完成なし→ブラフはGTO比率(~28%)のみ、バリューは高閾値
-            # ターン: 1枚残り→セミブラフ可だが閾値を引き上げ
-            # フロップ: Cbet用に低め
+            # value / bluff / semibluff の閾値をストリート別に設定
+            # FLOP : Cbetレンジ広め。バリュー/ブラフゾーンをほぼ接続しセミブラフも全面活用
+            # TURN : ドロー残り1枚。セミブラフを適度に許容。ミドルゾーンに混合戦略
+            # RIVER: ドロー完成なし。トップペア+でバリュー、純ブラフのみ。ミドルはチェック
             if self.street == "RIVER":
-                value_eq_threshold = 0.65
-                bluff_eq_threshold = 0.28  # リバーはGTO純ブラフ頻度のみ
+                value_eq_threshold = 0.54   # トップペア相当からバリューベット
+                bluff_eq_threshold = 0.32   # 純ブラフのみ（バックドア程度）
+                semibluff_freq_mult = 0.0   # リバーにセミブラフなし
             elif self.street == "TURN":
-                value_eq_threshold = 0.62
-                bluff_eq_threshold = 0.38  # ターン: セミブラフあるが締め気味
+                value_eq_threshold = 0.52   # ミドルペア+でバリューベット
+                bluff_eq_threshold = 0.42   # セミブラフ上限（強いドロー）
+                semibluff_freq_mult = 0.6   # セミブラフを適度に許容
             else:  # FLOP
-                value_eq_threshold = 0.58  # フロップCbetは広いレンジで打てる
-                bluff_eq_threshold = 0.45  # セミブラフ（ドロー: 30-45%）を捕捉
-            
-            is_value_bet = ev_bet > ev_pass and effective_equity > value_eq_threshold
+                value_eq_threshold = 0.50   # Cbetレンジを広く設定
+                bluff_eq_threshold = 0.48   # バリュー/ブラフゾーンをほぼ接続
+                semibluff_freq_mult = 1.0   # フロップはセミブラフを積極活用
+
+            is_value_bet = ev_bet > ev_pass and effective_equity >= value_eq_threshold
             is_bluff_bet = effective_equity < bluff_eq_threshold and random.random() < bluff_freq
-            
+            # セミブラフ: バリューとブラフの間のゾーン（ドロー・中程度のペア等）
+            is_semibluff_bet = (
+                bluff_eq_threshold <= effective_equity < value_eq_threshold
+                and random.random() < (bluff_freq * semibluff_freq_mult)
+            )
+
             # Additional logic for Preflop Limp (action_if_pass == "CALL")
             if action_if_pass == "CALL":
                  call_cost = self.current_bet - self.cpu_invested
                  ev_call = self.evaluator.ev_call(effective_equity, self.pot_size, call_cost)
-                 if is_value_bet or is_bluff_bet:
+                 if is_value_bet or is_bluff_bet or is_semibluff_bet:
                      self.cpu_last_action_intent = "VALUE" if is_value_bet else "BLUFF"
                      return action_if_bet, ideal_bet_size
                  elif ev_call > ev_pass:
                      return "CALL", call_cost
                  else:
                      return "FOLD", 0
-                     
-            if is_value_bet or is_bluff_bet:
+
+            if is_value_bet or is_bluff_bet or is_semibluff_bet:
                 self.cpu_last_action_intent = "VALUE" if is_value_bet else "BLUFF"
                 return action_if_bet, ideal_bet_size
             else:

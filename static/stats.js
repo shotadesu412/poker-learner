@@ -46,18 +46,16 @@ async function loadAll(period) {
         renderOverview(overview);
         renderStreets(streets);
 
-        if (isPremium) {
-            const [position, leaks, aiHistory, handHistory] = await Promise.all([
-                fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
-                fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
-                fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
-                fetch(`/api/stats/hand_history?user_id=${userId}`).then(r => r.json()),
-            ]);
-            renderPosition(position);
-            renderLeaks(leaks);
-            renderAiHistory(aiHistory);
-            renderHandHistory(handHistory);
-        }
+        const [position, leaks, aiHistory, handHistory] = await Promise.all([
+            fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/hand_history?user_id=${userId}`).then(r => r.json()),
+        ]);
+        renderPosition(position);
+        renderLeaks(leaks);
+        renderAiHistory(aiHistory);
+        renderHandHistory(handHistory);
     } catch (e) {
         console.error("Stats API error:", e);
     }
