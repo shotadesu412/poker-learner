@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function applyPremiumGates() {
-    const lockIds = ["lock-position", "lock-leaks", "lock-ai-history", "lock-hand-history"];
+    const lockIds = ["lock-position", "lock-leaks", "lock-hand-history"];
     lockIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = isPremium ? "none" : "flex";
@@ -46,16 +46,18 @@ async function loadAll(period) {
         renderOverview(overview);
         renderStreets(streets);
 
-        const [position, leaks, aiHistory, handHistory] = await Promise.all([
+        const [position, leaks, aiHistory, handHistory, personalRange] = await Promise.all([
             fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
             fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
             fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
             fetch(`/api/stats/hand_history?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/personal_range?period=${period}&user_id=${userId}`).then(r => r.json()),
         ]);
         renderPosition(position);
         renderLeaks(leaks);
         renderAiHistory(aiHistory);
         renderHandHistory(handHistory);
+        renderPersonalRange(personalRange);
     } catch (e) {
         console.error("Stats API error:", e);
     }
@@ -207,6 +209,63 @@ function renderHandHistory(hands) {
             </div>
         </div>`;
     }).join("");
+}
+
+// ==============================
+// パーソナルレンジグリッド
+// ==============================
+function renderPersonalRange(data) {
+    const container = document.getElementById("personal-range-grid");
+    if (!container) return;
+
+    const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+    const hasData = data && Object.keys(data).length > 0;
+
+    if (!hasData) {
+        container.innerHTML = `<div class="no-data" style="grid-column:span 13;padding:16px;text-align:center;font-size:0.8rem;color:#666;">プリフロップデータがまだありません。ゲームをプレイすると表示されます。</div>`;
+        return;
+    }
+
+    container.innerHTML = "";
+    for (let r1 = 0; r1 < 13; r1++) {
+        for (let r2 = 0; r2 < 13; r2++) {
+            let combo;
+            if (r1 === r2) {
+                combo = ranks[r1] + ranks[r2];
+            } else if (r1 < r2) {
+                combo = ranks[r1] + ranks[r2] + "s";
+            } else {
+                combo = ranks[r2] + ranks[r1] + "o";
+            }
+
+            const cell = document.createElement("div");
+            cell.className = "pr-cell";
+            cell.innerText = combo;
+
+            const d = data[combo];
+            if (d) {
+                const total = (d.OPEN || 0) + (d["3BET"] || 0) + (d.CALL || 0) + (d.FOLD || 0);
+                const played = total - (d.FOLD || 0);
+                const playRate = total > 0 ? played / total : 0;
+                const opacity = Math.max(0.3, Math.min(1.0, 0.3 + playRate * 0.7));
+
+                let bg = "#374151"; // fold / no play
+                if ((d["3BET"] || 0) > 0 && (d["3BET"] || 0) >= (d.OPEN || 0)) {
+                    bg = `rgba(139,92,246,${opacity})`; // 3bet = purple
+                } else if ((d.OPEN || 0) > 0) {
+                    bg = `rgba(16,185,129,${opacity})`; // open = green
+                } else if ((d.CALL || 0) > 0) {
+                    bg = `rgba(59,130,246,${opacity})`; // call = blue
+                }
+                cell.style.background = bg;
+
+                const tip = `${combo}: オープン${d.OPEN||0} 3Bet${d["3BET"]||0} コール${d.CALL||0} フォールド${d.FOLD||0}`;
+                cell.innerHTML += `<span class="pr-tooltip">${tip}</span>`;
+            }
+
+            container.appendChild(cell);
+        }
+    }
 }
 
 function toggleCollapse(bodyId, toggleId) {

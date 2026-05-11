@@ -454,7 +454,10 @@ body {
 }
 .premium-lock {
     position: absolute;
-    inset: 0;
+    top: 48px; /* section-title の高さ分だけ下げてタイトルを見せる */
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(26, 30, 27, 0.88);
     border-radius: 12px;
     display: flex;
@@ -485,6 +488,64 @@ body {
     font-weight: bold;
     vertical-align: middle;
     margin-left: 4px;
+}
+
+/* --- パーソナルレンジグリッド --- */
+.pr-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+.pr-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+.personal-range-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 2px;
+    width: 100%;
+}
+.pr-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.45rem;
+    font-weight: bold;
+    color: rgba(255,255,255,0.85);
+    cursor: default;
+    position: relative;
+    background: #1e2420;
+    border: 1px solid #2a332e;
+    overflow: hidden;
+}
+.pr-cell:hover .pr-tooltip {
+    display: block;
+}
+.pr-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 10;
+    color: #eee;
+    pointer-events: none;
 }
 
 /* --- ハンド履歴 --- */
