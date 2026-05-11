@@ -3,3 +3,8 @@ __pycache__/
 .env
 .venv/
 venv/
+
+# iOS
+ios/PokerLearner.xcodeproj/xcuserdata/
+ios/**/*.xcuserstate
+ios/DerivedData/
