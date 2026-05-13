@@ -1,6 +1,6 @@
 {
-  "name": "ポーカー学習アプリ",
-  "short_name": "PokerLearner",
+  "name": "ポーカーラッシュ",
+  "short_name": "ポーカーラッシュ",
   "description": "ポーカーの意思決定を鍛えるトレーニングアプリ",
   "start_url": "/play",
   "display": "standalone",
