@@ -5,16 +5,15 @@ PROJECT=~/Desktop/poker-learner/ios/PokerLearner.xcodeproj
 ARCHIVE=~/Desktop/PokerLearner.xcarchive
 EXPORT=~/Desktop/PokerLearner_export
 
-echo "=== Step 1: Archive ==="
+echo "=== Step 1: Archive (Automatic signing) ==="
 xcodebuild archive \
   -project "$PROJECT" \
   -scheme PokerLearner \
   -configuration Release \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE" \
-  CODE_SIGN_STYLE=Manual \
-  CODE_SIGN_IDENTITY="Apple Distribution" \
-  PROVISIONING_PROFILE_SPECIFIER=PokerLearner_AppStore \
+  -allowProvisioningUpdates \
+  CODE_SIGN_STYLE=Automatic \
   DEVELOPMENT_TEAM=7Z2ZRB6V2J
 
 echo "=== Step 2: ExportOptions.plist ==="
@@ -28,14 +27,7 @@ cat > ~/Desktop/ExportOptions.plist << 'EOF'
     <key>teamID</key>
     <string>7Z2ZRB6V2J</string>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>signingCertificate</key>
-    <string>Apple Distribution</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.shota.pokerlearner</key>
-        <string>PokerLearner_AppStore</string>
-    </dict>
+    <string>automatic</string>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
@@ -48,7 +40,8 @@ echo "=== Step 3: Export IPA ==="
 xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportPath "$EXPORT" \
-  -exportOptionsPlist ~/Desktop/ExportOptions.plist
+  -exportOptionsPlist ~/Desktop/ExportOptions.plist \
+  -allowProvisioningUpdates
 
-echo "=== Done! IPA is at $EXPORT ==="
+echo "=== Done! ==="
 ls "$EXPORT"
