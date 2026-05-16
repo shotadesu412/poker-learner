@@ -10,6 +10,7 @@ xcodebuild archive \
   -project "$PROJECT" \
   -scheme PokerLearner \
   -configuration Release \
+  -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="Apple Distribution" \
