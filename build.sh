@@ -27,7 +27,14 @@ cat > ~/Desktop/ExportOptions.plist << 'EOF'
     <key>teamID</key>
     <string>7Z2ZRB6V2J</string>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>iPhone Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.shota.pokerlearner</key>
+        <string>PokerLearner_iOS_AppStore</string>
+    </dict>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
