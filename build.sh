@@ -29,7 +29,7 @@ cat > ~/Desktop/ExportOptions.plist << 'EOF'
     <key>signingStyle</key>
     <string>manual</string>
     <key>signingCertificate</key>
-    <string>iPhone Distribution</string>
+    <string>iPhone Distribution: shota fukumoto (7Z2ZRB6V2J)</string>
     <key>provisioningProfiles</key>
     <dict>
         <key>com.shota.pokerlearner</key>
