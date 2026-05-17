@@ -29,11 +29,11 @@ cat > ~/Desktop/ExportOptions.plist << 'EOF'
     <key>signingStyle</key>
     <string>manual</string>
     <key>signingCertificate</key>
-    <string>iPhone Distribution: shota fukumoto (7Z2ZRB6V2J)</string>
+    <string>Apple Distribution: shota fukumoto (7Z2ZRB6V2J)</string>
     <key>provisioningProfiles</key>
     <dict>
         <key>com.shota.pokerlearner</key>
-        <string>PokerLearner_iOS_AppStore</string>
+        <string>PokerLearner_AppStore_v2</string>
     </dict>
     <key>uploadBitcode</key>
     <false/>
