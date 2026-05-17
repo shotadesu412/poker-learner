@@ -10,7 +10,7 @@ xcodebuild archive \
   -project "$PROJECT" \
   -scheme PokerLearner \
   -configuration Release \
-  -destination "generic/platform=iOS" \
+  -sdk iphoneos \
   -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
   CODE_SIGN_STYLE=Automatic \
