@@ -14,6 +14,7 @@ xcodebuild archive \
   -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
   CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Distribution" \
   DEVELOPMENT_TEAM=7Z2ZRB6V2J
 
 echo "=== Step 2: ExportOptions.plist ==="
