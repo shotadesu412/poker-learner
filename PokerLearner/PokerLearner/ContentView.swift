@@ -162,12 +162,14 @@ private struct SplashView: View {
             Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
             VStack(spacing: 32) {
                 VStack(spacing: 8) {
-                    Text("ポーカー")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-                    + Text("ラッシュ")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(Color(red: 0.23, green: 0.72, blue: 0.51))
+                    HStack(spacing: 0) {
+                        Text("ポーカー")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("ラッシュ")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(Color(red: 0.23, green: 0.72, blue: 0.51))
+                    }
                     Text("Poker Strategy Training")
                         .font(.system(size: 14))
                         .foregroundColor(Color.white.opacity(0.5))
