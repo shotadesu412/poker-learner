@@ -9,9 +9,11 @@ private let renderURL = URL(string: "https://tcgsimulator.onrender.com/static/in
 @MainActor
 final class WebViewModel: ObservableObject {
     @Published var isOffline = false
-    @Published var isLoaded = false
+    @Published var loadState: LoadState = .loading
     var webView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
+
+    enum LoadState { case loading, loaded, failed }
 
     func start() {
         Task {
@@ -28,26 +30,32 @@ final class WebViewModel: ObservableObject {
     }
 
     func retry() {
-        isLoaded = false
+        loadState = .loading
+        isOffline = false
+        webView?.load(URLRequest(url: renderURL))
+        startTimeout()
         start()
     }
 
     func startTimeout() {
+        timeoutTask?.cancel()
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 5_000_000_000)
-            if !Task.isCancelled { isLoaded = true }
+            try? await Task.sleep(nanoseconds: 90_000_000_000) // 90 seconds
+            if !Task.isCancelled && loadState == .loading {
+                loadState = .failed
+            }
         }
     }
 
     func didFinishLoading() {
         timeoutTask?.cancel()
-        isLoaded = true
+        loadState = .loaded
         Task { await StoreKitManager.shared.checkEntitlements() }
     }
 
     func didFailLoading() {
         timeoutTask?.cancel()
-        isLoaded = true
+        loadState = .failed
     }
 }
 
@@ -83,7 +91,6 @@ struct WebViewContainer: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.1, alpha: 1)
         webView.isOpaque = false
-        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS like Mac OS X) PokerLearner-iOS"
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.navigationDelegate = context.coordinator
 
@@ -122,26 +129,69 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
-            if viewModel.isOffline {
-                OfflineView { viewModel.retry() }
-            } else {
+
+            // WebView は常に裏で読み込み続ける
+            if !viewModel.isOffline {
                 WebViewContainer(viewModel: viewModel)
                     .ignoresSafeArea(.all)
-                    .opacity(viewModel.isLoaded ? 1 : 0)
+                    .opacity(viewModel.loadState == .loaded ? 1 : 0)
+            }
+
+            // ローディング中はスプラッシュ表示
+            if viewModel.loadState == .loading && !viewModel.isOffline {
+                SplashView()
+            }
+
+            // エラー・オフライン
+            if viewModel.isOffline || viewModel.loadState == .failed {
+                ErrorView(
+                    message: viewModel.isOffline
+                        ? "インターネット接続がありません"
+                        : "読み込みに失敗しました\nしばらく経ってから再試行してください",
+                    onRetry: { viewModel.retry() }
+                )
             }
         }
         .onAppear { viewModel.start() }
     }
 }
 
-private struct OfflineView: View {
+private struct SplashView: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
+            VStack(spacing: 32) {
+                VStack(spacing: 8) {
+                    Text("ポーカー")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(.white)
+                    + Text("ラッシュ")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(Color(red: 0.23, green: 0.72, blue: 0.51))
+                    Text("Poker Strategy Training")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.white.opacity(0.5))
+                }
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+                Text("読み込み中...")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.white.opacity(0.4))
+            }
+        }
+    }
+}
+
+private struct ErrorView: View {
+    let message: String
     let onRetry: () -> Void
 
     var body: some View {
         ZStack {
-            Color(red: 15 / 255, green: 15 / 255, blue: 26 / 255).ignoresSafeArea()
+            Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
             VStack(spacing: 24) {
-                Text("インターネット接続がありません")
+                Text(message)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 Button(action: onRetry) {
