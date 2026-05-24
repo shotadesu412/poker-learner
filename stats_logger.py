@@ -11,6 +11,14 @@ from typing import Optional
 # DBファイルのパス — 環境変数で上書き可能
 DB_PATH = os.environ.get("POKER_DB_PATH", "poker_stats.db")
 
+import re as _re
+def _safe_uid(user_id: str) -> str:
+    """user_idを英数字・アンダースコア・ハイフンのみに制限してSQLインジェクションを防ぐ"""
+    if not user_id:
+        return ""
+    sanitized = _re.sub(r"[^a-zA-Z0-9_\-]", "", user_id)
+    return sanitized[:64]
+
 
 def _get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -164,7 +172,7 @@ def get_overview(period: str = "all", user_id: str = "") -> dict:
     GTO一致率、VPIP、PFR、3-Bet率を集計して返す。
     """
     pf = _period_filter(period)
-    uf = f"AND user_id = '{user_id}'" if user_id else ""
+    uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
     conn = _get_conn()
 
     # 全HEROアクション数
@@ -235,7 +243,7 @@ def get_position_stats(user_id: str = "") -> list:
     """ポジション別 参加率・レイズ率・GTO一致率 を集計"""
     conn = _get_conn()
     positions = ["LJ", "HJ", "CO", "BTN", "SB", "BB"]
-    uf = f"AND user_id = '{user_id}'" if user_id else ""
+    uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
     result = []
 
     for pos in positions:
@@ -283,7 +291,7 @@ def get_street_eval_dist(user_id: str = "") -> dict:
     """ストリート別 評価分布（◎/◯/△/×の件数）を集計"""
     conn = _get_conn()
     streets = ["PREFLOP", "FLOP", "TURN", "RIVER"]
-    uf = f"AND user_id = '{user_id}'" if user_id else ""
+    uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
     result = {}
 
     for st in streets:
@@ -303,7 +311,7 @@ def get_street_eval_dist(user_id: str = "") -> dict:
 def get_leaks(user_id: str = "") -> list:
     """ユーザーのEV損失が大きいシチュエーションTop5を特定"""
     conn = _get_conn()
-    uf = f"AND user_id = '{user_id}'" if user_id else ""
+    uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
 
     rows = conn.execute(
         f"""
@@ -378,7 +386,7 @@ def get_saved_hands(user_id: str) -> list:
     """特定のユーザーIDが保存したAIコーチのフィードバック履歴を新しい順に取得する"""
     if not user_id:
         return []
-        
+
     conn = _get_conn()
     rows = conn.execute(
         """
@@ -388,7 +396,7 @@ def get_saved_hands(user_id: str) -> list:
         ORDER BY timestamp DESC
         LIMIT 50
         """,
-        (user_id,)
+        (_safe_uid(user_id),)
     ).fetchall()
     
     saved = []
@@ -452,7 +460,7 @@ def get_hand_history(user_id: str, limit: int = 30) -> list:
         WHERE user_id = ?
         ORDER BY started_at DESC
         LIMIT ?
-    """, (user_id, limit)).fetchall()
+    """, (_safe_uid(user_id), limit)).fetchall()
 
     result = []
     for s in sessions:
@@ -504,7 +512,7 @@ def _parse_hand_to_combo(hand_str: str) -> str:
 
 def get_personal_range_stats(period: str = "all", user_id: str = "") -> dict:
     pf = _period_filter(period)
-    uf = f"AND a.user_id = '{user_id}'" if user_id else ""
+    uf = f"AND a.user_id = '{_safe_uid(user_id)}'" if user_id else ""
     conn = _get_conn()
     rows = conn.execute(f"""
         SELECT s.session_id, s.hero_hand, a.action, a.amount

@@ -780,6 +780,13 @@ function handleCoachInputKeyPress(event) {
 document.addEventListener('DOMContentLoaded', async () => {
     // サブスク状態を先に取得
     await loadSubscriptionStatus();
+
+    // #premium ハッシュでページを開いた場合は購入モーダルを自動表示
+    if (window.location.hash === '#premium') {
+        history.replaceState(null, '', window.location.pathname);
+        openPurchaseModal();
+    }
+
     // プリフロップ標準レンジをキャッシュ
     fetchPreflopRanges();
     // 履歴をデフォルトで手前に
@@ -1113,6 +1120,120 @@ function closeAdModal() {
         clearInterval(adTimerInterval);
         adTimerInterval = null;
     }
+}
+
+// ==============================
+// プレミアム購入フロー（StoreKit 2 ブリッジ）
+// ==============================
+function openPurchaseModal() {
+    const modal = el('purchase-modal');
+    if (!modal) return;
+    const statusEl = el('purchase-status');
+    if (statusEl) statusEl.textContent = '';
+    if (isPremium) {
+        if (statusEl) statusEl.textContent = '✅ プレミアムプランご利用中です';
+    }
+    modal.classList.remove('hidden');
+}
+
+function closePurchaseModal() {
+    const modal = el('purchase-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function startPurchase() {
+    const statusEl = el('purchase-status');
+    const btn = el('btn-purchase');
+    if (statusEl) statusEl.textContent = '処理中...';
+    if (btn) btn.disabled = true;
+
+    try {
+        // iOS WKWebView ブリッジ経由でStoreKitを呼び出す
+        window.webkit.messageHandlers.purchaseRequest.postMessage({});
+    } catch (e) {
+        // iOS以外（ブラウザ等）では非対応
+        if (statusEl) statusEl.textContent = 'iOSアプリからのみ購入できます';
+        if (btn) btn.disabled = false;
+    }
+}
+
+function restorePurchase() {
+    const statusEl = el('purchase-status');
+    if (statusEl) statusEl.textContent = '復元中...';
+
+    try {
+        window.webkit.messageHandlers.restoreRequest.postMessage({});
+    } catch (e) {
+        if (statusEl) statusEl.textContent = 'iOSアプリからのみ復元できます';
+    }
+}
+
+// StoreKit から呼ばれるコールバック
+window.onPurchaseSuccess = async function(info) {
+    const statusEl = el('purchase-status');
+    const btn = el('btn-purchase');
+    try {
+        const res = await fetch('/api/subscription/verify_purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: currentUserId,
+                purchase_token: String(info.transactionId || ''),
+                product_id: info.productId || ''
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            isPremium = true;
+            if (statusEl) statusEl.textContent = '✅ プレミアム有効化しました！';
+            applyPremiumUI();
+            setTimeout(closePurchaseModal, 1500);
+        } else {
+            if (statusEl) statusEl.textContent = '有効化に失敗しました。再試行してください。';
+        }
+    } catch (e) {
+        if (statusEl) statusEl.textContent = 'サーバーエラーが発生しました';
+    }
+    if (btn) btn.disabled = false;
+};
+
+window.onRestoreSuccess = async function() {
+    const statusEl = el('purchase-status');
+    try {
+        const res = await fetch('/api/subscription/verify_purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: currentUserId,
+                purchase_token: 'restore',
+                product_id: 'com.shota.pokerlearner.premium.monthly'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            isPremium = true;
+            if (statusEl) statusEl.textContent = '✅ 購入を復元しました！';
+            applyPremiumUI();
+            setTimeout(closePurchaseModal, 1500);
+        } else {
+            if (statusEl) statusEl.textContent = '復元できる購入が見つかりませんでした';
+        }
+    } catch (e) {
+        if (statusEl) statusEl.textContent = 'サーバーエラーが発生しました';
+    }
+};
+
+window.onPurchaseCancel = function() {
+    const statusEl = el('purchase-status');
+    const btn = el('btn-purchase');
+    if (statusEl) statusEl.textContent = 'キャンセルされました';
+    if (btn) btn.disabled = false;
+};
+
+function applyPremiumUI() {
+    // スポットモードボタンなどのpremiumゲートを解除
+    const spotBtn = el('btn-spot-mode');
+    if (spotBtn) spotBtn.style.opacity = '1';
 }
 
 // ==============================
