@@ -264,7 +264,7 @@ async function startHand() {
         // ハンドカウンターをインクリメント & 広告チェック
         incrementHandCount();
         if (shouldShowHandAd()) {
-            showAdModal();
+            await showAdModal();
         }
 
         // Render CPU's first action if they act before the player preflop
@@ -686,7 +686,7 @@ async function requestCoachExplanation() {
     // AIコーチカウンターをインクリメント & 広告チェック
     incrementCoachCount();
     if (shouldShowCoachAd()) {
-        showAdModal();
+        await showAdModal();
     }
 
     el('ai-coach-area').classList.remove('hidden');
@@ -1080,46 +1080,30 @@ function shouldShowCoachAd() {
     return count > 0 && count % AD_COACH_INTERVAL === 0;
 }
 
+// 広告表示後のコールバック（iOSネイティブ側から呼ばれる）
+let _adResolve = null;
+window.onAdDismissed = function() {
+    if (_adResolve) { _adResolve(); _adResolve = null; }
+};
+
 function showAdModal() {
-    if (isPremium) return; // プレミアムユーザーは広告スキップ
-    const modal = el('ad-modal');
-    if (!modal) return;
+    if (isPremium) return Promise.resolve(); // プレミアムはスキップ
 
-    modal.classList.remove('hidden');
-    
-    let remaining = AD_DURATION;
-    const timerEl = el('ad-timer');
-    const countdownEl = el('ad-countdown');
-    const closeBtn = el('ad-close-btn');
-
-    closeBtn.disabled = true;
-    
-    if (timerEl) timerEl.textContent = remaining;
-    if (countdownEl) countdownEl.textContent = remaining;
-
-    if (adTimerInterval) clearInterval(adTimerInterval);
-    
-    adTimerInterval = setInterval(() => {
-        remaining--;
-        if (timerEl) timerEl.textContent = remaining;
-        if (countdownEl) countdownEl.textContent = remaining;
-
-        if (remaining <= 0) {
-            clearInterval(adTimerInterval);
-            adTimerInterval = null;
-            closeBtn.disabled = false;
-            closeBtn.innerHTML = '閉じる';
+    return new Promise(resolve => {
+        _adResolve = resolve;
+        try {
+            // iOSネイティブのAdMobインタースティシャルを呼び出す
+            window.webkit.messageHandlers.showInterstitialAd.postMessage({});
+        } catch (e) {
+            // iOSアプリ外（ブラウザ等）では即座に解決
+            resolve();
         }
-    }, 1000);
+    });
 }
 
 function closeAdModal() {
-    const modal = el('ad-modal');
-    if (modal) modal.classList.add('hidden');
-    if (adTimerInterval) {
-        clearInterval(adTimerInterval);
-        adTimerInterval = null;
-    }
+    // ネイティブ広告は自動で閉じるため不要。互換性のため残す。
+    window.onAdDismissed();
 }
 
 // ==============================

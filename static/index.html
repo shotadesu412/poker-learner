@@ -200,27 +200,6 @@
     <!-- Modal Overlay -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeBetPanel()"></div>
 
-    <!-- 広告モーダル -->
-    <div id="ad-modal" class="ad-modal-overlay hidden">
-        <div class="ad-modal-content">
-            <div class="ad-modal-header">
-                <span>📢 スポンサー広告</span>
-                <span id="ad-timer" class="ad-timer">30</span>
-            </div>
-            <div class="ad-modal-body">
-                <div class="ad-placeholder">
-                    <div class="ad-icon">🎰</div>
-                    <div class="ad-text">ポーカーラッシュ Premium</div>
-                    <div class="ad-sub">広告なしでプレイ！月額プランで全機能アンロック</div>
-                    <div onclick="closeAdModal(); openPurchaseModal();" style="margin-top: 15px; padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; color: white; font-weight: bold; font-size: 0.9rem; cursor:pointer;">詳しくはこちら →</div>
-                </div>
-            </div>
-            <div class="ad-modal-footer">
-                <button id="ad-close-btn" class="ad-close-btn" disabled onclick="closeAdModal()">閉じる (<span id="ad-countdown">30</span>秒)</button>
-            </div>
-        </div>
-    </div>
-
     <!-- プレミアム購入モーダル -->
     <div id="purchase-modal" class="ad-modal-overlay hidden" onclick="closePurchaseModal()">
         <div class="ad-modal-content" onclick="event.stopPropagation()" style="max-width:340px;">
