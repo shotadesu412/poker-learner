@@ -72,6 +72,8 @@ private final class WeakMessageHandler: NSObject, WKScriptMessageHandler {
                 await StoreKitManager.shared.purchase()
             } else if message.name == "restoreRequest" {
                 await StoreKitManager.shared.restore()
+            } else if message.name == "showInterstitialAd" {
+                AdManager.shared.show()
             }
         }
     }
@@ -87,6 +89,7 @@ struct WebViewContainer: UIViewRepresentable {
         let handler = WeakMessageHandler(context.coordinator)
         config.userContentController.add(handler, name: "purchaseRequest")
         config.userContentController.add(handler, name: "restoreRequest")
+        config.userContentController.add(handler, name: "showInterstitialAd")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.1, alpha: 1)
@@ -96,6 +99,7 @@ struct WebViewContainer: UIViewRepresentable {
 
         viewModel.webView = webView
         StoreKitManager.shared.webView = webView
+        AdManager.shared.webView = webView
 
         webView.load(URLRequest(url: renderURL))
         viewModel.startTimeout()

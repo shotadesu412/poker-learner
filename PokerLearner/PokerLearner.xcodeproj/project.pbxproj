@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		43708D212FC71ED800ACC3EC /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 43708D202FC71ED800ACC3EC /* GoogleMobileAds */; };
 		80E02DAE2FBA037900BF73B8 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 80E02DAD2FBA037900BF73B8 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
@@ -15,9 +16,22 @@
 		80E02DAD2FBA037900BF73B8 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		43708D222FC7213600ACC3EC /* Exceptions for "PokerLearner" folder in "PokerLearner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 80E02D9D2FB9FE6800BF73B8 /* PokerLearner */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		80E02DA02FB9FE6800BF73B8 /* PokerLearner */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				43708D222FC7213600ACC3EC /* Exceptions for "PokerLearner" folder in "PokerLearner" target */,
+			);
 			path = PokerLearner;
 			sourceTree = "<group>";
 		};
@@ -28,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				43708D212FC71ED800ACC3EC /* GoogleMobileAds in Frameworks */,
 				80E02DAE2FBA037900BF73B8 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,6 +95,7 @@
 			);
 			name = PokerLearner;
 			packageProductDependencies = (
+				43708D202FC71ED800ACC3EC /* GoogleMobileAds */,
 			);
 			productName = PokerLearner;
 			productReference = 80E02D9E2FB9FE6800BF73B8 /* PokerLearner.app */;
@@ -93,7 +109,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					80E02D9D2FB9FE6800BF73B8 = {
 						CreatedOnToolsVersion = 26.2;
@@ -109,6 +125,9 @@
 			);
 			mainGroup = 80E02D952FB9FE6800BF73B8;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				43708D1F2FC71ED800ACC3EC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 80E02D9F2FB9FE6800BF73B8 /* Products */;
 			projectDirPath = "";
@@ -199,6 +218,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -256,6 +276,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -270,18 +291,15 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z2ZRB6V2J;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PokerLearner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "ポーカーラッシュ";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.shota.PokerLearner;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shota.pokerlearner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -305,12 +323,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7Z2ZRB6V2J;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PokerLearner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "ポーカーラッシュ";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -353,6 +368,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		43708D1F2FC71ED800ACC3EC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		43708D202FC71ED800ACC3EC /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 43708D1F2FC71ED800ACC3EC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 80E02D962FB9FE6800BF73B8 /* Project object */;
 }
