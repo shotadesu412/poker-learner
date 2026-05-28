@@ -14,12 +14,13 @@ struct PokerLearnerApp: App {
     }
 
     /// UMP 同意フロー → 完了後に AdManager を初期化
+    @MainActor
     private func requestConsentAndInitializeAds() {
         // 1. 同意情報を更新（EEA/UK かどうかを判定）
         ConsentInformation.shared.requestConsentInfoUpdate(with: nil) { error in
             if let error {
                 print("[UMP] requestConsentInfoUpdate failed: \(error.localizedDescription)")
-                AdManager.shared.initializeAndLoad()
+                Task { @MainActor in AdManager.shared.initializeAndLoad() }
                 return
             }
 
@@ -28,7 +29,7 @@ struct PokerLearnerApp: App {
                 .connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .first?.keyWindow?.rootViewController else {
-                AdManager.shared.initializeAndLoad()
+                Task { @MainActor in AdManager.shared.initializeAndLoad() }
                 return
             }
 
@@ -39,15 +40,17 @@ struct PokerLearnerApp: App {
                 // 3. ATT許可ダイアログを表示（iOS 14+）
                 if #available(iOS 14, *) {
                     ATTrackingManager.requestTrackingAuthorization { _ in
-                        DispatchQueue.main.async {
+                        Task { @MainActor in
                             if ConsentInformation.shared.canRequestAds {
                                 AdManager.shared.initializeAndLoad()
                             }
                         }
                     }
                 } else {
-                    if ConsentInformation.shared.canRequestAds {
-                        AdManager.shared.initializeAndLoad()
+                    Task { @MainActor in
+                        if ConsentInformation.shared.canRequestAds {
+                            AdManager.shared.initializeAndLoad()
+                        }
                     }
                 }
             }
