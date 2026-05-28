@@ -11,6 +11,11 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     private override init() {
         super.init()
+        // MobileAds の初期化は UMP 同意取得後に initializeAndLoad() で行う
+    }
+
+    /// UMP 同意取得後に呼ぶ
+    func initializeAndLoad() {
         MobileAds.initialize()
         preload()
     }
