@@ -32,7 +32,7 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     func show() {
         guard let interstitial,
               let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let root = scene.windows.first?.rootViewController else {
+              let root = scene.keyWindow?.rootViewController else {
             dismiss()
             return
         }

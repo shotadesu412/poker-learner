@@ -4,18 +4,19 @@ import UIKit
 import WebKit
 import Network
 
-private let renderURL = URL(string: "https://tcgsimulator.onrender.com/static/index.html")!
+private let renderURL = URL(string: "https://poker-learner.onrender.com/")!
 
 @MainActor
 final class WebViewModel: ObservableObject {
     @Published var isOffline = false
     @Published var loadState: LoadState = .loading
-    @Published var isWarmingUp = false   // サーバー起動中メッセージ用
+    @Published var isWarmingUp = false      // サーバー起動中メッセージ用
+    @Published var isWebViewReady = false   // React描画完了後にtrueになる
     var webView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
     private var warmUpTask: Task<Void, Never>?
     private var autoRetryCount = 0
-    private let maxAutoRetries = 4       // 最大4回自動リトライ（約80秒）
+    private let maxAutoRetries = 4
 
     enum LoadState { case loading, loaded, failed }
 
@@ -37,6 +38,7 @@ final class WebViewModel: ObservableObject {
         autoRetryCount = 0
         loadState = .loading
         isWarmingUp = false
+        isWebViewReady = false
         isOffline = false
         webView?.load(URLRequest(url: renderURL))
         startTimeout()
@@ -47,7 +49,7 @@ final class WebViewModel: ObservableObject {
     func startTimeout() {
         timeoutTask?.cancel()
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 180_000_000_000) // 180秒に延長
+            try? await Task.sleep(nanoseconds: 180_000_000_000) // 180秒
             if !Task.isCancelled && loadState == .loading {
                 loadState = .failed
             }
@@ -58,7 +60,7 @@ final class WebViewModel: ObservableObject {
     func startWarmUpMessage() {
         warmUpTask?.cancel()
         warmUpTask = Task {
-            try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
             if !Task.isCancelled && loadState == .loading {
                 isWarmingUp = true
             }
@@ -72,6 +74,24 @@ final class WebViewModel: ObservableObject {
         isWarmingUp = false
         loadState = .loaded
         Task { await StoreKitManager.shared.checkEntitlements() }
+        Task { await waitForReactRender() }
+    }
+
+    /// ReactのDOM描画を検知してからWebViewを表示（最大30秒）
+    private func waitForReactRender() async {
+        let js = "document.body?.innerHTML?.length ?? 0"
+        for _ in 0..<60 {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard let wv = webView,
+                  let result = try? await wv.evaluateJavaScript(js),
+                  let length = result as? Int else { continue }
+            if length > 300 {
+                isWebViewReady = true
+                return
+            }
+        }
+        // 30秒経過でもとりあえず表示
+        isWebViewReady = true
     }
 
     /// ロード失敗時：自動リトライ（コールドスタート対応）
@@ -79,7 +99,7 @@ final class WebViewModel: ObservableObject {
         if autoRetryCount < maxAutoRetries {
             autoRetryCount += 1
             Task {
-                try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒待ってリトライ
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
                 if loadState != .loaded {
                     webView?.load(URLRequest(url: renderURL))
                 }
@@ -169,15 +189,14 @@ struct ContentView: View {
         ZStack {
             Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
 
-            // WebView は常に裏で読み込み続ける
-            if !viewModel.isOffline {
-                WebViewContainer(viewModel: viewModel)
-                    .ignoresSafeArea(.all)
-                    .opacity(viewModel.loadState == .loaded ? 1 : 0)
-            }
+            // WebView は常にView階層に存在（isOfflineで消さない）
+            WebViewContainer(viewModel: viewModel)
+                .ignoresSafeArea(.all)
+                .opacity(viewModel.isWebViewReady ? 1 : 0)
+                .animation(.easeIn(duration: 0.4), value: viewModel.isWebViewReady)
 
-            // ローディング中はスプラッシュ表示
-            if viewModel.loadState == .loading && !viewModel.isOffline {
+            // ローディング中 or React描画待ちはスプラッシュ表示
+            if !viewModel.isWebViewReady && viewModel.loadState != .failed {
                 SplashView(isWarmingUp: viewModel.isWarmingUp)
             }
 
