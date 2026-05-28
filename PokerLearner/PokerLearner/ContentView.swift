@@ -10,8 +10,12 @@ private let renderURL = URL(string: "https://tcgsimulator.onrender.com/static/in
 final class WebViewModel: ObservableObject {
     @Published var isOffline = false
     @Published var loadState: LoadState = .loading
+    @Published var isWarmingUp = false   // サーバー起動中メッセージ用
     var webView: WKWebView?
     private var timeoutTask: Task<Void, Never>?
+    private var warmUpTask: Task<Void, Never>?
+    private var autoRetryCount = 0
+    private let maxAutoRetries = 4       // 最大4回自動リトライ（約80秒）
 
     enum LoadState { case loading, loaded, failed }
 
@@ -30,32 +34,62 @@ final class WebViewModel: ObservableObject {
     }
 
     func retry() {
+        autoRetryCount = 0
         loadState = .loading
+        isWarmingUp = false
         isOffline = false
         webView?.load(URLRequest(url: renderURL))
         startTimeout()
+        startWarmUpMessage()
         start()
     }
 
     func startTimeout() {
         timeoutTask?.cancel()
         timeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 90_000_000_000) // 90 seconds
+            try? await Task.sleep(nanoseconds: 180_000_000_000) // 180秒に延長
             if !Task.isCancelled && loadState == .loading {
                 loadState = .failed
             }
         }
     }
 
+    /// 20秒後に「サーバー起動中」メッセージを表示
+    func startWarmUpMessage() {
+        warmUpTask?.cancel()
+        warmUpTask = Task {
+            try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒
+            if !Task.isCancelled && loadState == .loading {
+                isWarmingUp = true
+            }
+        }
+    }
+
     func didFinishLoading() {
         timeoutTask?.cancel()
+        warmUpTask?.cancel()
+        autoRetryCount = 0
+        isWarmingUp = false
         loadState = .loaded
         Task { await StoreKitManager.shared.checkEntitlements() }
     }
 
+    /// ロード失敗時：自動リトライ（コールドスタート対応）
     func didFailLoading() {
-        timeoutTask?.cancel()
-        loadState = .failed
+        if autoRetryCount < maxAutoRetries {
+            autoRetryCount += 1
+            Task {
+                try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒待ってリトライ
+                if loadState != .loaded {
+                    webView?.load(URLRequest(url: renderURL))
+                }
+            }
+        } else {
+            timeoutTask?.cancel()
+            warmUpTask?.cancel()
+            isWarmingUp = false
+            loadState = .failed
+        }
     }
 }
 
@@ -103,6 +137,7 @@ struct WebViewContainer: UIViewRepresentable {
 
         webView.load(URLRequest(url: renderURL))
         viewModel.startTimeout()
+        viewModel.startWarmUpMessage()
         return webView
     }
 
@@ -143,7 +178,7 @@ struct ContentView: View {
 
             // ローディング中はスプラッシュ表示
             if viewModel.loadState == .loading && !viewModel.isOffline {
-                SplashView()
+                SplashView(isWarmingUp: viewModel.isWarmingUp)
             }
 
             // エラー・オフライン
@@ -161,6 +196,8 @@ struct ContentView: View {
 }
 
 private struct SplashView: View {
+    var isWarmingUp: Bool = false
+
     var body: some View {
         ZStack {
             Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
@@ -181,9 +218,16 @@ private struct SplashView: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.2)
-                Text("読み込み中...")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color.white.opacity(0.4))
+                VStack(spacing: 8) {
+                    Text(isWarmingUp ? "サーバー起動中..." : "読み込み中...")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.4))
+                    if isWarmingUp {
+                        Text("初回起動は少し時間がかかります")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.white.opacity(0.3))
+                    }
+                }
             }
         }
     }
