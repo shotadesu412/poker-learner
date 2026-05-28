@@ -1,3 +1,4 @@
+import AppTrackingTransparency
 import SwiftUI
 import UserMessagingPlatform
 
@@ -35,9 +36,19 @@ struct PokerLearnerApp: App {
                 if let formError {
                     print("[UMP] loadAndPresentIfRequired error: \(formError.localizedDescription)")
                 }
-                // 3. 同意済み or 不要なら広告初期化
-                if ConsentInformation.shared.canRequestAds {
-                    AdManager.shared.initializeAndLoad()
+                // 3. ATT許可ダイアログを表示（iOS 14+）
+                if #available(iOS 14, *) {
+                    ATTrackingManager.requestTrackingAuthorization { _ in
+                        DispatchQueue.main.async {
+                            if ConsentInformation.shared.canRequestAds {
+                                AdManager.shared.initializeAndLoad()
+                            }
+                        }
+                    }
+                } else {
+                    if ConsentInformation.shared.canRequestAds {
+                        AdManager.shared.initializeAndLoad()
+                    }
                 }
             }
         }

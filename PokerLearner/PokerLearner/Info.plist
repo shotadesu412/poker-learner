@@ -20,6 +20,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-2416149393168379~9751019049</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>広告をあなたの興味に合わせてカスタマイズするために使用します。</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>SKAdNetworkItems</key>
