@@ -1182,9 +1182,23 @@ window.onPurchaseSuccess = async function(info) {
 };
 
 window.onRestoreSuccess = async function() {
-    const statusEl = el('purchase-status');
+    // isPremiumをすぐに反映（起動時の自動呼び出しでも即時有効化）
+    isPremium = true;
+    applyPremiumUI();
+
+    const modal = el('purchase-modal');
+    const isModalOpen = modal && !modal.classList.contains('hidden');
+
+    // モーダルが開いている場合（手動復元ボタン押下時）のみUI更新
+    if (isModalOpen) {
+        const statusEl = el('purchase-status');
+        if (statusEl) statusEl.textContent = '✅ 購入を復元しました！';
+        setTimeout(closePurchaseModal, 1500);
+    }
+
+    // サーバーのDB状態と同期（未登録なら登録、登録済みなら何もしない）
     try {
-        const res = await fetch('/api/subscription/verify_purchase', {
+        await fetch('/api/subscription/verify_purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1193,17 +1207,8 @@ window.onRestoreSuccess = async function() {
                 product_id: 'com.shota.pokerlearner.premium.monthly'
             })
         });
-        const data = await res.json();
-        if (data.success) {
-            isPremium = true;
-            if (statusEl) statusEl.textContent = '✅ 購入を復元しました！';
-            applyPremiumUI();
-            setTimeout(closePurchaseModal, 1500);
-        } else {
-            if (statusEl) statusEl.textContent = '復元できる購入が見つかりませんでした';
-        }
     } catch (e) {
-        if (statusEl) statusEl.textContent = 'サーバーエラーが発生しました';
+        // サーバー同期失敗でもisPremium=trueは維持（StoreKitが正として扱う）
     }
 };
 
