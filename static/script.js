@@ -1226,6 +1226,44 @@ function applyPremiumUI() {
 }
 
 // ==============================
+// 設定モーダル
+// ==============================
+function openSettings() {
+    const modal = el('settings-modal');
+    if (!modal) return;
+    // 現在の値をUIに反映
+    const fbCheck = el('setting-feedback');
+    if (fbCheck) fbCheck.checked = appSettings.showFeedback !== false;
+
+    const segNormal = el('seg-normal');
+    const segFast   = el('seg-fast');
+    if (segNormal && segFast) {
+        segNormal.classList.toggle('active', appSettings.speed !== 'fast');
+        segFast.classList.toggle('active', appSettings.speed === 'fast');
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeSettings() {
+    const modal = el('settings-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function saveSetting(key, value) {
+    appSettings[key] = value;
+    localStorage.setItem('poker_settings', JSON.stringify(appSettings));
+}
+
+function setSpeedSetting(speed) {
+    appSettings.speed = speed;
+    localStorage.setItem('poker_settings', JSON.stringify(appSettings));
+    el('seg-normal').classList.toggle('active', speed !== 'fast');
+    el('seg-fast').classList.toggle('active', speed === 'fast');
+    // speedMult はページリロードで反映（次のハンドから）
+}
+
+// ==============================
 // スポット練習モード
 // ==============================
 function toggleSpotMode() {

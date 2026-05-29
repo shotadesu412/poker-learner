@@ -1364,6 +1364,186 @@ body {
     }
 }
 
+/* ==============================
+   設定モーダル（iOS風）
+   ============================== */
+.settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 600;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.settings-overlay.hidden { display: none !important; }
+
+.settings-sheet {
+    width: 100%;
+    max-width: 480px;
+    background: #f2f2f7;
+    border-radius: 12px 12px 0 0;
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.28s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    background: #f2f2f7;
+    border-bottom: 1px solid #d1d1d6;
+    flex-shrink: 0;
+}
+
+.settings-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1c1c1e;
+}
+
+.settings-done-btn {
+    background: none;
+    border: none;
+    color: #007aff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.settings-scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding: 16px 0 32px;
+}
+
+.settings-section-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6d6d72;
+    padding: 0 16px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 8px;
+}
+
+.settings-group {
+    background: #fff;
+    border-radius: 10px;
+    margin: 0 16px 20px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    min-height: 44px;
+    background: #fff;
+}
+
+.settings-row-label {
+    font-size: 0.9rem;
+    color: #1c1c1e;
+    font-weight: 400;
+}
+
+.settings-row-value {
+    font-size: 0.88rem;
+    color: #8e8e93;
+}
+
+.settings-readonly .settings-row-label {
+    color: #3c3c43;
+}
+
+.settings-separator {
+    height: 1px;
+    background: #e5e5ea;
+    margin-left: 16px;
+}
+
+/* iOS風トグルスイッチ */
+.ios-toggle {
+    position: relative;
+    display: inline-block;
+    width: 51px;
+    height: 31px;
+    flex-shrink: 0;
+}
+
+.ios-toggle input { display: none; }
+
+.ios-toggle-track {
+    position: absolute;
+    inset: 0;
+    background: #e5e5ea;
+    border-radius: 31px;
+    transition: background 0.22s;
+    cursor: pointer;
+}
+
+.ios-toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    transition: transform 0.22s;
+}
+
+.ios-toggle input:checked + .ios-toggle-track {
+    background: #34c759;
+}
+
+.ios-toggle input:checked + .ios-toggle-track::after {
+    transform: translateX(20px);
+}
+
+/* セグメントコントロール */
+.settings-segmented {
+    display: flex;
+    background: #e5e5ea;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.seg-btn {
+    padding: 5px 14px;
+    border: none;
+    background: transparent;
+    color: #3c3c43;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.seg-btn.active {
+    background: #fff;
+    color: #1c1c1e;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
 /* スポット練習ボタン */
 .btn-spot {
     background: rgba(139, 92, 246, 0.15);

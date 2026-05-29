@@ -70,6 +70,10 @@
     <a href="/"
         style="position:absolute;top:12px;left:12px;background:rgba(59,130,246,.15);border:1px solid #3b82f6;color:#3b82f6;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;text-decoration:none;z-index:50;">
         ホーム</a>
+    <!-- 設定ボタン -->
+    <button onclick="openSettings()"
+        style="position:absolute;top:12px;left:76px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.55);padding:5px 10px;border-radius:14px;font-size:0.78rem;cursor:pointer;z-index:50;">
+        設定</button>
     <!-- レンジ表ボタン（常時表示） -->
     <button onclick="openPreflopRangeModal()"
         style="position:absolute;top:12px;right:12px;background:rgba(16,185,129,.15);border:1px solid #10b981;color:#10b981;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;cursor:pointer;z-index:50;">
@@ -222,6 +226,68 @@
                 <button onclick="restorePurchase()" class="purchase-btn-secondary">
                     購入を復元
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settings-modal" class="settings-overlay hidden" onclick="closeSettings()">
+        <div class="settings-sheet" onclick="event.stopPropagation()">
+            <div class="settings-header">
+                <span class="settings-title">設定</span>
+                <button onclick="closeSettings()" class="settings-done-btn">完了</button>
+            </div>
+            <div class="settings-scroll">
+
+                <!-- セクション: 表示設定 -->
+                <div class="settings-section-label">表示</div>
+                <div class="settings-group">
+                    <div class="settings-row">
+                        <span class="settings-row-label">アクション評価</span>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="setting-feedback" onchange="saveSetting('showFeedback', this.checked)">
+                            <span class="ios-toggle-track"></span>
+                        </label>
+                    </div>
+                    <div class="settings-separator"></div>
+                    <div class="settings-row">
+                        <span class="settings-row-label">表示速度</span>
+                        <div class="settings-segmented">
+                            <button class="seg-btn" id="seg-normal" onclick="setSpeedSetting('normal')">通常</button>
+                            <button class="seg-btn" id="seg-fast" onclick="setSpeedSetting('fast')">速い</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- セクション: ゲームルール -->
+                <div class="settings-section-label">ゲームルール（変更不可）</div>
+                <div class="settings-group">
+                    <div class="settings-row settings-readonly">
+                        <span class="settings-row-label">形式</span>
+                        <span class="settings-row-value">ヘッズアップ</span>
+                    </div>
+                    <div class="settings-separator"></div>
+                    <div class="settings-row settings-readonly">
+                        <span class="settings-row-label">スタック</span>
+                        <span class="settings-row-value">100bb</span>
+                    </div>
+                    <div class="settings-separator"></div>
+                    <div class="settings-row settings-readonly">
+                        <span class="settings-row-label">ブラインド</span>
+                        <span class="settings-row-value">0.5bb / 1bb</span>
+                    </div>
+                    <div class="settings-separator"></div>
+                    <div class="settings-row settings-readonly">
+                        <span class="settings-row-label">対戦相手</span>
+                        <span class="settings-row-value">CPU (GTO)</span>
+                    </div>
+                    <div class="settings-separator"></div>
+                    <div class="settings-row settings-readonly">
+                        <span class="settings-row-label">ポジション</span>
+                        <span class="settings-row-value">ランダム</span>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
