@@ -58,6 +58,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 12px 15px;
     gap: 10px;
     overflow-y: auto;
@@ -1094,14 +1095,118 @@ body {
 }
 
 .ad-modal-content {
-    background: linear-gradient(145deg, #1a1e2e, #262c38);
-    border-radius: 16px;
+    background: #1e2228;
+    border-radius: 12px;
     width: 90vw;
     max-width: 380px;
     padding: 0;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--border-color);
     overflow: hidden;
+}
+
+/* プレミアム購入モーダル専用スタイル */
+.purchase-modal-content {
+    background: #1e2228;
+    border-radius: 12px;
+    width: 90vw;
+    max-width: 320px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+}
+
+.purchase-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: #262c38;
+}
+
+.purchase-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.purchase-modal-body {
+    padding: 16px;
+}
+
+.purchase-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.purchase-features li {
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.purchase-features li::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    flex-shrink: 0;
+}
+
+.purchase-features li:last-child {
+    border-bottom: none;
+}
+
+.purchase-status {
+    min-height: 18px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--accent-orange);
+    margin-bottom: 10px;
+}
+
+.purchase-btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.purchase-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.purchase-btn-secondary {
+    width: 100%;
+    padding: 9px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
 }
 
 .ad-modal-header {

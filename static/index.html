@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=4">
+    <link rel="stylesheet" href="/static/style.css?v=5">
 </head>
 
 <body>
@@ -202,24 +202,24 @@
 
     <!-- プレミアム購入モーダル -->
     <div id="purchase-modal" class="ad-modal-overlay hidden" onclick="closePurchaseModal()">
-        <div class="ad-modal-content" onclick="event.stopPropagation()" style="max-width:340px;">
-            <div class="ad-modal-header" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);">
-                <span>👑 Premium プラン</span>
-                <button onclick="closePurchaseModal()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer;">✕</button>
+        <div class="purchase-modal-content" onclick="event.stopPropagation()">
+            <div class="purchase-modal-header">
+                <span>Premium プラン</span>
+                <button onclick="closePurchaseModal()" class="purchase-close-btn">✕</button>
             </div>
-            <div class="ad-modal-body" style="padding:16px;">
-                <ul style="list-style:none;padding:0;margin:0 0 16px;color:#ccc;font-size:0.85rem;line-height:2;">
-                    <li>✅ 広告なし</li>
-                    <li>✅ ポジション別詳細統計</li>
-                    <li>✅ よくあるミス分析（リーク）</li>
-                    <li>✅ ハンド履歴（直近30件）</li>
-                    <li>✅ スポット練習モード</li>
+            <div class="purchase-modal-body">
+                <ul class="purchase-features">
+                    <li>広告なし</li>
+                    <li>ポジション別詳細統計</li>
+                    <li>よくあるミス分析（リーク）</li>
+                    <li>ハンド履歴（直近30件）</li>
+                    <li>スポット練習モード</li>
                 </ul>
-                <div id="purchase-status" style="min-height:20px;text-align:center;font-size:0.8rem;color:#f59e0b;margin-bottom:8px;"></div>
-                <button onclick="startPurchase()" id="btn-purchase" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:bold;cursor:pointer;margin-bottom:8px;">
+                <div id="purchase-status" class="purchase-status"></div>
+                <button onclick="startPurchase()" id="btn-purchase" class="purchase-btn-primary">
                     サブスクリプションを開始
                 </button>
-                <button onclick="restorePurchase()" style="width:100%;padding:8px;background:rgba(255,255,255,0.1);color:#aaa;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;">
+                <button onclick="restorePurchase()" class="purchase-btn-secondary">
                     購入を復元
                 </button>
             </div>
