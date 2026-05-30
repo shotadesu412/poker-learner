@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=6">
+    <link rel="stylesheet" href="/static/style.css?v=7">
 </head>
 
 <body>
@@ -48,9 +48,6 @@
             </div>
         </div>
 
-        <!-- アクション履歴ログ（真ん中に配置） -->
-        <div id="eval-history" class="eval-history-inline"></div>
-
         <div class="hands-info">
             <div class="hand-col" onclick="openRangeModal('HERO')" style="cursor: pointer;">
                 <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">You
@@ -72,6 +69,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- アクション履歴ログ（ハンドの下に配置） -->
+        <div id="eval-history" class="eval-history-inline"></div>
     </div>
 
     <!-- Notification / message area -->
