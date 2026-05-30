@@ -38,6 +38,61 @@ body {
     overflow: hidden;
 }
 
+/* ==============================
+   トップナビゲーションバー
+   ============================== */
+.top-nav {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* iOSのノッチ/Dynamic Island分を上に確保 */
+    padding-top: max(env(safe-area-inset-top, 0px), 10px);
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: 8px;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 50;
+}
+
+.top-nav-left {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.top-nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.nav-btn {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.4;
+    border: 1px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.nav-btn-dim {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-btn-green {
+    border: 1px solid #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
 /* Base Layouts */
 .board-area {
     flex: 0 0 auto;
@@ -68,7 +123,7 @@ body {
 .action-area {
     flex: 0 0 auto;
     background-color: var(--surface-color);
-    padding: 10px 10px 32px;
+    padding: 10px 10px max(env(safe-area-inset-bottom, 0px), 20px);
     border-top: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;

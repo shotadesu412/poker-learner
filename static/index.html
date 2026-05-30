@@ -3,15 +3,26 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=5">
+    <link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 
 <body>
 
-    <!-- Top Area: Board Cards（タップで履歴/ボード切り替え） -->
+    <!-- トップナビゲーションバー -->
+    <nav class="top-nav">
+        <div class="top-nav-left">
+            <a href="/" class="nav-btn">ホーム</a>
+            <button onclick="openSettings()" class="nav-btn nav-btn-dim">設定</button>
+        </div>
+        <div class="top-nav-right">
+            <button onclick="openPreflopRangeModal()" class="nav-btn nav-btn-green">レンジ表</button>
+        </div>
+    </nav>
+
+    <!-- Board Cards（タップで履歴/ボード切り替え） -->
     <div class="board-area" id="board-area" onclick="toggleHistoryBoard()">
         <div id="board-container" class="card-container">
             <div class="empty-card"></div>
@@ -20,7 +31,7 @@
             <div class="empty-card"></div>
             <div class="empty-card"></div>
         </div>
-        <div id="board-tap-hint" class="board-tap-hint">📋 履歴 / ボード</div>
+        <div id="board-tap-hint" class="board-tap-hint">履歴 / ボード</div>
     </div>
 
     <!-- Middle Area: Info -->
@@ -66,18 +77,6 @@
     <!-- Notification / message area -->
     <div id="message-area" class="message-area hidden"></div>
 
-    <!-- ホーム画面へのリンク -->
-    <a href="/"
-        style="position:absolute;top:12px;left:12px;background:rgba(59,130,246,.15);border:1px solid #3b82f6;color:#3b82f6;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;text-decoration:none;z-index:50;">
-        ホーム</a>
-    <!-- 設定ボタン -->
-    <button onclick="openSettings()"
-        style="position:absolute;top:12px;left:76px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.55);padding:5px 10px;border-radius:14px;font-size:0.78rem;cursor:pointer;z-index:50;">
-        設定</button>
-    <!-- レンジ表ボタン（常時表示） -->
-    <button onclick="openPreflopRangeModal()"
-        style="position:absolute;top:12px;right:12px;background:rgba(16,185,129,.15);border:1px solid #10b981;color:#10b981;padding:5px 10px;border-radius:14px;font-size:0.78rem;font-weight:bold;cursor:pointer;z-index:50;">
-        レンジ表</button>
 
     <!-- Central Evaluation Popup -->
     <div id="eval-popup" class="eval-popup hidden">◎</div>
