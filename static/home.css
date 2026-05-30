@@ -13,21 +13,26 @@
     --transition: ALL 0.3s ease;
 }
 
-body {
+html, body {
     margin: 0;
     padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    height: 100dvh;
-    /* iOSのノッチ/Dynamic Island 対応（safe area分だけ内側にパディング） */
+    justify-content: center;
+    min-height: 100%;
+    /* Dynamic Island / ノッチ対応 */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     box-sizing: border-box;
-    padding-top: max(env(safe-area-inset-top, 0px), 20px);
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
 }
 
 .home-container {
