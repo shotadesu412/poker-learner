@@ -22,7 +22,10 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: 100dvh;
+    /* iOSのノッチ/Dynamic Island 対応 */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .home-container {
@@ -33,15 +36,16 @@ body {
 }
 
 .home-header {
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     animation: fadeInDown 0.8s ease-out;
 }
 
 .logo-title {
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 11vw, 3.5rem);
     font-weight: 800;
     margin: 0;
     letter-spacing: -1px;
+    white-space: nowrap;
 }
 
 .logo-title span {
@@ -57,7 +61,7 @@ body {
 .menu-container {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
     animation: fadeInUp 0.8s ease-out;
 }
 
@@ -66,8 +70,8 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 1.2rem;
-    font-size: 1.3rem;
+    padding: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: #fff;
     border: none;
