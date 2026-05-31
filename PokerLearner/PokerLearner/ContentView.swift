@@ -40,7 +40,9 @@ final class WebViewModel: ObservableObject {
         isWarmingUp = false
         isWebViewReady = false
         isOffline = false
-        webView?.load(URLRequest(url: renderURL))
+        var request = URLRequest(url: renderURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        webView?.load(request)
         startTimeout()
         startWarmUpMessage()
         start()
@@ -155,9 +157,21 @@ struct WebViewContainer: UIViewRepresentable {
         StoreKitManager.shared.webView = webView
         AdManager.shared.webView = webView
 
-        webView.load(URLRequest(url: renderURL))
         viewModel.startTimeout()
         viewModel.startWarmUpMessage()
+
+        // キャッシュをクリアしてから最新のWebコンテンツを読み込む
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+            modifiedSince: .distantPast
+        ) {
+            DispatchQueue.main.async {
+                var request = URLRequest(url: renderURL)
+                request.cachePolicy = .reloadIgnoringLocalCacheData
+                webView.load(request)
+            }
+        }
+
         return webView
     }
 
