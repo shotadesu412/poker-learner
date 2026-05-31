@@ -1044,8 +1044,8 @@ function closeRangeModal() {
 // ============================================
 // 広告表示システム
 // ============================================
-const AD_HAND_INTERVAL = 3;      // 3ハンドごとに広告
-const AD_COACH_INTERVAL = 5;     // AIコーチ5回ごとに広告
+const AD_HAND_INTERVAL = 30;     // 30ハンドごとに広告
+const AD_COACH_INTERVAL = 3;     // AIコーチ3回ごとに広告
 const AD_DURATION = 30;          // 30秒
 
 let adTimerInterval = null;
