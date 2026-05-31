@@ -27,14 +27,17 @@ body {
     background: var(--bg-color);
     color: var(--text-main);
     min-height: 100vh;
-    padding-bottom: 40px;
+    padding-bottom: env(safe-area-inset-bottom, 40px);
 }
 
 /* ヘッダー */
 .stats-header {
     background: var(--surface-color);
     border-bottom: 1px solid var(--border-color);
-    padding: 14px 20px;
+    padding-top: max(env(safe-area-inset-top, 0px), 14px);
+    padding-bottom: 14px;
+    padding-left: 20px;
+    padding-right: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
