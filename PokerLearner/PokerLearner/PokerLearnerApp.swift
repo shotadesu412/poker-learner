@@ -37,21 +37,18 @@ struct PokerLearnerApp: App {
                 if let formError {
                     print("[UMP] loadAndPresentIfRequired error: \(formError.localizedDescription)")
                 }
+                print("[UMP] canRequestAds = \(ConsentInformation.shared.canRequestAds)")
                 // 3. ATT許可ダイアログを表示（iOS 14+）
+                // canRequestAds のチェックは行わず常に初期化する
+                // （日本など非GDPR地域では常に広告リクエスト可能だが、
+                //   UMP の初期化タイミングによっては false を返す場合があるため）
                 if #available(iOS 14, *) {
-                    ATTrackingManager.requestTrackingAuthorization { _ in
-                        Task { @MainActor in
-                            if ConsentInformation.shared.canRequestAds {
-                                AdManager.shared.initializeAndLoad()
-                            }
-                        }
+                    ATTrackingManager.requestTrackingAuthorization { status in
+                        print("[ATT] status = \(status.rawValue)")
+                        Task { @MainActor in AdManager.shared.initializeAndLoad() }
                     }
                 } else {
-                    Task { @MainActor in
-                        if ConsentInformation.shared.canRequestAds {
-                            AdManager.shared.initializeAndLoad()
-                        }
-                    }
+                    Task { @MainActor in AdManager.shared.initializeAndLoad() }
                 }
             }
         }

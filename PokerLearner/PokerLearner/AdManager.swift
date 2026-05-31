@@ -23,24 +23,33 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     func preload() {
         Task {
             do {
+                print("[Ad] Loading interstitial ad...")
                 interstitial = try await InterstitialAd.load(
                     with: adUnitID,
                     request: Request()
                 )
                 interstitial?.fullScreenContentDelegate = self
+                print("[Ad] Interstitial ad loaded successfully")
             } catch {
+                print("[Ad] Failed to load interstitial ad: \(error.localizedDescription)")
                 interstitial = nil
             }
         }
     }
 
     func show() {
-        guard let interstitial,
-              let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let root = scene.keyWindow?.rootViewController else {
+        guard let interstitial else {
+            print("[Ad] show() called but no ad loaded — calling dismiss()")
             dismiss()
             return
         }
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let root = scene.keyWindow?.rootViewController else {
+            print("[Ad] show() called but no root view controller")
+            dismiss()
+            return
+        }
+        print("[Ad] Presenting interstitial ad")
         interstitial.present(from: root)
     }
 
