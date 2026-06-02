@@ -1,83 +1,67 @@
 // static/home.js
 
 document.addEventListener("DOMContentLoaded", () => {
-    // ----------------------------
-    // Settings Management
-    // ----------------------------
-    const defaultSettings = {
-        showRange: true,
-        showFeedback: true,
-        speed: "normal"
-    };
-
-    // Load from localStorage or use defaults
+    const defaultSettings = { showFeedback: true, speed: "normal" };
     let currentSettings = JSON.parse(localStorage.getItem("poker_settings")) || defaultSettings;
 
-    // Elements
-    const toggleRange = document.getElementById("toggle-range");
-    const toggleFeedback = document.getElementById("toggle-feedback");
-    const speedNormal = document.getElementById("speed-normal");
-    const speedFast = document.getElementById("speed-fast");
+    // --- 設定モーダルを開く ---
+    const settingsBtn = document.getElementById("settings-btn");
+    if (settingsBtn) {
+        settingsBtn.onclick = () => openHomeSettings();
+    }
 
-    // Initialize UI with current settings
-    function initSettingsUI() {
-        if (!currentSettings) return;
-        toggleRange.checked = currentSettings.showRange !== false;
-        toggleFeedback.checked = currentSettings.showFeedback !== false;
-        
-        if (currentSettings.speed === "fast") {
-            speedFast.checked = true;
-        } else {
-            speedNormal.checked = true;
+    window.openHomeSettings = function() {
+        const modal = document.getElementById("settings-modal");
+        if (!modal) return;
+
+        // UIに現在の設定を反映
+        const fbToggle = document.getElementById("toggle-feedback");
+        if (fbToggle) fbToggle.checked = currentSettings.showFeedback !== false;
+
+        const segNormal = document.getElementById("home-seg-normal");
+        const segFast   = document.getElementById("home-seg-fast");
+        if (segNormal && segFast) {
+            segNormal.classList.toggle("active", currentSettings.speed !== "fast");
+            segFast.classList.toggle("active", currentSettings.speed === "fast");
         }
-    }
 
-    // Modal Elements
-    const modal = document.getElementById("settings-modal");
-    const btn = document.getElementById("settings-btn");
-    const span = document.getElementById("close-settings");
-    const saveBtn = document.getElementById("save-settings-btn");
-
-    // Open Modal
-    btn.onclick = function() {
-        initSettingsUI(); // refresh UI to match current settings
-        modal.style.display = "block";
-    }
-
-    // Close Modal without saving specifically (though we'd usually save on change, here we save on Save button)
-    span.onclick = function() {
-        modal.style.display = "none";
-    }
-
-    // Close Modal on outside click
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
+        // プレミアムステータス
+        const premStatus = document.getElementById("home-premium-status");
+        if (premStatus) {
+            const isPremium = localStorage.getItem("poker_is_premium") === "true";
+            if (isPremium) {
+                premStatus.textContent = "✓ 加入中";
+                premStatus.className = "home-premium-status is-premium";
+            } else {
+                premStatus.innerHTML = '<button class="home-premium-upgrade-btn" onclick="location.href=\'/play#premium\'">アップグレード</button>';
+                premStatus.className = "home-premium-status";
+            }
         }
-    }
 
-    // Save Settings
-    saveBtn.onclick = function() {
-        currentSettings = {
-            showRange: toggleRange.checked,
-            showFeedback: toggleFeedback.checked,
-            speed: speedNormal.checked ? "normal" : "fast"
-        };
-        
+        modal.classList.remove("hidden");
+    };
+
+    window.closeHomeSettings = function() {
+        const modal = document.getElementById("settings-modal");
+        if (modal) modal.classList.add("hidden");
+    };
+
+    window.setHomeSpeed = function(speed) {
+        currentSettings.speed = speed;
         localStorage.setItem("poker_settings", JSON.stringify(currentSettings));
-        
-        // Brief visual feedback on button
-        const originalText = saveBtn.innerText;
-        saveBtn.innerText = "保存しました！";
-        saveBtn.style.backgroundColor = "var(--secondary)";
-        
-        setTimeout(() => {
-            saveBtn.innerText = originalText;
-            saveBtn.style.backgroundColor = "";
-            modal.style.display = "none";
-        }, 800);
-    }
-    
-    // Initial UI Setup
-    initSettingsUI();
+        const segNormal = document.getElementById("home-seg-normal");
+        const segFast   = document.getElementById("home-seg-fast");
+        if (segNormal && segFast) {
+            segNormal.classList.toggle("active", speed !== "fast");
+            segFast.classList.toggle("active", speed === "fast");
+        }
+    };
+
+    // アクション評価トグルは変更時に即保存
+    document.addEventListener("change", (e) => {
+        if (e.target.id === "toggle-feedback") {
+            currentSettings.showFeedback = e.target.checked;
+            localStorage.setItem("poker_settings", JSON.stringify(currentSettings));
+        }
+    });
 });

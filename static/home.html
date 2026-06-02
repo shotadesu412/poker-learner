@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/home.css?v=4">
+    <link rel="stylesheet" href="/static/home.css?v=5">
 </head>
 <body>
     <div class="home-container">
@@ -29,52 +29,45 @@
         </main>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>ゲーム設定</h2>
-                <span class="close-btn" id="close-settings">&times;</span>
+    <!-- Settings Modal (iOS-style dark sheet) -->
+    <div id="settings-modal" class="home-settings-overlay hidden" onclick="closeHomeSettings()">
+        <div class="home-settings-sheet" onclick="event.stopPropagation()">
+            <div class="home-settings-header">
+                <span class="home-settings-title">設定</span>
+                <button onclick="closeHomeSettings()" class="home-settings-done-btn">完了</button>
             </div>
-            <div class="modal-body">
+            <div class="home-settings-scroll">
 
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <label>レンジバーの表示</label>
-                        <p>自分と相手のハンドレンジ強さをグラフで表示します</p>
+                <div class="home-settings-section-label">表示</div>
+                <div class="home-settings-group">
+                    <div class="home-settings-row">
+                        <div class="home-settings-row-info">
+                            <span class="home-settings-row-label">アクション評価</span>
+                            <span class="home-settings-row-desc">アクションごとの解説コメントを表示</span>
+                        </div>
+                        <label class="ios-toggle">
+                            <input type="checkbox" id="toggle-feedback" checked>
+                            <span class="ios-toggle-track"></span>
+                        </label>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-range" checked>
-                        <span class="slider round"></span>
-                    </label>
+                    <div class="home-settings-separator"></div>
+                    <div class="home-settings-row">
+                        <span class="home-settings-row-label">表示速度</span>
+                        <div class="home-settings-segmented">
+                            <button class="home-seg-btn active" id="home-seg-normal" onclick="setHomeSpeed('normal')">通常</button>
+                            <button class="home-seg-btn" id="home-seg-fast" onclick="setHomeSpeed('fast')">速い</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <label>評価時の解説文（フィードバック）の表示</label>
-                        <p>アクションごとの詳細な解説コメントを表示します（OFF時はアイコンのみ）</p>
+                <div class="home-settings-section-label">アカウント</div>
+                <div class="home-settings-group">
+                    <div class="home-settings-row">
+                        <span class="home-settings-row-label">プレミアムプラン</span>
+                        <span id="home-premium-status" class="home-premium-status"></span>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-feedback" checked>
-                        <span class="slider round"></span>
-                    </label>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <label>アニメーション速度</label>
-                        <p>カードの配布や評価表示のスピードを設定します</p>
-                    </div>
-                    <div class="speed-control">
-                        <input type="radio" id="speed-normal" name="speed" value="normal" checked>
-                        <label for="speed-normal">通常</label>
-                        <input type="radio" id="speed-fast" name="speed" value="fast">
-                        <label for="speed-fast">高速</label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="save-btn" id="save-settings-btn">保存して閉じる</button>
             </div>
         </div>
     </div>

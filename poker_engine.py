@@ -774,11 +774,17 @@ class PokerEngine:
         self.deck.shuffle()
         self.board = []
 
-        # Randomize positions
-        positions = list(self.POSITIONS)
-        random.shuffle(positions)
-        self.hero_position = positions[0]
-        self.cpu_position = positions[1]
+        # Randomize positions (スポット練習でポジション固定が指定されていれば優先)
+        forced = getattr(self, 'forced_position', '')
+        if forced and forced in self.POSITIONS:
+            self.hero_position = forced
+            remaining = [p for p in self.POSITIONS if p != forced]
+            self.cpu_position = random.choice(remaining)
+        else:
+            positions = list(self.POSITIONS)
+            random.shuffle(positions)
+            self.hero_position = positions[0]
+            self.cpu_position = positions[1]
 
         # スポット練習モード: 常にGTOレンジ内のハンドを配布
         force_range = getattr(self, 'spot_mode', False) or (self.hand_count > 0 and self.hand_count % 4 == 0)

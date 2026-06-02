@@ -86,10 +86,12 @@ class AICoachRequest(BaseModel):
     user_id: str = "guest"
 
 @app.get("/api/start_hand")
-def start_hand(user_id: str = Query(""), spot: bool = Query(False)):
+def start_hand(user_id: str = Query(""), spot: bool = Query(False), position: str = Query("")):
   try:
     eng = _get_engine(user_id)
     eng.spot_mode = spot
+    # スポット練習でポジション固定が指定された場合に設定
+    eng.forced_position = position.upper() if position else ""
     MAX_RETRIES = 50
     cpu_msg = ""
 

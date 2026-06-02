@@ -21,6 +21,8 @@ if (!currentUserId) {
 // サブスクリプション状態
 let isPremium = false;
 let isSpotMode = false;
+let spotPosition = "";        // スポット練習: 固定ポジション（""=ランダム）
+let spotParticipatedOnly = false;  // スポット練習: 参加ハンドのみ
 
 async function loadSubscriptionStatus() {
     try {
@@ -256,7 +258,7 @@ async function startHand() {
     if (el('coach-input')) el('coach-input').value = "";
 
     try {
-        const spotParam = isSpotMode ? "&spot=true" : "";
+        const spotParam = isSpotMode ? `&spot=true&position=${encodeURIComponent(spotPosition)}` : "";
         const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`);
         currentState = await res.json();
         updateUI();
@@ -305,7 +307,16 @@ async function takeAction(actionType, amount = 0) {
         const data = await res.json();
 
         // Show evaluation animation
-        const actionText = amount > 0 ? `${actionType} ${amount.toFixed(1)}bb` : actionType;
+        // ゲーム状態から正確なアクション表示名を決定（BET/RAISE の誤表記修正）
+        const hasActiveBet = currentState && (
+            (currentState.street === "PREFLOP" && currentState.currentBet > 1.0) ||
+            (currentState.street !== "PREFLOP" && currentState.currentBet > 0)
+        );
+        let displayAction = actionType;
+        if (actionType === "BET" || actionType === "RAISE") {
+            displayAction = hasActiveBet ? "RAISE" : "BET";
+        }
+        const actionText = amount > 0 ? `${displayAction} ${amount.toFixed(1)}bb` : displayAction;
         const actionStreet = currentState ? currentState.street : "";
         showEvaluation(data.evaluation || "", actionText, actionStreet);
 
@@ -315,6 +326,12 @@ async function takeAction(actionType, amount = 0) {
                 showReason(data.evaluation, data.reason);
             }
         }, 800 * speedMult);
+
+        // スポット練習「参加ハンドのみ」: PREFLOPフォールド時は自動で次のハンドへ
+        if (spotParticipatedOnly && isSpotMode && actionType === "FOLD" && actionStreet === "PREFLOP") {
+            setTimeout(() => startHand(), 600 * speedMult);
+            return;
+        }
 
         // Render CPU response if exists
         if (data.cpuMessage) {
@@ -1242,6 +1259,18 @@ function openSettings() {
         segFast.classList.toggle('active', appSettings.speed === 'fast');
     }
 
+    // プレミアムステータス表示
+    const premStatus = el('settings-premium-status');
+    if (premStatus) {
+        if (isPremium) {
+            premStatus.textContent = '✓ 加入中';
+            premStatus.className = 'settings-premium-status is-premium';
+        } else {
+            premStatus.innerHTML = '<button class="settings-premium-btn" onclick="openPurchaseModal(); closeSettings();">アップグレード</button>';
+            premStatus.className = 'settings-premium-status';
+        }
+    }
+
     modal.classList.remove('hidden');
 }
 
@@ -1268,15 +1297,31 @@ function setSpeedSetting(speed) {
 // ==============================
 function toggleSpotMode() {
     if (!isPremium) {
-        alert('スポット練習はプレミアムプランの機能です。');
+        openPurchaseModal();
         return;
     }
     isSpotMode = !isSpotMode;
     const btn = el('btn-spot-mode');
+    const selector = el('spot-pos-selector');
     if (btn) {
         btn.classList.toggle('spot-active', isSpotMode);
-        btn.textContent = isSpotMode ? 'スポット練習 ON' : 'スポット練習';
+        btn.textContent = isSpotMode ? '🎯 スポット練習 ON' : '🎯 スポット練習';
     }
-    // モードを切り替えたら即座に新しいハンドを開始
+    if (selector) {
+        selector.classList.toggle('hidden', !isSpotMode);
+    }
     startHand();
+}
+
+function setSpotPosition(pos) {
+    spotPosition = pos;
+    // ボタンのactiveクラス更新
+    document.querySelectorAll('.spot-pos-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.pos === pos);
+    });
+    if (isSpotMode) startHand();
+}
+
+function setSpotParticipated(val) {
+    spotParticipatedOnly = val;
 }

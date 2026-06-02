@@ -125,7 +125,172 @@ body {
     border-color: #555;
 }
 
-/* Modal Styling */
+/* ==============================
+   iOS スタイル ダークテーマ設定シート
+   ============================== */
+.home-settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 600;
+    display: flex;
+    align-items: flex-end;
+    backdrop-filter: blur(4px);
+}
+.home-settings-overlay.hidden {
+    display: none !important;
+}
+.home-settings-sheet {
+    width: 100%;
+    background: #1c1c1e;
+    border-radius: 16px 16px 0 0;
+    max-height: 80dvh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.home-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.home-settings-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f0f0f0;
+}
+.home-settings-done-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+.home-settings-scroll {
+    overflow-y: auto;
+    padding: 16px 0 20px;
+}
+.home-settings-section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 20px 6px;
+    margin-top: 8px;
+}
+.home-settings-group {
+    background: #2c2c2e;
+    border-radius: 12px;
+    margin: 0 16px 20px;
+    overflow: hidden;
+}
+.home-settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 16px;
+    min-height: 50px;
+}
+.home-settings-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.home-settings-row-label {
+    font-size: 0.95rem;
+    color: #f0f0f0;
+    font-weight: 500;
+}
+.home-settings-row-desc {
+    font-size: 0.75rem;
+    color: #8e8e93;
+}
+.home-settings-separator {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin-left: 16px;
+}
+.home-settings-segmented {
+    display: flex;
+    background: #1c1c1e;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.home-seg-btn {
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    background: none;
+    border: none;
+    color: #8e8e93;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.home-seg-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 6px;
+}
+/* iOS トグル (ゲーム画面と共通スタイル再定義) */
+.ios-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 30px;
+    flex-shrink: 0;
+}
+.ios-toggle input { opacity: 0; width: 0; height: 0; }
+.ios-toggle-track {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #3a3a3c;
+    border-radius: 31px;
+    transition: 0.3s;
+}
+.ios-toggle-track:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.ios-toggle input:checked + .ios-toggle-track { background: #34c759; }
+.ios-toggle input:checked + .ios-toggle-track:before { transform: translateX(20px); }
+/* プレミアムステータス */
+.home-premium-status {
+    font-size: 0.82rem;
+    font-weight: bold;
+}
+.home-premium-status.is-premium { color: #34c759; }
+.home-premium-upgrade-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 14px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Modal Styling (legacy) */
 .modal {
     display: none; 
     position: fixed; 

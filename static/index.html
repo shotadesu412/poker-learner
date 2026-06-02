@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=8">
+    <link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 
 <body>
@@ -14,8 +14,8 @@
     <!-- トップナビゲーションバー -->
     <nav class="top-nav">
         <div class="top-nav-left">
-            <a href="/" class="nav-btn">ホーム</a>
-            <button onclick="openSettings()" class="nav-btn nav-btn-dim">設定</button>
+            <a href="/" class="nav-btn nav-icon-btn" title="ホーム">🏠</a>
+            <button onclick="openSettings()" class="nav-btn nav-btn-dim nav-icon-btn" title="設定">⚙️</button>
         </div>
         <div class="top-nav-right">
             <button onclick="openPreflopRangeModal()" class="nav-btn nav-btn-green">レンジ表</button>
@@ -121,6 +121,25 @@
             style="margin-top: 10px;"> AIコーチに相談する</button>
         <button class="action-btn btn-spot full-width" id="btn-spot-mode" onclick="toggleSpotMode()"
             style="margin-top: 8px;">🎯 スポット練習</button>
+        <!-- スポット練習: ポジション固定セレクター（spot ON時のみ表示） -->
+        <div id="spot-pos-selector" class="spot-pos-selector hidden">
+            <div class="spot-pos-label">ポジション固定</div>
+            <div class="spot-pos-btns">
+                <button class="spot-pos-btn" data-pos="" onclick="setSpotPosition('')">ランダム</button>
+                <button class="spot-pos-btn" data-pos="UTG" onclick="setSpotPosition('UTG')">UTG</button>
+                <button class="spot-pos-btn" data-pos="HJ" onclick="setSpotPosition('HJ')">HJ</button>
+                <button class="spot-pos-btn" data-pos="CO" onclick="setSpotPosition('CO')">CO</button>
+                <button class="spot-pos-btn" data-pos="BTN" onclick="setSpotPosition('BTN')">BTN</button>
+                <button class="spot-pos-btn" data-pos="SB" onclick="setSpotPosition('SB')">SB</button>
+                <button class="spot-pos-btn" data-pos="BB" onclick="setSpotPosition('BB')">BB</button>
+            </div>
+            <div class="spot-participated-row">
+                <label class="spot-participated-label">
+                    <input type="checkbox" id="spot-participated-only" onchange="setSpotParticipated(this.checked)">
+                    <span>参加ハンドのみ（フォールドは自動スキップ）</span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <!-- AI Coach Chat Area -->
@@ -258,6 +277,15 @@
                     </div>
                 </div>
 
+                <!-- セクション: プレミアムプラン -->
+                <div class="settings-section-label">プラン</div>
+                <div class="settings-group">
+                    <div class="settings-row" id="settings-premium-row">
+                        <span class="settings-row-label">プレミアムプラン</span>
+                        <span id="settings-premium-status" class="settings-premium-status"></span>
+                    </div>
+                </div>
+
                 <!-- セクション: ゲームルール -->
                 <div class="settings-section-label">ゲームルール（変更不可）</div>
                 <div class="settings-group">
@@ -301,7 +329,7 @@
         <div id="glossary-popup-body" class="glossary-popup-body"></div>
     </div>
 
-    <script src="/static/script.js?v=11"></script>
+    <script src="/static/script.js?v=12"></script>
 </body>
 
 </html>

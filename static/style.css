@@ -93,6 +93,90 @@ body {
     color: #10b981;
 }
 
+/* アイコン専用ナビボタン（絵文字表示用） */
+.nav-icon-btn {
+    padding: 5px 10px;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+/* スポット練習: ポジション選択 */
+.spot-pos-selector {
+    margin-top: 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.spot-pos-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.spot-pos-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.spot-pos-btn {
+    flex: 1;
+    min-width: 44px;
+    padding: 6px 4px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-color);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.spot-pos-btn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+}
+.spot-participated-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.spot-participated-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.spot-participated-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
+
+/* 設定モーダル: プレミアムステータス */
+.settings-premium-status {
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+.settings-premium-status.is-premium {
+    color: #10b981;
+}
+.settings-premium-btn {
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 /* Base Layouts */
 .board-area {
     flex: 0 0 auto;
