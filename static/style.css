@@ -93,10 +93,12 @@ body {
     color: #10b981;
 }
 
-/* アイコン専用ナビボタン（絵文字表示用） */
+/* アイコン専用ナビボタン（SVGアイコン表示用） */
 .nav-icon-btn {
-    padding: 5px 10px;
-    font-size: 1.1rem;
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
 }
 

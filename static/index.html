@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=9">
+    <link rel="stylesheet" href="/static/style.css?v=10">
 </head>
 
 <body>
@@ -14,8 +14,12 @@
     <!-- トップナビゲーションバー -->
     <nav class="top-nav">
         <div class="top-nav-left">
-            <a href="/" class="nav-btn nav-icon-btn" title="ホーム">🏠</a>
-            <button onclick="openSettings()" class="nav-btn nav-btn-dim nav-icon-btn" title="設定">⚙️</button>
+            <a href="/" class="nav-btn nav-icon-btn" title="ホーム">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            </a>
+            <button onclick="openSettings()" class="nav-btn nav-btn-dim nav-icon-btn" title="設定">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a6.96 6.96 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4a.484.484 0 0 0-.48.41l-.36 2.54a7.3 7.3 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.64 8.47a.48.48 0 0 0 .12.61l2.03 1.58a7.23 7.23 0 0 0-.07.94c0 .32.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.07.27.3.47.58.47h4c.28 0 .51-.2.58-.47l.36-2.54a7.3 7.3 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+            </button>
         </div>
         <div class="top-nav-right">
             <button onclick="openPreflopRangeModal()" class="nav-btn nav-btn-green">レンジ表</button>
