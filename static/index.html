@@ -333,7 +333,27 @@
         <div id="glossary-popup-body" class="glossary-popup-body"></div>
     </div>
 
-    <script src="/static/script.js?v=12"></script>
+    <!-- AIコーチ追加質問 制限モーダル -->
+    <div id="coach-limit-modal" class="ad-modal-overlay hidden" onclick="closeCoachLimitModal()">
+        <div class="coach-limit-content" onclick="event.stopPropagation()">
+            <div class="coach-limit-header">
+                <span>AIコーチ</span>
+                <button onclick="closeCoachLimitModal()" class="purchase-close-btn">✕</button>
+            </div>
+            <div class="coach-limit-body">
+                <p class="coach-limit-msg">追加質問の上限に達しました<br><span class="coach-limit-sub">（1ハンドにつき<span id="coach-limit-num">3</span>回まで）</span></p>
+                <button onclick="watchAdForCoach()" class="coach-limit-btn-ad">
+                    広告を見て3回分追加
+                </button>
+                <div class="coach-limit-or">── または ──</div>
+                <button onclick="closeCoachLimitModal(); openPurchaseModal();" class="coach-limit-btn-premium">
+                    プレミアムで無制限に使う
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=15"></script>
 </body>
 
 </html>

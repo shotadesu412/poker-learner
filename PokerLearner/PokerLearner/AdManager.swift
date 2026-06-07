@@ -5,7 +5,14 @@ import WebKit
 @MainActor
 final class AdManager: NSObject, FullScreenContentDelegate {
     static let shared = AdManager()
-    private let adUnitID = "ca-app-pub-2416149393168379/6297339288"
+
+    // デバッグビルドはGoogleテストIDを使用（本番では絶対に使わないこと）
+    #if DEBUG
+    private let adUnitID = "ca-app-pub-3940256099942544/4411468910"  // Google公式テスト用インタースティシャル
+    #else
+    private let adUnitID = "ca-app-pub-2416149393168379/6297339288"  // 本番
+    #endif
+
     private var interstitial: InterstitialAd?
     weak var webView: WKWebView?
 

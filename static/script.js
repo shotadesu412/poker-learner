@@ -36,6 +36,8 @@ async function loadSubscriptionStatus() {
 
 // AI Coach Global States
 let coachMessages = [];
+const FREE_COACH_QUESTIONS = 3;   // 非プレミアム: 1ハンドあたり追加質問N回まで
+let coachQuestionsThisHand = 0;   // このハンドでの追加質問数
 
 const POKER_GLOSSARY = {
     "GTO": "Game Theory Optimal の略。\nお互いが最適な防衛戦略をとることで誰も搾取されない、数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたものです。",
@@ -252,6 +254,7 @@ async function startHand() {
 
     // Reset Chat Array and Hide UI
     coachMessages = [];
+    coachQuestionsThisHand = 0;   // ハンドが変わったらリセット
     el('ai-coach-area').classList.remove('show');
     el('ai-coach-area').classList.add('hidden');
     el('coach-chat-history').innerHTML = "";
@@ -764,6 +767,12 @@ async function sendCoachMessage() {
     const text = input.value.trim();
     if (!text) return;
 
+    // 初回・追加質問共通: 3回に1回広告
+    incrementCoachCount();
+    if (shouldShowCoachAd()) {
+        await showAdModal();
+    }
+
     input.value = "";
     input.disabled = true;
     el('btn-coach-send').disabled = true;
@@ -791,6 +800,27 @@ function handleCoachInputKeyPress(event) {
     if (event.key === 'Enter') {
         sendCoachMessage();
     }
+}
+
+// AIコーチ追加質問 制限モーダル
+function showCoachLimitModal() {
+    const numEl = el('coach-limit-num');
+    if (numEl) numEl.textContent = FREE_COACH_QUESTIONS;
+    const modal = el('coach-limit-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeCoachLimitModal() {
+    const modal = el('coach-limit-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 広告を見てコーチ質問を追加（3回分リセット）
+async function watchAdForCoach() {
+    closeCoachLimitModal();
+    await showAdModal();
+    // 広告視聴後: このハンドのカウンターをリセット
+    coachQuestionsThisHand = 0;
 }
 
 // Init
@@ -1173,6 +1203,13 @@ function restorePurchase() {
 window.onPurchaseSuccess = async function(info) {
     const statusEl = el('purchase-status');
     const btn = el('btn-purchase');
+
+    // StoreKit が成功した時点で即座にプレミアム有効化（サーバー応答を待たない）
+    isPremium = true;
+    applyPremiumUI();
+    if (statusEl) statusEl.textContent = '✅ プレミアム有効化しました！';
+
+    // サーバーへの同期はバックグラウンドで行う（失敗してもisPremium=trueは維持）
     try {
         const res = await fetch('/api/subscription/verify_purchase', {
             method: 'POST',
@@ -1183,18 +1220,14 @@ window.onPurchaseSuccess = async function(info) {
                 product_id: info.productId || ''
             })
         });
-        const data = await res.json();
-        if (data.success) {
-            isPremium = true;
-            if (statusEl) statusEl.textContent = '✅ プレミアム有効化しました！';
-            applyPremiumUI();
-            setTimeout(closePurchaseModal, 1500);
-        } else {
-            if (statusEl) statusEl.textContent = '有効化に失敗しました。再試行してください。';
-        }
+        await res.json();
+        // サーバー同期成功・失敗に関わらずisPremium=trueを維持
     } catch (e) {
-        if (statusEl) statusEl.textContent = 'サーバーエラーが発生しました';
+        // サーバーエラーでもisPremium=trueを維持
+        console.warn('[Purchase] サーバー同期失敗（StoreKit購入は有効）:', e);
     }
+
+    setTimeout(closePurchaseModal, 1500);
     if (btn) btn.disabled = false;
 };
 

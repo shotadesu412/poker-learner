@@ -13,6 +13,13 @@ struct PokerLearnerApp: App {
         }
     }
 
+    // デバッグビルド時のみログを詳細出力
+    init() {
+        #if DEBUG
+        print("[App] ⚠️ DEBUG BUILD — テスト広告IDを使用中")
+        #endif
+    }
+
     /// UMP 同意フロー → 完了後に AdManager を初期化
     @MainActor
     private func requestConsentAndInitializeAds() {
