@@ -1284,6 +1284,44 @@ body {
     padding: 16px;
 }
 
+.purchase-plan-info {
+    background: rgba(78, 140, 255, 0.08);
+    border: 1px solid rgba(78, 140, 255, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+.purchase-plan-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin-bottom: 4px;
+}
+.purchase-plan-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+.purchase-plan-renew {
+    font-size: 0.72rem;
+    color: #8e8e93;
+}
+.purchase-legal {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 0.72rem;
+}
+.purchase-legal-link {
+    color: #8e8e93;
+    text-decoration: underline;
+}
+.purchase-legal-sep {
+    color: #555;
+    margin: 0 4px;
+}
+
 .purchase-features {
     list-style: none;
     padding: 0;

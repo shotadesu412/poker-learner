@@ -230,12 +230,18 @@
     <div id="purchase-modal" class="ad-modal-overlay hidden" onclick="closePurchaseModal()">
         <div class="purchase-modal-content" onclick="event.stopPropagation()">
             <div class="purchase-modal-header">
-                <span>Premium プラン</span>
+                <span>プレミアムプラン</span>
                 <button onclick="closePurchaseModal()" class="purchase-close-btn">✕</button>
             </div>
             <div class="purchase-modal-body">
+                <div class="purchase-plan-info">
+                    <div class="purchase-plan-name">プレミアムプラン</div>
+                    <div class="purchase-plan-price" id="purchase-price-display">月額サブスクリプション</div>
+                    <div class="purchase-plan-renew">1ヶ月ごとに自動更新。いつでもキャンセル可能。</div>
+                </div>
                 <ul class="purchase-features">
                     <li>広告なし</li>
+                    <li>AIコーチ無制限</li>
                     <li>ポジション別詳細統計</li>
                     <li>よくあるミス分析（リーク）</li>
                     <li>ハンド履歴（直近30件）</li>
@@ -248,6 +254,11 @@
                 <button onclick="restorePurchase()" class="purchase-btn-secondary">
                     購入を復元
                 </button>
+                <div class="purchase-legal">
+                    <a href="https://app.notion.com/p/35ef58c9a02080ff9ecafeaad8f5df69" target="_blank" class="purchase-legal-link">プライバシーポリシー</a>
+                    <span class="purchase-legal-sep">｜</span>
+                    <a href="https://app.notion.com/p/37af58c9a0208059b916d9e3ce1ba8e5" target="_blank" class="purchase-legal-link">利用規約</a>
+                </div>
             </div>
         </div>
     </div>
@@ -353,7 +364,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=15"></script>
+    <script src="/static/script.js?v=16"></script>
 </body>
 
 </html>

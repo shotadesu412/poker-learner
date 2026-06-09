@@ -24,6 +24,11 @@ final class StoreKitManager: ObservableObject {
         for attempt in 1...3 {
             do {
                 products = try await Product.products(for: [productID])
+                if let product = products.first {
+                    // 購入モーダルに価格を表示するためJSに渡す
+                    let price = product.displayPrice
+                    sendJS("(function(){ var el = document.getElementById('purchase-price-display'); if(el) el.textContent = '\(price) / 月（自動更新）'; })()")
+                }
                 return
             } catch {
                 if attempt < 3 {
