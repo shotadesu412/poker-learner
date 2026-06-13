@@ -1293,20 +1293,22 @@ body {
     text-align: center;
 }
 .purchase-plan-name {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #f0f0f0;
-    margin-bottom: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #8e8e93;
+    margin-bottom: 6px;
 }
 .purchase-plan-price {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin-bottom: 4px;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+    margin-bottom: 8px;
 }
 .purchase-plan-renew {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #8e8e93;
+    line-height: 1.5;
 }
 .purchase-legal {
     text-align: center;

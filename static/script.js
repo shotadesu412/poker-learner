@@ -1164,6 +1164,10 @@ function openPurchaseModal() {
     if (isPremium) {
         if (statusEl) statusEl.textContent = '✅ プレミアムプランご利用中です';
     }
+    // ネイティブ(StoreKit)から最新の価格を取得して表示
+    try {
+        window.webkit.messageHandlers.requestPrice.postMessage({});
+    } catch (e) { /* iOSアプリ外では無視 */ }
     modal.classList.remove('hidden');
 }
 

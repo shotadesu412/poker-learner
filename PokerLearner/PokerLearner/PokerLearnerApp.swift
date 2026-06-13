@@ -1,5 +1,6 @@
 import AppTrackingTransparency
 import SwiftUI
+import UIKit
 import UserMessagingPlatform
 
 @main
@@ -8,7 +9,7 @@ struct PokerLearnerApp: App {
         WindowGroup {
             ContentView()
                 .onAppear {
-                    requestConsentAndInitializeAds()
+                    Self.startConsentFlow()
                 }
         }
     }
@@ -20,10 +21,27 @@ struct PokerLearnerApp: App {
         #endif
     }
 
+    /// 起動後フロー: ATT許可ダイアログ → UMP同意 → 広告初期化
+    /// ATT は「メインスレッド」かつ「アプリがactiveな状態」でなければダイアログが表示されない。
+    /// 以前は UMP のコールバック（バックグラウンドスレッドの可能性）から直接呼んでいたため
+    /// 表示されないことがあった。ここでメインスレッドで遅延実行して確実に表示する。
+    @MainActor
+    static func startConsentFlow() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            if #available(iOS 14, *) {
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    print("[ATT] status = \(status.rawValue)")
+                    Task { @MainActor in requestConsentAndInitializeAds() }
+                }
+            } else {
+                Task { @MainActor in requestConsentAndInitializeAds() }
+            }
+        }
+    }
+
     /// UMP 同意フロー → 完了後に AdManager を初期化
     @MainActor
-    private func requestConsentAndInitializeAds() {
-        // 1. 同意情報を更新（EEA/UK かどうかを判定）
+    static func requestConsentAndInitializeAds() {
         ConsentInformation.shared.requestConsentInfoUpdate(with: nil) { error in
             if let error {
                 print("[UMP] requestConsentInfoUpdate failed: \(error.localizedDescription)")
@@ -31,7 +49,6 @@ struct PokerLearnerApp: App {
                 return
             }
 
-            // 2. 必要であれば同意フォームを表示
             guard let rootVC = UIApplication.shared
                 .connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
@@ -45,18 +62,7 @@ struct PokerLearnerApp: App {
                     print("[UMP] loadAndPresentIfRequired error: \(formError.localizedDescription)")
                 }
                 print("[UMP] canRequestAds = \(ConsentInformation.shared.canRequestAds)")
-                // 3. ATT許可ダイアログを表示（iOS 14+）
-                // canRequestAds のチェックは行わず常に初期化する
-                // （日本など非GDPR地域では常に広告リクエスト可能だが、
-                //   UMP の初期化タイミングによっては false を返す場合があるため）
-                if #available(iOS 14, *) {
-                    ATTrackingManager.requestTrackingAuthorization { status in
-                        print("[ATT] status = \(status.rawValue)")
-                        Task { @MainActor in AdManager.shared.initializeAndLoad() }
-                    }
-                } else {
-                    Task { @MainActor in AdManager.shared.initializeAndLoad() }
-                }
+                Task { @MainActor in AdManager.shared.initializeAndLoad() }
             }
         }
     }

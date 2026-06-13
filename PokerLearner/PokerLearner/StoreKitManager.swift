@@ -10,6 +10,7 @@ final class StoreKitManager: ObservableObject {
 
     weak var webView: WKWebView?
     private var products: [Product] = []
+    private var displayPrice: String?
     private var updatesTask: Task<Void, Never>?
 
     private init() {
@@ -25,9 +26,8 @@ final class StoreKitManager: ObservableObject {
             do {
                 products = try await Product.products(for: [productID])
                 if let product = products.first {
-                    // 購入モーダルに価格を表示するためJSに渡す
-                    let price = product.displayPrice
-                    sendJS("(function(){ var el = document.getElementById('purchase-price-display'); if(el) el.textContent = '\(price) / 月（自動更新）'; })()")
+                    displayPrice = product.displayPrice
+                    pushPrice()
                 }
                 return
             } catch {
@@ -35,6 +35,17 @@ final class StoreKitManager: ObservableObject {
                     try? await Task.sleep(nanoseconds: 3_000_000_000) // 3秒待ってリトライ
                 }
             }
+        }
+    }
+
+    /// 購入モーダルの価格表示を更新する（モーダルを開いたときにJSから呼ばれる）
+    func pushPrice() {
+        if let price = displayPrice {
+            let js = "(function(){var el=document.getElementById('purchase-price-display');if(el)el.textContent='\(price) / 月';})()"
+            sendJS(js)
+        } else {
+            // まだ価格を取得できていなければ再取得を試みる
+            Task { await loadProducts() }
         }
     }
 
