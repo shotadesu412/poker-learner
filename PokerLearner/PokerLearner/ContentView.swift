@@ -155,6 +155,7 @@ struct WebViewContainer: UIViewRepresentable {
         webView.isOpaque = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
 
         viewModel.webView = webView
         StoreKitManager.shared.webView = webView
@@ -181,9 +182,21 @@ struct WebViewContainer: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         let viewModel: WebViewModel
         init(viewModel: WebViewModel) { self.viewModel = viewModel }
+
+        // target="_blank" のリンク（利用規約・プライバシーポリシー等）をSafariで開く。
+        // WKWebViewはデフォルトでは新規ウィンドウを開かないため、これがないとリンクが無反応になる。
+        nonisolated func webView(_ webView: WKWebView,
+                                 createWebViewWith configuration: WKWebViewConfiguration,
+                                 for navigationAction: WKNavigationAction,
+                                 windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if let url = navigationAction.request.url {
+                Task { @MainActor in UIApplication.shared.open(url) }
+            }
+            return nil
+        }
 
         nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             Task { @MainActor [weak self] in self?.viewModel.didFinishLoading() }
