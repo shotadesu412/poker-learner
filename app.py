@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 from poker_engine import PokerEngine, Evaluator
 from equity import EquityCalculator
@@ -53,6 +53,11 @@ def serve_home():
 @app.get("/play")
 def serve_index():
     return FileResponse("static/index.html")
+
+@app.get("/app-ads.txt", response_class=PlainTextResponse)
+def serve_app_ads_txt():
+    # AdMob の所有権確認用（広告詐欺防止の認証ファイル）
+    return "google.com, pub-2416149393168379, DIRECT, f08c47fec0942fa0\n"
 
 @app.get("/api/test_sync")
 def test_sync():

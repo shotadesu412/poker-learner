@@ -130,8 +130,10 @@ private final class WeakMessageHandler: NSObject, WKScriptMessageHandler {
                 await StoreKitManager.shared.restore()
             } else if message.name == "requestPrice" {
                 StoreKitManager.shared.pushPrice()
+            } else if message.name == "showRewardedAd" {
+                AdManager.shared.showRewarded()
             } else if message.name == "showInterstitialAd" {
-                AdManager.shared.show()
+                AdManager.shared.showInterstitial()
             }
         }
     }
@@ -148,6 +150,7 @@ struct WebViewContainer: UIViewRepresentable {
         config.userContentController.add(handler, name: "purchaseRequest")
         config.userContentController.add(handler, name: "restoreRequest")
         config.userContentController.add(handler, name: "requestPrice")
+        config.userContentController.add(handler, name: "showRewardedAd")
         config.userContentController.add(handler, name: "showInterstitialAd")
 
         let webView = WKWebView(frame: .zero, configuration: config)

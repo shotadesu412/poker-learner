@@ -36,9 +36,7 @@ async function loadSubscriptionStatus() {
 
 // AI Coach Global States
 let coachMessages = [];
-const FREE_COACH_CREDITS = 5;   // 無料で使えるAIコーチ回数
-const AD_REWARD_CREDITS = 5;    // リワード広告1回視聴で追加される回数
-let coachCredits = FREE_COACH_CREDITS;   // 残りコーチ回数（プレミアムは無制限）
+// AIコーチ・広告のカウンターは「広告システム」セクションで管理
 
 const POKER_GLOSSARY = {
     "GTO": "Game Theory Optimal の略。\nお互いが最適な防衛戦略をとることで誰も搾取されない、数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたものです。",
@@ -265,6 +263,9 @@ async function startHand() {
         const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`);
         currentState = await res.json();
         updateUI();
+
+        // 30ハンドごとに自動でインタースティシャル広告
+        maybeShowHandAd();
 
         // Render CPU's first action if they act before the player preflop
         if (currentState.cpuMessage) {
@@ -697,12 +698,8 @@ function closeCoachArea() {
 }
 
 async function requestCoachExplanation() {
-    // 無料ユーザーは回数制限。残り0なら広告/プレミアムの選択モーダルを表示
-    if (!isPremium && coachCredits <= 0) {
-        showCoachLimitModal();
-        return;
-    }
-    if (!isPremium) coachCredits--;
+    // 3回ごとに広告/プレミアムの選択ゲート。広告を見ずに閉じたら続行しない
+    if (!(await coachGate())) return;
 
     el('ai-coach-area').classList.remove('hidden');
     setTimeout(() => {
@@ -762,12 +759,8 @@ async function sendCoachMessage() {
     const text = input.value.trim();
     if (!text) return;
 
-    // 無料ユーザーは回数制限。残り0なら広告/プレミアムの選択モーダルを表示
-    if (!isPremium && coachCredits <= 0) {
-        showCoachLimitModal();
-        return;
-    }
-    if (!isPremium) coachCredits--;
+    // 3回ごとに広告/プレミアムの選択ゲート。広告を見ずに閉じたら送信しない
+    if (!(await coachGate())) return;
 
     input.value = "";
     input.disabled = true;
@@ -798,10 +791,8 @@ function handleCoachInputKeyPress(event) {
     }
 }
 
-// AIコーチ回数切れ時の選択モーダル（広告 or プレミアム）
+// AIコーチ3回ごとの選択モーダル（広告 or プレミアム）
 function showCoachLimitModal() {
-    const numEl = el('coach-limit-num');
-    if (numEl) numEl.textContent = AD_REWARD_CREDITS;
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.remove('hidden');
 }
@@ -809,15 +800,16 @@ function showCoachLimitModal() {
 function closeCoachLimitModal() {
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.add('hidden');
+    // 広告を見ずに閉じた → コーチは続行しない
+    if (_coachGateResolve) { _coachGateResolve(false); _coachGateResolve = null; }
 }
 
-// リワード広告を最後まで視聴したらコーチ回数を追加
+// リワード広告を最後まで視聴したらコーチを続行
 async function watchAdForCoach() {
-    closeCoachLimitModal();
+    const modal = el('coach-limit-modal');
+    if (modal) modal.classList.add('hidden');   // closeを呼ぶとゲートがfalseになるため直接閉じる
     const earned = await showRewardedAd();
-    if (earned) {
-        coachCredits += AD_REWARD_CREDITS;
-    }
+    if (_coachGateResolve) { _coachGateResolve(earned); _coachGateResolve = null; }
 }
 
 // Init
@@ -1086,28 +1078,56 @@ function closeRangeModal() {
 }
 
 // ============================================
-// リワード広告システム（ユーザーが任意で視聴）
+// 広告システム
 // ============================================
-// 自動表示の広告は廃止。ユーザーが「広告を見る」を押したときのみ表示する。
+const AD_COACH_INTERVAL = 3;    // AIコーチ3回ごとにゲート（広告 or プレミアム）
+const AD_HAND_INTERVAL = 30;    // 30ハンドごとに自動インタースティシャル広告
+let coachUseCount = 0;          // AIコーチ利用回数（無料ユーザーのみ加算）
+let handPlayCount = 0;          // ハンド数
+let _coachGateResolve = null;   // コーチゲートのPromise解決用
 
-// 広告の視聴完了/中断時にiOSネイティブから呼ばれるコールバック
-// earned=true のとき（最後まで視聴）報酬を付与する
+// --- リワード広告（ユーザーが視聴を選択） ---
+// 視聴完了/中断時にiOSネイティブから呼ばれる。earned=true なら最後まで視聴。
 let _adResolve = null;
 window.onAdDismissed = function(earned) {
     if (_adResolve) { _adResolve(earned === true); _adResolve = null; }
 };
 
-// リワード広告を表示し、最後まで視聴したか(Promise<bool>)を返す
 function showRewardedAd() {
     return new Promise(resolve => {
         _adResolve = resolve;
         try {
-            // iOSネイティブのAdMobリワード広告を呼び出す
-            window.webkit.messageHandlers.showInterstitialAd.postMessage({});
+            window.webkit.messageHandlers.showRewardedAd.postMessage({});
         } catch (e) {
-            // iOSアプリ外（ブラウザ等）では報酬なしで解決
-            resolve(false);
+            resolve(false); // iOSアプリ外では報酬なし
         }
+    });
+}
+
+// --- インタースティシャル広告（30ハンドごとに自動表示） ---
+function showInterstitialAd() {
+    try {
+        window.webkit.messageHandlers.showInterstitialAd.postMessage({});
+    } catch (e) { /* iOSアプリ外では無視 */ }
+}
+
+function maybeShowHandAd() {
+    if (isPremium) return;
+    handPlayCount++;
+    if (handPlayCount % AD_HAND_INTERVAL === 0) {
+        showInterstitialAd();
+    }
+}
+
+// --- AIコーチのゲート（3回ごとに広告/プレミアム選択） ---
+// 続行してよいか(Promise<bool>)を返す。premiumは常にtrue。
+function coachGate() {
+    if (isPremium) return Promise.resolve(true);
+    coachUseCount++;
+    if (coachUseCount % AD_COACH_INTERVAL !== 0) return Promise.resolve(true);
+    return new Promise(resolve => {
+        _coachGateResolve = resolve;
+        showCoachLimitModal();
     });
 }
 
