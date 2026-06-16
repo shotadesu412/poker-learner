@@ -8,12 +8,13 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     // デバッグビルドはGoogleテストIDを使用（本番では絶対に使わないこと）
     #if DEBUG
-    private let adUnitID = "ca-app-pub-3940256099942544/4411468910"  // Google公式テスト用インタースティシャル
+    private let adUnitID = "ca-app-pub-3940256099942544/1712485313"  // Google公式テスト用リワード
     #else
-    private let adUnitID = "ca-app-pub-2416149393168379/6297339288"  // 本番
+    private let adUnitID = "ca-app-pub-2416149393168379/REWARDED_UNIT_ID"  // 本番（AdMobでリワード広告ユニットを作成して差し替える）
     #endif
 
-    private var interstitial: InterstitialAd?
+    private var rewarded: RewardedAd?
+    private var didEarnReward = false
     weak var webView: WKWebView?
 
     private override init() {
@@ -30,47 +31,53 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     func preload() {
         Task {
             do {
-                print("[Ad] Loading interstitial ad...")
-                interstitial = try await InterstitialAd.load(
+                print("[Ad] Loading rewarded ad...")
+                rewarded = try await RewardedAd.load(
                     with: adUnitID,
                     request: Request()
                 )
-                interstitial?.fullScreenContentDelegate = self
-                print("[Ad] Interstitial ad loaded successfully")
+                rewarded?.fullScreenContentDelegate = self
+                print("[Ad] Rewarded ad loaded successfully")
             } catch {
-                print("[Ad] Failed to load interstitial ad: \(error.localizedDescription)")
-                interstitial = nil
+                print("[Ad] Failed to load rewarded ad: \(error.localizedDescription)")
+                rewarded = nil
             }
         }
     }
 
     func show() {
-        guard let interstitial else {
-            print("[Ad] show() called but no ad loaded — calling dismiss()")
-            dismiss()
+        guard let rewarded else {
+            print("[Ad] show() called but no ad loaded — earned=false")
+            dismiss(earned: false)
             return
         }
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let root = scene.keyWindow?.rootViewController else {
             print("[Ad] show() called but no root view controller")
-            dismiss()
+            dismiss(earned: false)
             return
         }
-        print("[Ad] Presenting interstitial ad")
-        interstitial.present(from: root)
+        print("[Ad] Presenting rewarded ad")
+        didEarnReward = false
+        rewarded.present(from: root) { [weak self] in
+            // ユーザーが最後まで視聴して報酬を獲得
+            self?.didEarnReward = true
+            print("[Ad] User earned reward")
+        }
     }
 
-    private func dismiss() {
-        sendJS("window.onAdDismissed()")
+    /// 広告終了時にJSへ通知（earned: 最後まで視聴したか）
+    private func dismiss(earned: Bool) {
+        sendJS("window.onAdDismissed(\(earned ? "true" : "false"))")
         preload()
     }
 
     nonisolated func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        Task { @MainActor in self.dismiss() }
+        Task { @MainActor in self.dismiss(earned: self.didEarnReward) }
     }
 
     nonisolated func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        Task { @MainActor in self.dismiss() }
+        Task { @MainActor in self.dismiss(earned: false) }
     }
 
     private func sendJS(_ script: String) {

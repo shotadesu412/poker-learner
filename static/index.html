@@ -352,9 +352,9 @@
                 <button onclick="closeCoachLimitModal()" class="purchase-close-btn">✕</button>
             </div>
             <div class="coach-limit-body">
-                <p class="coach-limit-msg">追加質問の上限に達しました<br><span class="coach-limit-sub">（1ハンドにつき<span id="coach-limit-num">3</span>回まで）</span></p>
+                <p class="coach-limit-msg">無料分のAIコーチを使い切りました<br><span class="coach-limit-sub">広告を見るか、プレミアムで無制限に</span></p>
                 <button onclick="watchAdForCoach()" class="coach-limit-btn-ad">
-                    広告を見て3回分追加
+                    広告を見て<span id="coach-limit-num">5</span>回分追加
                 </button>
                 <div class="coach-limit-or">── または ──</div>
                 <button onclick="closeCoachLimitModal(); openPurchaseModal();" class="coach-limit-btn-premium">
@@ -364,7 +364,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=18"></script>
+    <script src="/static/script.js?v=19"></script>
 </body>
 
 </html>

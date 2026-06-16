@@ -36,8 +36,9 @@ async function loadSubscriptionStatus() {
 
 // AI Coach Global States
 let coachMessages = [];
-const FREE_COACH_QUESTIONS = 3;   // 非プレミアム: 1ハンドあたり追加質問N回まで
-let coachQuestionsThisHand = 0;   // このハンドでの追加質問数
+const FREE_COACH_CREDITS = 5;   // 無料で使えるAIコーチ回数
+const AD_REWARD_CREDITS = 5;    // リワード広告1回視聴で追加される回数
+let coachCredits = FREE_COACH_CREDITS;   // 残りコーチ回数（プレミアムは無制限）
 
 const POKER_GLOSSARY = {
     "GTO": "Game Theory Optimal の略。\nお互いが最適な防衛戦略をとることで誰も搾取されない、数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたものです。",
@@ -254,7 +255,6 @@ async function startHand() {
 
     // Reset Chat Array and Hide UI
     coachMessages = [];
-    coachQuestionsThisHand = 0;   // ハンドが変わったらリセット
     el('ai-coach-area').classList.remove('show');
     el('ai-coach-area').classList.add('hidden');
     el('coach-chat-history').innerHTML = "";
@@ -265,12 +265,6 @@ async function startHand() {
         const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`);
         currentState = await res.json();
         updateUI();
-
-        // ハンドカウンターをインクリメント & 広告チェック
-        incrementHandCount();
-        if (shouldShowHandAd()) {
-            await showAdModal();
-        }
 
         // Render CPU's first action if they act before the player preflop
         if (currentState.cpuMessage) {
@@ -703,11 +697,12 @@ function closeCoachArea() {
 }
 
 async function requestCoachExplanation() {
-    // AIコーチカウンターをインクリメント & 広告チェック
-    incrementCoachCount();
-    if (shouldShowCoachAd()) {
-        await showAdModal();
+    // 無料ユーザーは回数制限。残り0なら広告/プレミアムの選択モーダルを表示
+    if (!isPremium && coachCredits <= 0) {
+        showCoachLimitModal();
+        return;
     }
+    if (!isPremium) coachCredits--;
 
     el('ai-coach-area').classList.remove('hidden');
     setTimeout(() => {
@@ -767,11 +762,12 @@ async function sendCoachMessage() {
     const text = input.value.trim();
     if (!text) return;
 
-    // 初回・追加質問共通: 3回に1回広告
-    incrementCoachCount();
-    if (shouldShowCoachAd()) {
-        await showAdModal();
+    // 無料ユーザーは回数制限。残り0なら広告/プレミアムの選択モーダルを表示
+    if (!isPremium && coachCredits <= 0) {
+        showCoachLimitModal();
+        return;
     }
+    if (!isPremium) coachCredits--;
 
     input.value = "";
     input.disabled = true;
@@ -802,10 +798,10 @@ function handleCoachInputKeyPress(event) {
     }
 }
 
-// AIコーチ追加質問 制限モーダル
+// AIコーチ回数切れ時の選択モーダル（広告 or プレミアム）
 function showCoachLimitModal() {
     const numEl = el('coach-limit-num');
-    if (numEl) numEl.textContent = FREE_COACH_QUESTIONS;
+    if (numEl) numEl.textContent = AD_REWARD_CREDITS;
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.remove('hidden');
 }
@@ -815,12 +811,13 @@ function closeCoachLimitModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// 広告を見てコーチ質問を追加（3回分リセット）
+// リワード広告を最後まで視聴したらコーチ回数を追加
 async function watchAdForCoach() {
     closeCoachLimitModal();
-    await showAdModal();
-    // 広告視聴後: このハンドのカウンターをリセット
-    coachQuestionsThisHand = 0;
+    const earned = await showRewardedAd();
+    if (earned) {
+        coachCredits += AD_REWARD_CREDITS;
+    }
 }
 
 // Init
@@ -1089,68 +1086,29 @@ function closeRangeModal() {
 }
 
 // ============================================
-// 広告表示システム
+// リワード広告システム（ユーザーが任意で視聴）
 // ============================================
-const AD_HAND_INTERVAL = 30;     // 30ハンドごとに広告
-const AD_COACH_INTERVAL = 3;     // AIコーチ3回ごとに広告
-const AD_DURATION = 30;          // 30秒
+// 自動表示の広告は廃止。ユーザーが「広告を見る」を押したときのみ表示する。
 
-let adTimerInterval = null;
-
-function getHandCount() {
-    return parseInt(localStorage.getItem('poker_hand_count') || '0', 10);
-}
-
-function incrementHandCount() {
-    const count = getHandCount() + 1;
-    localStorage.setItem('poker_hand_count', count.toString());
-    return count;
-}
-
-function getCoachCount() {
-    return parseInt(localStorage.getItem('poker_coach_count') || '0', 10);
-}
-
-function incrementCoachCount() {
-    const count = getCoachCount() + 1;
-    localStorage.setItem('poker_coach_count', count.toString());
-    return count;
-}
-
-function shouldShowHandAd() {
-    const count = getHandCount();
-    return count > 0 && count % AD_HAND_INTERVAL === 0;
-}
-
-function shouldShowCoachAd() {
-    const count = getCoachCount();
-    return count > 0 && count % AD_COACH_INTERVAL === 0;
-}
-
-// 広告表示後のコールバック（iOSネイティブ側から呼ばれる）
+// 広告の視聴完了/中断時にiOSネイティブから呼ばれるコールバック
+// earned=true のとき（最後まで視聴）報酬を付与する
 let _adResolve = null;
-window.onAdDismissed = function() {
-    if (_adResolve) { _adResolve(); _adResolve = null; }
+window.onAdDismissed = function(earned) {
+    if (_adResolve) { _adResolve(earned === true); _adResolve = null; }
 };
 
-function showAdModal() {
-    if (isPremium) return Promise.resolve(); // プレミアムはスキップ
-
+// リワード広告を表示し、最後まで視聴したか(Promise<bool>)を返す
+function showRewardedAd() {
     return new Promise(resolve => {
         _adResolve = resolve;
         try {
-            // iOSネイティブのAdMobインタースティシャルを呼び出す
+            // iOSネイティブのAdMobリワード広告を呼び出す
             window.webkit.messageHandlers.showInterstitialAd.postMessage({});
         } catch (e) {
-            // iOSアプリ外（ブラウザ等）では即座に解決
-            resolve();
+            // iOSアプリ外（ブラウザ等）では報酬なしで解決
+            resolve(false);
         }
     });
-}
-
-function closeAdModal() {
-    // ネイティブ広告は自動で閉じるため不要。互換性のため残す。
-    window.onAdDismissed();
 }
 
 // ==============================
