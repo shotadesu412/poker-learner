@@ -11,7 +11,7 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     private let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"      // Google公式テスト用リワード
     private let interstitialAdUnitID = "ca-app-pub-3940256099942544/4411468910"  // Google公式テスト用インタースティシャル
     #else
-    private let rewardedAdUnitID = "ca-app-pub-2416149393168379/REWARDED_UNIT_ID" // 本番（AdMobでリワード広告ユニットを作成して差し替える）
+    private let rewardedAdUnitID = "ca-app-pub-2416149393168379/9738839934"      // 本番リワード
     private let interstitialAdUnitID = "ca-app-pub-2416149393168379/6297339288"   // 本番インタースティシャル
     #endif
 
