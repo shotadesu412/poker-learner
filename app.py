@@ -160,11 +160,13 @@ def take_action(req: ActionRequest):
         effective_stack = min(eng.hero_stack, eng.cpu_stack)
 
         is_preflop = (eng.street == "PREFLOP")
-        hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=100)
-        hero_range_adv = EquityCalculator.calc_range_advantage(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=100)
+        # ▼ 修正(重大5): 評価用エクイティは100試行だと±5pt超のノイズで判定がブレるため
+        #   1000試行に増やす（σ≈1pt）。MCループ最適化済みで速度は許容範囲。
+        hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=1000)
+        hero_range_adv = EquityCalculator.calc_range_advantage(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=1000)
 
         eqr = Evaluator.get_eqr_modifier(eng.hero_position, eng.hero_hand, is_3bet_pot, eng.board, range_adv=hero_range_adv)
-        realized_equity = hero_eq * eqr
+        realized_equity = Evaluator.realize_equity(hero_eq, eqr)
 
         eval_result = "N/A"
         eval_reason = ""
@@ -354,8 +356,8 @@ def take_action(req: ActionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
-    hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, iterations=50)
-    realized_eq = min(1.0, max(0.0, hero_eq * Evaluator.get_eqr_modifier(eng.hero_position)))
+    hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, iterations=500)
+    realized_eq = Evaluator.realize_equity(hero_eq, Evaluator.get_eqr_modifier(eng.hero_position))
 
     if finished and show_cpu_hand and not eng.cpu_hand:
         eng.generate_realized_cpu_hand()

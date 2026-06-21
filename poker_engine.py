@@ -21,6 +21,51 @@ class Evaluator:
     FOLD_OPTIMAL_THRESHOLD = 1.2
 
     @staticmethod
+    def realize_equity(equity, eqr):
+        """
+        生エクイティに Equity Realization(EQR) を適用して「実現エクイティ」を返す。
+
+        単純な equity * eqr では、強いハンド(高エクイティ)に EQR>1 を掛けたとき
+        勝率が 100% を超えてしまう（例: 0.95 * 1.25 = 1.19 → 「勝率119%」）。
+        ソルバー理論上、実現率が1を大きく超えるのはドロー/エア等の弱いハンドだけで、
+        ナッツ級の完成ハンドは R≈1.0 に収束する。
+
+        そこで EQR の影響を (1 - equity) で重み付けし、エクイティが高いほど
+        実現率を 1.0 へ漸近させる:
+            realized = equity * (1 + (eqr - 1) * (1 - equity))
+        この式は equity∈[0,1] で realized<=1.0 を保証する（equity=1 で realized=1）。
+        最後に安全のため [0.02, 0.99] にクランプする。
+        """
+        adjusted = equity * (1.0 + (eqr - 1.0) * (1.0 - equity))
+        return max(0.02, min(0.99, adjusted))
+
+    @staticmethod
+    def estimate_fold_equity(pot_size, bet_amount, texture=None):
+        """
+        相手が降りる現実的な頻度（フォールドエクイティ）を推定する。
+
+        α = bet/(pot+bet) は「ブラフが損益分岐となる最低フォールド率」であって、
+        実際に相手が降りる頻度ではない。これをそのまま FE に使うと
+        ev_bet/ev_check の比がエクイティに依らずほぼ定数化し、評価が壊れる。
+
+        実プレイの傾向に合わせ、ベットサイズ（対ポット比）が大きいほど
+        フォールド率が上がるモデルとする。ハーフポットで約0.55となり、
+        evaluate_check が使う 0.55 と整合する。
+            FE = clamp(0.40 + 0.30 * (bet/pot), 0.35, 0.65)
+        さらにボードテクスチャで微調整（ドライ/ペアは降りやすい、
+        ウェット/モノトーンは降りにくい）。
+        """
+        pot = max(pot_size, 1e-9)
+        ratio = bet_amount / pot
+        fe = 0.40 + 0.30 * ratio
+        fe = max(0.35, min(0.65, fe))
+        if texture in ("dry", "paired"):
+            fe += 0.05
+        elif texture in ("wet", "monotone"):
+            fe -= 0.05
+        return max(0.30, min(0.70, fe))
+
+    @staticmethod
     def calculate_required_equity(call_amount, pot_size):
         return EVCalculator.calculate_required_equity(call_amount, pot_size)
 
@@ -308,7 +353,7 @@ class Evaluator:
 
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
-        realized_equity = equity * eqr
+        realized_equity = Evaluator.realize_equity(equity, eqr)
 
         spr = None
         if effective_stack > 0 and pot_size > 0:
@@ -377,7 +422,7 @@ class Evaluator:
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
         mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
-        realized_equity = equity * eqr
+        realized_equity = Evaluator.realize_equity(equity, eqr)
         
         result_eval = EVAL_OPTIMAL
         result_reason = ""
@@ -422,24 +467,27 @@ class Evaluator:
             margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
-        realized_equity = equity * eqr
+        realized_equity = Evaluator.realize_equity(equity, eqr)
 
         # SPR計算
         spr = None
         if effective_stack > 0 and pot_size > 0:
             spr = effective_stack / pot_size
 
-        # Fold Equity Estimate using MDF threshold
-        fold_equity = bet_amount / (pot_size + bet_amount)
-        
+        # ボードテクスチャ（FE推定とサイジング評価で共有）
+        texture = "dry"
+        if board and len(board) >= 3:
+            texture = HandClassifier.classify_board_texture(board)
+
+        # ▼ 修正(重大4): α(bet/(pot+bet)) ではなく現実的なフォールドエクイティを使用
+        fold_equity = Evaluator.estimate_fold_equity(pot_size, bet_amount, texture)
+
         ev_betting = Evaluator.ev_bet(realized_equity, pot_size, bet_amount, fold_equity)
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
 
         # ボードテクスチャ別サイジング評価
-        texture = "dry"
         sizing_feedback = ""
         if board and len(board) >= 3:
-            texture = HandClassifier.classify_board_texture(board)
             sizing_result = evaluate_bet_sizing(pot_size, bet_amount, texture, spr=spr)
             if sizing_result["evaluation"] in ("△", "×"):
                 sizing_feedback = f"\n\n📐 サイジング: {sizing_result['reason']}"
@@ -496,12 +544,12 @@ class Evaluator:
             raise_margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
 
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
-        realized_equity = equity * eqr
+        realized_equity = Evaluator.realize_equity(equity, eqr)
 
-        # Calculate fold equity dynamically via MDF.
-        # FE = bet / (pot + bet)
+        # ▼ 修正(重大4): α ではなく現実的なフォールドエクイティを使用
         total_pot = pot_size + opponent_bet_size
-        fold_equity = raise_amount / (total_pot + raise_amount)
+        raise_texture = HandClassifier.classify_board_texture(board) if (board and len(board) >= 3) else None
+        fold_equity = Evaluator.estimate_fold_equity(total_pot, raise_amount, raise_texture)
 
         ev_raising = Evaluator.ev_bet(realized_equity, total_pot, raise_amount, fold_equity)
         ev_calling = Evaluator.ev_call(realized_equity, pot_size, opponent_bet_size)
@@ -541,7 +589,7 @@ class Evaluator:
         # has_initiative=True と同様に EV 評価へ。強いハンドでのチェックバックを正しく罰する。
             
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
-        realized_equity = equity * eqr
+        realized_equity = Evaluator.realize_equity(equity, eqr)
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
         # 強いハンドは EV 比較に依らず直接評価（バリューミスは常に BAD）

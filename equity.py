@@ -176,60 +176,57 @@ class EquityCalculator:
 
     @staticmethod
     def calc_equity_monte_carlo(hero_cards, board_cards, hero_range_dict, cpu_range_dict, target_actor="CPU", is_preflop=False, iterations=1000):
-        if is_preflop:
-            target_dict = cpu_range_dict if target_actor == "CPU" else hero_range_dict
-            dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-
-            # ▼ 修正: Chen FormulaのスコアベースEQ算出を廃止し
-            #         Matchupパターンに基づく近似エクイティを使用する。
-            hero_equity = EquityCalculator.calculate_preflop_equity_approx(
-                hero_cards, target_dict, dead_cards_str
-            )
-            return hero_equity, 1.0 - hero_equity
+        # ▼ 修正(重大2): プリフロップの固定マッチアップ近似（誤差大）を廃止し、
+        #   ボード5枚をランダムに配って相手レンジと突き合わせる実モンテカルロに統一する。
+        #   board_cards が空でも下のループは needed=5 として正しく動作する。
 
         hero_wins = 0
         ties = 0
         total_sims = 0
-        
+
         target_dict = cpu_range_dict if target_actor == "CPU" else hero_range_dict
         dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-        
-        # We process range sampling iteratively using our external range logic
+
+        # ▼ 修正(重大5): 毎反復で Deck() を生成・シャッフルしていた無駄を排除。
+        #   ヒーロー+ボードを除いた利用可能カードを一度だけ作り、random.sample で配る。
+        #   これで反復が数倍高速化し、試行回数を増やしてもノイズを抑えられる。
+        dead_set = set(hero_cards) | set(board_cards)
+        base_deck = [c for c in Deck.GetFullDeck() if c not in dead_set]
+        hero_tuple = tuple(hero_cards)
+        needed = 5 - len(board_cards)
+
         for _ in range(iterations):
-            temp_deck = Deck()
-            sim_board = list(board_cards)
-            
-            removals = hero_cards + board_cards
-            temp_deck.cards = [c for c in temp_deck.cards if c not in removals]
-            
-            needed = 5 - len(sim_board)
-            if needed > 0:
-                drawn = temp_deck.draw(needed)
-                if not isinstance(drawn, list): drawn = [drawn]
-                sim_board.extend(drawn)
-                
             cpu_cards = range_utils.sample_range(target_dict, dead_cards_str=dead_cards_str)
             if not cpu_cards:
                 continue
-                
-            if any(c in sim_board for c in cpu_cards) or any(c in hero_cards for c in cpu_cards):
-                 continue
-                 
-            # Use fixed LRU Cache wrapper for performance
+
+            cpu_set = set(cpu_cards)
+            if cpu_set & dead_set:
+                continue
+
+            if needed > 0:
+                avail = [c for c in base_deck if c not in cpu_set]
+                drawn = random.sample(avail, needed)
+                sim_board = board_cards + drawn
+            else:
+                sim_board = list(board_cards)
+
             sim_board_tuple = tuple(sim_board)
-            hero_score = cached_evaluate(sim_board_tuple, tuple(hero_cards))
+            hero_score = cached_evaluate(sim_board_tuple, hero_tuple)
             cpu_score = cached_evaluate(sim_board_tuple, tuple(cpu_cards))
-            
+
             if hero_score < cpu_score:
                 hero_wins += 1
             elif hero_score == cpu_score:
                 ties += 1
-                
+
             total_sims += 1
 
         if total_sims == 0:
-            return 1.0, 0.0
-            
+            # 相手レンジが空などで計算不能なときは「勝率100%」ではなく
+            # 中立値(50%)を返す。1.0を返すと全アクションが過大評価されてしまう。
+            return 0.5, 0.5
+
         hero_equity = (hero_wins + ties / 2) / total_sims
         cpu_equity = 1.0 - hero_equity
         return hero_equity, cpu_equity
@@ -237,12 +234,12 @@ class EquityCalculator:
     @staticmethod
     def calc_range_advantage(hero_cards, board_cards, hero_range_dict, cpu_range_dict, is_preflop=False, iterations=1000):
         if is_preflop:
-            # 以前は常に0.5(五分五分)を返していたが、実際のハンド vs 相手レンジで近似する
-            # ヒーローの実カードと相手のレンジを比較してヒーローのエクイティを返す
+            # ▼ 修正(重大2): 固定マッチアップ近似を廃止し、実モンテカルロで
+            #   ヒーローの実ハンド vs 相手レンジのエクイティを算出する。
             if hero_cards and len(hero_cards) == 2:
-                dead_cards_str = [Card.int_to_str(c) for c in hero_cards]
-                hero_eq = EquityCalculator.calculate_preflop_equity_approx(
-                    hero_cards, cpu_range_dict, dead_cards_str
+                hero_eq, _ = EquityCalculator.calc_equity_monte_carlo(
+                    hero_cards, [], hero_range_dict, cpu_range_dict,
+                    target_actor="CPU", is_preflop=False, iterations=iterations
                 )
                 return max(0.20, min(0.80, hero_eq))
             return 0.5
