@@ -67,15 +67,35 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     /// リワード広告（AIコーチのゲート用）。ユーザーが視聴を選んだときのみ呼ぶ。
     func showRewarded() {
-        guard let rewarded, let root = Self.rootViewController() else {
-            print("[Ad] showRewarded: not ready — earned=false")
+        guard let root = Self.rootViewController() else {
+            print("[Ad] showRewarded: no root — earned=false")
             notifyRewardDismissed(earned: false)
             return
         }
+        // プリロード済みならそのまま表示。未ロードならその場で読み込んでから表示。
+        if let rewarded {
+            presentRewarded(rewarded, from: root)
+        } else {
+            print("[Ad] Rewarded not preloaded — loading on demand...")
+            Task {
+                do {
+                    let ad = try await RewardedAd.load(with: rewardedAdUnitID, request: Request())
+                    ad.fullScreenContentDelegate = self
+                    self.rewarded = ad
+                    self.presentRewarded(ad, from: root)
+                } catch {
+                    print("[Ad] On-demand rewarded load failed: \(error.localizedDescription)")
+                    self.notifyRewardDismissed(earned: false)
+                }
+            }
+        }
+    }
+
+    private func presentRewarded(_ ad: RewardedAd, from root: UIViewController) {
         print("[Ad] Presenting rewarded ad")
         presentingRewarded = true
         didEarnReward = false
-        rewarded.present(from: root) { [weak self] in
+        ad.present(from: root) { [weak self] in
             self?.didEarnReward = true
             print("[Ad] User earned reward")
         }

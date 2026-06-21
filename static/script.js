@@ -804,12 +804,20 @@ function closeCoachLimitModal() {
     if (_coachGateResolve) { _coachGateResolve(false); _coachGateResolve = null; }
 }
 
-// リワード広告を最後まで視聴したらコーチを続行
+// リワード広告を最後まで視聴したらロック解除してコーチを続行
 async function watchAdForCoach() {
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.add('hidden');   // closeを呼ぶとゲートがfalseになるため直接閉じる
     const earned = await showRewardedAd();
-    if (_coachGateResolve) { _coachGateResolve(earned); _coachGateResolve = null; }
+    if (earned) {
+        // 視聴完了 → ロック解除、また無料分を付与
+        coachLocked = false;
+        coachFreeUsesLeft = AD_COACH_INTERVAL;
+        if (_coachGateResolve) { _coachGateResolve(true); _coachGateResolve = null; }
+    } else {
+        // 途中で閉じた → ロック維持、続行しない（次も2択が出る）
+        if (_coachGateResolve) { _coachGateResolve(false); _coachGateResolve = null; }
+    }
 }
 
 // Init
@@ -1080,9 +1088,10 @@ function closeRangeModal() {
 // ============================================
 // 広告システム
 // ============================================
-const AD_COACH_INTERVAL = 3;    // AIコーチ3回ごとにゲート（広告 or プレミアム）
+const AD_COACH_INTERVAL = 3;    // 無料で使えるAIコーチ回数（これを超えたらゲート）
 const AD_HAND_INTERVAL = 30;    // 30ハンドごとに自動インタースティシャル広告
-let coachUseCount = 0;          // AIコーチ利用回数（無料ユーザーのみ加算）
+let coachFreeUsesLeft = AD_COACH_INTERVAL;  // 残り無料コーチ回数
+let coachLocked = false;        // ゲート未消化ロック（広告視聴 or 加入で解除）
 let handPlayCount = 0;          // ハンド数
 let _coachGateResolve = null;   // コーチゲートのPromise解決用
 
@@ -1119,16 +1128,23 @@ function maybeShowHandAd() {
     }
 }
 
-// --- AIコーチのゲート（3回ごとに広告/プレミアム選択） ---
+// --- AIコーチのゲート（広告/プレミアム選択） ---
 // 続行してよいか(Promise<bool>)を返す。premiumは常にtrue。
+// 無料分を使い切るとロックされ、広告を最後まで見るか加入するまで使えない。
 function coachGate() {
     if (isPremium) return Promise.resolve(true);
-    coachUseCount++;
-    if (coachUseCount % AD_COACH_INTERVAL !== 0) return Promise.resolve(true);
-    return new Promise(resolve => {
-        _coachGateResolve = resolve;
-        showCoachLimitModal();
-    });
+
+    // ロック中 or 無料分を使い切り → 消化するまで毎回ゲートを出す
+    if (coachLocked || coachFreeUsesLeft <= 0) {
+        coachLocked = true;
+        return new Promise(resolve => {
+            _coachGateResolve = resolve;
+            showCoachLimitModal();
+        });
+    }
+
+    coachFreeUsesLeft--;
+    return Promise.resolve(true);
 }
 
 // ==============================
@@ -1252,6 +1268,12 @@ window.onPurchaseCancel = function() {
 };
 
 function applyPremiumUI() {
+    // コーチのロック解除（プレミアムは広告なし・無制限）
+    coachLocked = false;
+    // 開いているコーチゲートがあれば続行させる
+    if (_coachGateResolve) { _coachGateResolve(true); _coachGateResolve = null; }
+    const coachModal = el('coach-limit-modal');
+    if (coachModal) coachModal.classList.add('hidden');
     // スポットモードボタンなどのpremiumゲートを解除
     const spotBtn = el('btn-spot-mode');
     if (spotBtn) spotBtn.style.opacity = '1';
