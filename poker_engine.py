@@ -154,8 +154,14 @@ class Evaluator:
             base_eqr -= 0.10
             
         # 2. Playability Modifier (8-tier buckets)
-        if category in ["STRONG_DRAW", "MEDIUM_DRAW"]:
-            base_eqr += 0.15 # Draws over-realize
+        # ▼ 修正(二重計上): 生エクイティ(MC)には既にドローの完成確率が含まれている。
+        #   従来の +0.15 は完成確率を二重に評価し、IPでR=1.25まで過大化していた。
+        #   ソルバー実態(ドローのR≈1.0〜1.15 IP / 0.9〜1.0 OOP)に合わせて減衰させる。
+        #   「当たった時に多く取る」インプライドオッズは ev_call 側で別途加算済み。
+        if category == "STRONG_DRAW":
+            base_eqr += 0.07 # 強いドロー: セミブラフ/プレイアビリティ分のみ上乗せ
+        elif category == "MEDIUM_DRAW":
+            base_eqr += 0.03 # ガットショット: 過大実現はわずか
         elif category in ["NUT_HAND", "STRONG_MADE"]:
             base_eqr += 0.05 # Strong made hands realize well
         elif category == "AIR" or category == "WEAK_MADE":
@@ -212,13 +218,20 @@ class Evaluator:
         # Turn: one card to come, draws still alive → cap at 1.15, floor 0.55
         # Flop: two cards to come, draws can over-realize → cap at 1.20, floor 0.60
         # Preflop: widest range, many streets to play → cap at 1.25, floor 0.65
+        #
+        # ▼ 修正(二重計上): ドローの「完成確率」は生エクイティ(MC)に既に含まれている。
+        #   そのためドロー系ハンドは過大実現の上限を低く設定し、EQRが made hand と
+        #   同じ上限まで膨らんで完成確率を二重評価するのを防ぐ（ソルバー実態 R≈1.0〜1.1）。
+        is_draw = category in ("STRONG_DRAW", "MEDIUM_DRAW", "WEAK_DRAW")
         if street == "RIVER":
-            return max(0.50, min(1.0, final_eqr))
+            lo, hi = 0.50, 1.0
         elif street == "TURN":
-            return max(0.55, min(1.15, final_eqr))
+            lo, hi = 0.55, (1.08 if is_draw else 1.15)
         elif street == "FLOP":
-            return max(0.60, min(1.20, final_eqr))
-        return max(0.65, min(1.25, final_eqr))
+            lo, hi = 0.60, (1.10 if is_draw else 1.20)
+        else:
+            lo, hi = 0.65, (1.12 if is_draw else 1.25)
+        return max(lo, min(hi, final_eqr))
     
     @staticmethod
     def calculate_alpha(bet_amount, pot_size):
