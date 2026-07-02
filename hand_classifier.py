@@ -1,5 +1,8 @@
 from treys import Card, Evaluator as TreysEvaluator
 
+# 毎回インスタンス化するとハンドごとにルックアップテーブルを再構築して遅いため共有する
+_TREYS_EVALUATOR = TreysEvaluator()
+
 class HandClassifier:
     @staticmethod
     def _has_straight(rank_set):
@@ -101,10 +104,9 @@ class HandClassifier:
             
         # Postflop evaluation
         if board and len(board) >= 3:
-            evaluator = TreysEvaluator()
             score = 7462 # Default worst score
             try:
-                score = evaluator.evaluate(board, cards)
+                score = _TREYS_EVALUATOR.evaluate(board, cards)
             except:
                 pass
             
@@ -126,19 +128,30 @@ class HandClassifier:
                 else:
                     return "AIR"
                 
-        # Preflop basic heuristic categories
-        if is_suited:
-            if r1 >= 10 and r2 >= 10:
-                return "STRONG_DRAW"
-                
-        if r1 >= 10 and r2 >= 10:
-             return "STRONG_MADE"
-             
+        # ▼ 修正: プリフロップ分類の是正
+        #   旧実装は AKs を「STRONG_DRAW」(ドロー用EQR上限が適用され不整合)、
+        #   スーテッドコネクターを「AIR」に分類していた。
+        #   文献上、オフスートブロードウェイは過小実現(ドミネイト・リバースインプライド)、
+        #   スーテッド/コネクト性の実現ボーナスは calculate_pi 側で加点されるため、
+        #   ここでは「ハイカード強度の階層」のみを表す。
+        hi, lo = max(r1, r2), min(r1, r2)
+
         if r1 == r2:
-            if r1 >= 9: return "STRONG_MADE"
-            if r1 >= 5: return "MEDIUM_MADE"
-            return "WEAK_MADE"
-            
+            if r1 >= 9:  return "STRONG_MADE"   # JJ+
+            if r1 >= 4:  return "MEDIUM_MADE"   # 66-TT
+            return "WEAK_MADE"                  # 22-55
+
+        if hi == 12 and lo >= 10:               # AK, AQ
+            return "STRONG_MADE"
+
+        if (hi == 12 and lo >= 7 and is_suited) or \
+           (hi >= 10 and lo >= 9 and is_suited) or \
+           (hi == 12 and lo >= 9):
+            return "MEDIUM_MADE"                # A9s+, KJs/QJs/KQs, AJo+
+
+        if hi >= 10 and lo >= 8:                # オフスートブロードウェイ (KTo, QJo等)
+            return "WEAK_MADE"                  # ドミネイトされやすく過小実現
+
         return "AIR"
 
     @staticmethod

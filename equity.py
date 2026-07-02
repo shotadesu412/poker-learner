@@ -233,61 +233,58 @@ class EquityCalculator:
 
     @staticmethod
     def calc_range_advantage(hero_cards, board_cards, hero_range_dict, cpu_range_dict, is_preflop=False, iterations=1000):
-        if is_preflop:
-            # ▼ 修正(重大2): 固定マッチアップ近似を廃止し、実モンテカルロで
-            #   ヒーローの実ハンド vs 相手レンジのエクイティを算出する。
-            if hero_cards and len(hero_cards) == 2:
-                hero_eq, _ = EquityCalculator.calc_equity_monte_carlo(
-                    hero_cards, [], hero_range_dict, cpu_range_dict,
-                    target_actor="CPU", is_preflop=False, iterations=iterations
-                )
-                return max(0.20, min(0.80, hero_eq))
-            return 0.5
-            
+        # ▼ 修正: プリフロップ特殊分岐（ヒーローの実ハンド vs レンジ）を廃止。
+        #   「レンジ優位」はレンジ vs レンジの量であり、実ハンドのエクイティを返すと
+        #   EQR側で equity × f(equity) の二重計上になる。
+        #   下の汎用ループは board_cards が空でも needed=5 として正しく動作する。
+
         hero_wins = 0
         ties = 0
         total_sims = 0
-        
-        dead_cards_str = [Card.int_to_str(c) for c in hero_cards] + [Card.int_to_str(c) for c in board_cards]
-        
-        for _ in range(iterations):
-            temp_deck = Deck()
-            sim_board = list(board_cards)
-            
-            temp_deck.cards = [c for c in temp_deck.cards if c not in board_cards]
-            
-            needed = 5 - len(sim_board)
-            if needed > 0:
-                drawn = temp_deck.draw(needed)
-                if not isinstance(drawn, list): drawn = [drawn]
-                sim_board.extend(drawn)
 
-            # ▼ 修正: hero_cards（引数）をループ内の変数で上書きしないようリネーム
+        # レンジサンプリングのデッドカードはボードのみ（両者のレンジからハンドを引くため
+        # ヒーローの実カードは除外しない — レンジ vs レンジの定義通り）
+        dead_cards_str = [Card.int_to_str(c) for c in board_cards]
+
+        # ▼ 最適化: 毎反復の Deck() 生成を排除（calc_equity_monte_carlo と同様）
+        board_set = set(board_cards)
+        base_deck = [c for c in Deck.GetFullDeck() if c not in board_set]
+        needed = 5 - len(board_cards)
+
+        for _ in range(iterations):
             sampled_hero = range_utils.sample_range(hero_range_dict, dead_cards_str=dead_cards_str)
             sampled_cpu  = range_utils.sample_range(cpu_range_dict,  dead_cards_str=dead_cards_str)
-            
+
             if not sampled_hero or not sampled_cpu:
-                 continue
-                 
-            if any(c in sim_board for c in sampled_cpu) or any(c in sim_board for c in sampled_hero):
-                 continue
+                continue
             if any(c in sampled_hero for c in sampled_cpu):
-                 continue
-                 
+                continue
+
+            used = set(sampled_hero) | set(sampled_cpu)
+            if used & board_set:
+                continue
+
+            if needed > 0:
+                avail = [c for c in base_deck if c not in used]
+                drawn = random.sample(avail, needed)
+                sim_board = board_cards + drawn
+            else:
+                sim_board = list(board_cards)
+
             sim_board_tuple = tuple(sim_board)
             hero_score = cached_evaluate(sim_board_tuple, tuple(sampled_hero))
             cpu_score  = cached_evaluate(sim_board_tuple, tuple(sampled_cpu))
-            
+
             if hero_score < cpu_score:
                 hero_wins += 1
             elif hero_score == cpu_score:
                 ties += 1
-                
+
             total_sims += 1
-            
+
         if total_sims == 0:
             return 0.5
-            
+
         hero_equity = (hero_wins + ties / 2) / total_sims
         return hero_equity
 

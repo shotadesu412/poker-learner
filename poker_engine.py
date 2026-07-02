@@ -70,8 +70,8 @@ class Evaluator:
         return EVCalculator.calculate_required_equity(call_amount, pot_size)
 
     @staticmethod
-    def ev_call(equity, pot_size, call_amount, spr=None, hand_category=None):
-        return EVCalculator.ev_call(equity, pot_size, call_amount, spr, hand_category)
+    def ev_call(equity, pot_size, call_amount, spr=None, hand_category=None, is_ip=True):
+        return EVCalculator.ev_call(equity, pot_size, call_amount, spr, hand_category, is_ip)
 
     @staticmethod
     def ev_check(equity, pot_size):
@@ -104,32 +104,34 @@ class Evaluator:
     @staticmethod
     def calculate_pi(cards, board=None):
         """
-        Playability Index (PI) の計算 (Updated to GTO Constraints)
+        Playability Index (PI): プリフロップの実現しやすさ補正。
+
+        ▼ 修正:
+        - ポストフロップは 1.0 (中立) を返す。ポストフロップでは実際の役・ドローが
+          categorize_hand / detect_draw_strength で評価済みであり、ホールカード属性の
+          再加点は二重計上になる。旧実装の「4枚同スート+0.10」はヒーローの関与を
+          確認しないボード単独バグでもあった。
+        - プリフロップのみ、スーテッド/コネクト/ペアの実現ボーナスを返す
+          (文献: スーテッド・コネクト性はマルチストリートでの実現率を高める)。
         """
         if not cards or len(cards) < 2:
             return 1.0
-            
-        pi = 1.0
+        if board and len(board) >= 3:
+            return 1.0  # ポストフロップは中立 (カテゴリ評価に委譲)
+
         from treys import Card
         r1 = Card.get_rank_int(cards[0])
         r2 = Card.get_rank_int(cards[1])
         s1 = Card.get_suit_int(cards[0])
         s2 = Card.get_suit_int(cards[1])
-        
+
+        pi = 1.0
         if s1 == s2:
-            pi += 0.08
-        if abs(r1 - r2) <= 1:
             pi += 0.06
+        if r1 != r2 and abs(r1 - r2) <= 1:
+            pi += 0.04
         if r1 == r2:
-            pi += 0.10
-            
-        # Postflop PI
-        if board and len(board) >= 3:
-            suits = [Card.get_suit_int(c) for c in cards + board]
-            suit_counts = {s: suits.count(s) for s in set(suits)}
-            if suit_counts and max(suit_counts.values()) == 4:
-                pi += 0.10 # Good playability to hit flush
-                
+            pi += 0.06
         return pi
 
     @staticmethod
@@ -143,75 +145,77 @@ class Evaluator:
         5. Board Texture (New)
         6. Nut Advantage (New)
         """
+        # ▼ 修正: 乗算の積み重ね(飽和の主因)を廃止し、加算合成 + SPRレバレッジに再構成。
+        #   さらに旧実装の2つの理論逆転を是正:
+        #   (a) TEXTURE_MULTIPLIER はベットサイズ用定数(dry=小さく打つ0.75/wet=大きく打つ1.25)
+        #       であり、EQRに乗算すると「ドライで実現率↓・ウェットで実現率↑」と理論の逆になっていた。
+        #       正: 静的(dry/paired)ボードでは完成ハンドがほぼフル実現、
+        #           動的(wet/monotone)ボードでは中間の完成ハンドが実現しにくい。
+        #   (b) SPR>6 の一律 ×1.15 は OOP の EQR<1 まで持ち上げ過実現側に反転させていた。
+        #       正: ディープほど「1.0からの乖離」が増幅され、ショートほど1.0に収束する。
         base_eqr = 1.0
         category = Evaluator.categorize_hand(cards, board)
         is_ip = hero_pos in ["BTN", "CO", "HJ"] # Rough IP heuristic
-        
-        # 1. Positional Modifier
-        if is_ip:
-            base_eqr += 0.10
-        else:
-            base_eqr -= 0.10
-            
-        # 2. Playability Modifier (8-tier buckets)
-        # ▼ 修正(二重計上): 生エクイティ(MC)には既にドローの完成確率が含まれている。
-        #   従来の +0.15 は完成確率を二重に評価し、IPでR=1.25まで過大化していた。
-        #   ソルバー実態(ドローのR≈1.0〜1.15 IP / 0.9〜1.0 OOP)に合わせて減衰させる。
-        #   「当たった時に多く取る」インプライドオッズは ev_call 側で別途加算済み。
+
+        # 1. ポジション
+        base_eqr += 0.10 if is_ip else -0.10
+
+        # 2. ハンドカテゴリ (生エクイティに含まれない「実現のしやすさ」のみ加点)
         if category == "STRONG_DRAW":
-            base_eqr += 0.07 # 強いドロー: セミブラフ/プレイアビリティ分のみ上乗せ
+            base_eqr += 0.07   # セミブラフ/プレイアビリティ分
         elif category == "MEDIUM_DRAW":
-            base_eqr += 0.03 # ガットショット: 過大実現はわずか
-        elif category in ["NUT_HAND", "STRONG_MADE"]:
-            base_eqr += 0.05 # Strong made hands realize well
-        elif category == "AIR" or category == "WEAK_MADE":
-            base_eqr -= 0.05 # (緩和) Air and weak pairs under-realize
-        elif category == "WEAK_DRAW":
-            base_eqr -= 0.05 # (緩和) 
-            
-        if is_3bet_pot:
-            # 3bet pots punish marginal/air hands even more heavily
-            if category in ["MEDIUM_MADE", "WEAK_MADE", "WEAK_DRAW", "AIR"]:
-                base_eqr -= 0.05 # (緩和) 3bet pots margin penalty
-                
-        # 3. SPR Convergence using SPR_MULTIPLIER categories
-        if spr < 1.0:
-            spr_adj = (1.0 - base_eqr) * SPR_MULTIPLIER["ultra_low"]
-            base_eqr += spr_adj
-        elif spr < 3.0:
-            spr_adj = (1.0 - base_eqr) * SPR_MULTIPLIER["low"]
-            base_eqr += spr_adj
-        elif spr > 6.0:
-            base_eqr *= SPR_MULTIPLIER["high"]
-            
-        # 4. Range Advantage Bonus/Penalty
-        adv_multiplier = 1.0 + (range_adv - 0.5) * 0.3
-        base_eqr *= adv_multiplier
-        
-        # 5 & 6. Board Texture and Nut Advantage
+            base_eqr += 0.03
+        elif category in ("NUT_HAND", "STRONG_MADE"):
+            base_eqr += 0.05
+        elif category in ("AIR", "WEAK_MADE", "WEAK_DRAW"):
+            base_eqr -= 0.05
+
+        if is_3bet_pot and category in ("MEDIUM_MADE", "WEAK_MADE", "WEAK_DRAW", "AIR"):
+            base_eqr -= 0.05
+
+        # 3. ボードテクスチャ (ハンドカテゴリ連動・加算)
+        is_made = category in ("NUT_HAND", "STRONG_MADE", "MEDIUM_MADE", "WEAK_MADE")
         if board:
             texture = HandClassifier.classify_board_texture(board)
-            if texture == "paired":
-                nut_adv = 0.3 if is_ip else -0.1
-                base_eqr *= TEXTURE_MULTIPLIER["paired"]
-            elif texture == "dry":
+            if texture in ("dry", "paired"):
+                # 静的ボード: 完成ハンドはバッドカードが少なくフル実現に近い
+                if is_made:
+                    base_eqr += 0.05
                 nut_adv = 0.2 if is_ip else -0.1
-                base_eqr *= TEXTURE_MULTIPLIER["dry"]
             elif texture == "wet":
+                # 動的ボード: 中間の完成ハンドはドロー完成/ベットで実現を削られる
+                if category in ("MEDIUM_MADE", "WEAK_MADE"):
+                    base_eqr -= 0.08
+                elif category == "AIR":
+                    base_eqr -= 0.04
                 nut_adv = -0.2 if is_ip else 0.2
-                base_eqr *= TEXTURE_MULTIPLIER["wet"]
             elif texture == "monotone":
+                # モノトーン: 非フラッシュ系の実現が最も抑圧される
+                if category in ("MEDIUM_MADE", "WEAK_MADE"):
+                    base_eqr -= 0.10
+                elif category == "AIR":
+                    base_eqr -= 0.06
                 nut_adv = -0.3 if is_ip else 0.2
-                base_eqr *= TEXTURE_MULTIPLIER.get("semi_wet", 1.0)
             else:
                 nut_adv = 0.0
-                
-            base_eqr += (nut_adv * 0.15)
-        
-        # Add basic PI
-        pi = Evaluator.calculate_pi(cards, board)
+            base_eqr += nut_adv * 0.15
 
-        final_eqr = base_eqr * pi
+        # 4. レンジ優位 (ポストフロップはレンジvsレンジのMC値) — 加算 ±0.06
+        base_eqr += (range_adv - 0.5) * 0.2
+
+        # 5. プリフロップのプレイアビリティ (スーテッド/コネクト/ペア) — 加算
+        base_eqr += Evaluator.calculate_pi(cards, board) - 1.0
+
+        # 6. SPRレバレッジ: 乖離(base-1.0)をSPRに応じて増幅/収束
+        if spr < 1.0:
+            leverage = 0.3    # ほぼオールイン: 実現率は生エクイティに収束
+        elif spr < 3.0:
+            leverage = 0.6    # 3betポット相当: 収束方向
+        elif spr <= 6.0:
+            leverage = 1.0    # 標準
+        else:
+            leverage = 1.3    # ディープ: ポジション/プレイアビリティの効きが増幅
+        final_eqr = 1.0 + (base_eqr - 1.0) * leverage
 
         # Street-specific EQR bounds:
         # River: no draws can complete, over-realization impossible → cap at 1.0, floor 0.50
@@ -365,17 +369,20 @@ class Evaluator:
                 }
 
         e_req = Evaluator.calculate_required_equity(call_amount, pot_size)
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
-        realized_equity = Evaluator.realize_equity(equity, eqr)
 
+        # ▼ 修正: SPRをEQRに配線（未指定だと常に「ディープ」扱いになっていた）
         spr = None
         if effective_stack > 0 and pot_size > 0:
             spr = effective_stack / pot_size
-            
+
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, spr=(spr if spr is not None else 10.0), street=street)
+        realized_equity = Evaluator.realize_equity(equity, eqr)
+
         category = Evaluator.categorize_hand(cards, board)
-        
-        # EV computation
-        ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount, spr=spr, hand_category=category)
+        is_ip = hero_pos in ["BTN", "CO", "HJ"]
+
+        # EV computation（is_ipを配線: OOPはインプライドオッズを実現しにくい）
+        ev_call_val = Evaluator.ev_call(realized_equity, pot_size, call_amount, spr=spr, hand_category=category, is_ip=is_ip)
         
         result_eval = EVAL_BAD
         result_reason = preflop_prefix
@@ -412,7 +419,7 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5, street=None):
+    def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5, effective_stack=0.0, street=None):
         if opponent_bet_size == 0:
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "ベットがない状況でのフォールドは不利な選択です。無料でカードを見られる場合はチェックを選びましょう。"}
             
@@ -434,7 +441,8 @@ class Evaluator:
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
         mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, street=street)
+        fold_spr = (effective_stack / pot_size) if (effective_stack > 0 and pot_size > 0) else 10.0
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, spr=fold_spr, street=street)
         realized_equity = Evaluator.realize_equity(equity, eqr)
         
         result_eval = EVAL_OPTIMAL
@@ -479,13 +487,13 @@ class Evaluator:
         else:
             margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
-        realized_equity = Evaluator.realize_equity(equity, eqr)
-
-        # SPR計算
+        # SPR計算（EQRに配線するため先に算出）
         spr = None
         if effective_stack > 0 and pot_size > 0:
             spr = effective_stack / pot_size
+
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, spr=(spr if spr is not None else 10.0), street=street)
+        realized_equity = Evaluator.realize_equity(equity, eqr)
 
         # ボードテクスチャ（FE推定とサイジング評価で共有）
         texture = "dry"
@@ -534,7 +542,7 @@ class Evaluator:
 
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, street=None):
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, effective_stack=0.0, street=None):
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
@@ -556,7 +564,8 @@ class Evaluator:
         else:
             raise_margin_pct = Evaluator.BET_OPTIMAL_MARGIN_PCT
 
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
+        raise_spr = (effective_stack / pot_size) if (effective_stack > 0 and pot_size > 0) else 10.0
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, spr=raise_spr, street=street)
         realized_equity = Evaluator.realize_equity(equity, eqr)
 
         # ▼ 修正(重大4): α ではなく現実的なフォールドエクイティを使用
@@ -594,14 +603,15 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, street=None):
+    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None):
         if not has_initiative and not is_hero_ip:
             # OOP で先にチェック: 標準的なパッシブプレイ（ドンクベットは上級者向け）
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_GOOD, "reason": "ポジション不利（OOP）でアグレッサーでもない場合、まずチェックして相手のアクションを見てからディフェンスするのが基本です。"}
         # IP かつ no-initiative（相手がチェック → ヒーローにベット/チェックバックの選択権）は
         # has_initiative=True と同様に EV 評価へ。強いハンドでのチェックバックを正しく罰する。
             
-        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, street=street)
+        check_spr = (effective_stack / pot_size) if (effective_stack > 0 and pot_size > 0) else 10.0
+        eqr = Evaluator.get_eqr_modifier(hero_pos, cards, False, board, range_adv, spr=check_spr, street=street)
         realized_equity = Evaluator.realize_equity(equity, eqr)
         ev_checking = Evaluator.ev_check(realized_equity, pot_size)
         
@@ -621,7 +631,8 @@ class Evaluator:
         # 常に約 0.833 の定数になってしまい、閾値の 0.8/0.5 に全く引っかからない。
         # 実際の折たたみ率 55% を使うことで equity に応じた正しい差別化が可能になる。
         half_pot = pot_size / 2.0
-        fold_equity = 0.55
+        check_texture = HandClassifier.classify_board_texture(board) if (board and len(board) >= 3) else None
+        fold_equity = Evaluator.estimate_fold_equity(pot_size, half_pot, check_texture)
         ev_betting_half_pot = Evaluator.ev_bet(realized_equity, pot_size, half_pot, fold_equity)
 
         if ev_checking >= ev_betting_half_pot:
@@ -1515,7 +1526,8 @@ def run_session(num_hands=3):
                 eval_result = Evaluator.evaluate_raise(realized_equity, hero_amount, cpu_mock_bet, engine.pot_size)
                 engine.update_pot(hero_amount)
             elif hero_action == "CHECK":
-                eval_result = Evaluator.evaluate_check(realized_equity, engine.pot_size, engine.is_hero_ip)
+                # ▼ 修正: is_hero_ip(bool)がhero_pos(str)の位置に渡されていた
+                eval_result = Evaluator.evaluate_check(realized_equity, engine.pot_size, hero_pos=engine.hero_position, is_hero_ip=engine.is_hero_ip)
             
             print(f"Action Evaluation: [{hero_action}] -> {eval_result}")
             

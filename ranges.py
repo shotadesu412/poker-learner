@@ -231,7 +231,8 @@ def get_hand_reason(combo_str):
 # Backward compatibility map for the engine's current structure
 RANGES = {
     "UTG": {
-        "open": position_ranges.get("UTG", {}),
+        # ▼ 修正: RFIデータのキーは"LJ"(6-maxのUTG)のため、"UTG"では空になっていた
+        "open": position_ranges.get("UTG", position_ranges.get("LJ", {})),
         "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
         "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
         "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AQs": 0.5},
@@ -323,14 +324,31 @@ class HandRange:
 def get_range_by_category(category, action="open"):
     """
     Returns the weighted dictionary for a position and action state.
+
+    ▼ 修正: 空レンジのフォールバックを追加。
+    - UTGのopenはデータキーが"LJ"のため空になっていた → LJへエイリアス。
+    - SBのvs_open_callは意図的に空(3bet-or-fold戦略)だが、エンジンは
+      これを「継続レンジ」として使うため、空だとMCが計算不能になり
+      勝率50%フォールバックに落ちていた → 継続レンジ = call ∪ 3bet で構成。
     """
     pos_data = RANGES.get(category, {})
-    
-    # Handle BB specific logic (vs_ position)
-    if category == "BB" and action.startswith("vs_"):
-        return pos_data.get(action, ALL_HANDS_DICT)
-        
-    return pos_data.get(action, ALL_HANDS_DICT)
+    result = pos_data.get(action, None)
+
+    # UTG open → LJデータへのエイリアス
+    if (result is None or not result) and action == "open" and category == "UTG":
+        result = RANGES.get("LJ", {}).get("open", {})
+
+    # 継続レンジが空: コールレンジ + 3betレンジを合成（3bet-or-foldポジション対応）
+    if (result is None or not result) and action == "vs_open_call":
+        merged = dict(pos_data.get("vs_open_call", {}) or {})
+        for combo, w in (pos_data.get("vs_open_3bet", {}) or {}).items():
+            merged[combo] = max(merged.get(combo, 0.0), w)
+        if merged:
+            result = merged
+
+    if result is None or not result:
+        return ALL_HANDS_DICT
+    return result
 
 def parse_combo(combo_str):
     ranks = '23456789TJQKA'

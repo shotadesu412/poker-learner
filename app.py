@@ -163,9 +163,11 @@ def take_action(req: ActionRequest):
         # ▼ 修正(重大5): 評価用エクイティは100試行だと±5pt超のノイズで判定がブレるため
         #   1000試行に増やす（σ≈1pt）。MCループ最適化済みで速度は許容範囲。
         hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=1000)
-        hero_range_adv = EquityCalculator.calc_range_advantage(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=1000)
+        # range_adv は EQR の ±0.06 補正にのみ使うためノイズ耐性が高い → 400試行で十分（σ≈2.5pt → EQRで±0.005）
+        hero_range_adv = EquityCalculator.calc_range_advantage(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, is_preflop=is_preflop, iterations=400)
 
-        eqr = Evaluator.get_eqr_modifier(eng.hero_position, eng.hero_hand, is_3bet_pot, eng.board, range_adv=hero_range_adv)
+        spr_now = (effective_stack / eng.pot_size) if (effective_stack > 0 and eng.pot_size > 0) else 10.0
+        eqr = Evaluator.get_eqr_modifier(eng.hero_position, eng.hero_hand, is_3bet_pot, eng.board, range_adv=hero_range_adv, spr=spr_now)
         realized_equity = Evaluator.realize_equity(hero_eq, eqr)
 
         eval_result = "N/A"
@@ -179,7 +181,7 @@ def take_action(req: ActionRequest):
             eng.record_action("HERO", "FOLD", 0, realized_equity, eng.pot_size)
             eval_dict = Evaluator.evaluate_fold(
                 hero_eq, hero_facing, eng.pot_size,
-                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, range_adv=hero_range_adv, street=eng.street
+                hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack, street=eng.street
             )
             ev_fold = eval_dict.get("ev", 0.0)
             ev_call_alt = Evaluator.ev_call(hero_eq, eng.pot_size, hero_facing) if hero_facing > 0 else 0.0
@@ -220,7 +222,7 @@ def take_action(req: ActionRequest):
             if action == "RAISE":
                 eval_dict = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, eng.pot_size,
-                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, street=eng.street
+                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, effective_stack=effective_stack, street=eng.street
                 )
             else:
                 eval_dict = Evaluator.evaluate_bet(
@@ -254,6 +256,7 @@ def take_action(req: ActionRequest):
                 cards=eng.hero_hand,
                 board=eng.board,
                 range_adv=hero_range_adv,
+                effective_stack=effective_stack,
                 street=eng.street
             )
             eval_result = eval_dict["evaluation"]
@@ -357,7 +360,9 @@ def take_action(req: ActionRequest):
 
 def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
     hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, iterations=500)
-    realized_eq = Evaluator.realize_equity(hero_eq, Evaluator.get_eqr_modifier(eng.hero_position))
+    _disp_stack = min(eng.hero_stack, eng.cpu_stack)
+    _disp_spr = (_disp_stack / eng.pot_size) if (_disp_stack > 0 and eng.pot_size > 0) else 10.0
+    realized_eq = Evaluator.realize_equity(hero_eq, Evaluator.get_eqr_modifier(eng.hero_position, eng.hero_hand, board=eng.board, spr=_disp_spr))
 
     if finished and show_cpu_hand and not eng.cpu_hand:
         eng.generate_realized_cpu_hand()
