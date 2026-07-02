@@ -99,6 +99,7 @@ def start_hand(user_id: str = Query(""), spot: bool = Query(False), position: st
     eng.forced_position = position.upper() if position else ""
     MAX_RETRIES = 50
     cpu_msg = ""
+    cpu_first_actions = []
 
     # 新しいハンドのセッションIDを発行（ユーザーごとに管理）
     new_session_id = str(uuid.uuid4())
@@ -128,6 +129,7 @@ def start_hand(user_id: str = Query(""), spot: bool = Query(False), position: st
             # アクション履歴に記録（これにより cpu_has_acted=True → ポジション表示される）
             eng.record_action("CPU", cpu_action, bet_amount, 0.5, eng.pot_size)
             cpu_msg = f"CPU {cpu_action}S {bet_amount > 0 and str(round(bet_amount, 1)) + 'bb' or ''}".strip()
+            cpu_first_actions = [{"street": "PREFLOP", "action": cpu_action, "amount": round(bet_amount, 1), "allIn": False}]
             break
 
     hero_hand_str = ",".join([Card.int_to_str(c) for c in eng.hero_hand]) if eng.hero_hand else ""
@@ -136,6 +138,8 @@ def start_hand(user_id: str = Query(""), spot: bool = Query(False), position: st
     state = get_game_state(eng)
     if cpu_msg:
         state["cpuMessage"] = cpu_msg
+    if cpu_first_actions:
+        state["cpuActions"] = cpu_first_actions
 
     return state
   except Exception as e:
@@ -153,6 +157,15 @@ def take_action(req: ActionRequest):
         user_id = req.user_id or ""
         eng = _get_engine(user_id)
         current_session_id = _get_session_id(user_id)
+
+        # ▼ 修正(ルール): ベット/レイズ額を有効スタックでキャップ。
+        #   自分のスタック超過や、相手がコール不可能な額（超過分は返還されるだけ）を防ぐ。
+        hero_all_in = False
+        if action in ["BET", "RAISE"]:
+            max_add = eng.max_additional_bet("HERO")
+            if amount >= max_add - 0.01:
+                amount = max_add
+                hero_all_in = True
 
         # 1. Calc Equity
         # Determine if 3bet pot (heuristic based on standard sizings)
@@ -198,7 +211,9 @@ def take_action(req: ActionRequest):
             return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(eng, finished=True, show_cpu_hand=show_cpu), "message": "You Folded"}
 
         elif action == "CALL":
-            call_amount = hero_facing
+            call_amount = min(hero_facing, eng.hero_stack)  # オールインコール対応
+            if call_amount >= eng.hero_stack - 0.01:
+                hero_all_in = True
             eval_dict = Evaluator.evaluate_call(
                 hero_eq, call_amount, eng.pot_size,
                 hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, street=eng.street
@@ -293,42 +308,71 @@ def take_action(req: ActionRequest):
                 street_closed_by_hero = False
 
         cpu_msg = ""
+        cpu_actions = []   # 履歴表示用の構造化アクションリスト [{street, action, amount, allIn}]
         if street_closed_by_hero:
             cpu_action = "CHECK"
             cpu_amount = 0
         else:
             cpu_action, cpu_amount = eng.cpu_decide(cpu_eq, action, cpu_facing)
 
+            # ▼ 修正(ルール): ヒーローがオールイン済みならCPUのレイズは不可能
+            #   （レイズしてもヒーローは追加コールできない）→ コールに変換
+            if cpu_action == "RAISE" and eng.is_all_in("HERO"):
+                cpu_action = "CALL"
+                cpu_amount = cpu_facing
+
+            # ▼ 修正(ルール): CPUのベット/レイズ額を有効スタックでキャップ。
+            #   キャップの結果コール額以下になったらコールとして扱う
+            if cpu_action in ["BET", "RAISE"]:
+                cpu_cap = eng.max_additional_bet("CPU")
+                if cpu_amount > cpu_cap:
+                    cpu_amount = cpu_cap
+                    if cpu_amount <= cpu_facing + 0.01:
+                        cpu_action = "CALL"
+                        cpu_amount = cpu_facing
+
             if cpu_action == "FOLD":
                  eng.generate_realized_cpu_hand()   # レンジを0にする前に生成する
                  eng.update_range_dict("CPU", "FOLD", 0)
                  eng.record_action("CPU", "FOLD", 0, cpu_eq, eng.pot_size)
                  eng.hand_finished = True
-                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD"}
+                 cpu_actions.append({"street": eng.street, "action": "FOLD", "amount": 0, "allIn": False})
+                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD", "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
             if cpu_action in ["CALL", "BET", "RAISE"]:
                  if cpu_action == "CALL":
-                     eng.update_range_dict("CPU", "CALL", cpu_facing)
-                     eng.record_action("CPU", "CALL", cpu_facing, cpu_eq, eng.pot_size)
-                     eng.place_bet("CPU", cpu_facing)
+                     cpu_call_amount = min(cpu_facing, eng.cpu_stack)
+                     eng.update_range_dict("CPU", "CALL", cpu_call_amount)
+                     eng.record_action("CPU", "CALL", cpu_call_amount, cpu_eq, eng.pot_size)
+                     eng.place_bet("CPU", cpu_call_amount)
+                     cpu_amount = cpu_call_amount
                  else:
                      eng.update_range_dict("CPU", cpu_action, cpu_amount)
                      eng.record_action("CPU", cpu_action, cpu_amount, cpu_eq, eng.pot_size)
                      eng.place_bet("CPU", cpu_amount)
 
                  cpu_msg = f"CPU {cpu_action}S {cpu_amount > 0 and str(round(cpu_amount, 1)) + 'bb' or ''}".strip()
+                 cpu_actions.append({"street": eng.street, "action": cpu_action, "amount": round(cpu_amount, 1), "allIn": eng.is_all_in("CPU")})
             elif cpu_action == "CHECK":
                  eng.update_range_dict("CPU", "CHECK", 0)
                  eng.record_action("CPU", "CHECK", 0, cpu_eq, eng.pot_size)
                  cpu_msg = "CPU CHECKS"
+                 cpu_actions.append({"street": eng.street, "action": "CHECK", "amount": 0, "allIn": False})
 
         # Check if CPU acting resolved the street
         hero_facing_after_cpu = eng.current_bet - eng.hero_invested
         if (cpu_action in ["CALL", "CHECK"] and hero_facing_after_cpu < 0.01) or street_closed_by_hero:
+            # ▼ 修正(ルール): オールイン成立（どちらかのスタックが0で賭け金が一致）なら
+            #   以降のベッティングは発生しない → 残りのボードを全て配ってショーダウン
+            if eng.is_all_in("HERO") or eng.is_all_in("CPU"):
+                eng.run_out_board()
+                eng.hand_finished = True
+                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => All-in! Showdown!".strip(), "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
+
             # 4. Advance Street
             if eng.street == "RIVER":
                 eng.hand_finished = True
-                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
+                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
             current_idx = eng.STREETS.index(eng.street)
             if current_idx + 1 < len(eng.STREETS):
@@ -340,18 +384,23 @@ def take_action(req: ActionRequest):
                      cpu_action_2, cpu_amount_2 = eng.cpu_decide(cpu_eq_next, "CHECK", 0)
 
                      if cpu_action_2 in ["BET", "RAISE"]:
+                          # 新ストリートのCPUベットも有効スタックでキャップ
+                          cpu_amount_2 = min(cpu_amount_2, eng.max_additional_bet("CPU"))
+                     if cpu_action_2 in ["BET", "RAISE"] and cpu_amount_2 > 0.01:
                           eng.update_range_dict("CPU", cpu_action_2, cpu_amount_2)
                           eng.record_action("CPU", cpu_action_2, cpu_amount_2, cpu_eq_next, eng.pot_size)
                           eng.place_bet("CPU", cpu_amount_2)
                           cpu_msg += f" | Next street CPU {cpu_action_2}S {round(cpu_amount_2, 1)}bb"
+                          cpu_actions.append({"street": eng.street, "action": cpu_action_2, "amount": round(cpu_amount_2, 1), "allIn": eng.is_all_in("CPU")})
                      else:
                           eng.record_action("CPU", "CHECK", 0, cpu_eq_next, eng.pot_size)
                           cpu_msg += f" | Next street CPU CHECKS"
+                          cpu_actions.append({"street": eng.street, "action": "CHECK", "amount": 0, "allIn": False})
             else:
                 eng.hand_finished = True
-                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action}
+                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
-        return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng), "cpuAction": cpu_action, "cpuMessage": cpu_msg}
+        return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng), "cpuAction": cpu_action, "cpuMessage": cpu_msg, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
     except Exception as e:
         import traceback
         with open('trace.txt', 'w') as f:

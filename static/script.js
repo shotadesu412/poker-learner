@@ -268,7 +268,9 @@ async function startHand() {
         maybeShowHandAd();
 
         // Render CPU's first action if they act before the player preflop
-        if (currentState.cpuMessage) {
+        if (currentState.cpuActions) {
+            addCpuActionsToHistory(currentState.cpuActions, 500);
+        } else if (currentState.cpuMessage) {
             setTimeout(() => {
                 addEvaluationToHistory("", currentState.cpuMessage, "", "CPU", "PREFLOP");
             }, 500 * speedMult);
@@ -314,7 +316,12 @@ async function takeAction(actionType, amount = 0) {
         if (actionType === "BET" || actionType === "RAISE") {
             displayAction = hasActiveBet ? "RAISE" : "BET";
         }
-        const actionText = amount > 0 ? `${displayAction} ${amount.toFixed(1)}bb` : displayAction;
+        // サーバー側でキャップされた実際の金額を優先（オールイン時など）
+        const displayAmount = (typeof data.heroAmount === "number" && data.heroAmount > 0) ? data.heroAmount : amount;
+        let actionText = displayAmount > 0 ? `${displayAction} ${Number(displayAmount).toFixed(1)}bb` : displayAction;
+        if (data.heroAllIn && (actionType === "BET" || actionType === "RAISE" || actionType === "CALL")) {
+            actionText += " (ALL-IN)";
+        }
         const actionStreet = currentState ? currentState.street : "";
         showEvaluation(data.evaluation || "", actionText, actionStreet);
 
@@ -331,8 +338,10 @@ async function takeAction(actionType, amount = 0) {
             return;
         }
 
-        // Render CPU response if exists
-        if (data.cpuMessage) {
+        // Render CPU response if exists（構造化データがあれば1アクション=1行・正しいストリートで表示）
+        if (data.cpuActions && data.cpuActions.length > 0) {
+            addCpuActionsToHistory(data.cpuActions, 1000);
+        } else if (data.cpuMessage) {
             setTimeout(() => {
                 const cpuStreet = data.state ? data.state.street : actionStreet;
                 addEvaluationToHistory("", data.cpuMessage, "", "CPU", cpuStreet);
@@ -577,6 +586,26 @@ function showEvaluation(evalSymbol, actionName, street) {
         popup.classList.remove('show');
         addEvaluationToHistory(evalSymbol, actionName, colorClass, "YOU", street);
     }, 800 * speedMult);
+}
+
+// CPUアクションの表示テキストを整形（"CPU CALLS 2.2bb" ではなく "CALL 2.2bb" — アクター表示は別チップにあるため）
+function formatCpuAction(a) {
+    let text = a.action;
+    if (a.amount > 0 && (a.action === "BET" || a.action === "RAISE" || a.action === "CALL")) {
+        text += ` ${Number(a.amount).toFixed(1)}bb`;
+    }
+    if (a.allIn) text += " (ALL-IN)";
+    return text;
+}
+
+// 構造化されたCPUアクション配列を、正しいストリートバッジ付きで1件ずつ履歴に追加
+function addCpuActionsToHistory(cpuActions, delayBase) {
+    if (!Array.isArray(cpuActions)) return;
+    cpuActions.forEach((a, i) => {
+        setTimeout(() => {
+            addEvaluationToHistory("", formatCpuAction(a), "", "CPU", a.street || "");
+        }, (delayBase + i * 350) * speedMult);
+    });
 }
 
 function addEvaluationToHistory(symbol, action, colorClass, actor, street) {

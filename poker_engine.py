@@ -904,6 +904,36 @@ class PokerEngine:
             drawn = self.deck.draw(1)
             self.board.append(drawn[0] if isinstance(drawn, list) else drawn)
 
+    def max_additional_bet(self, actor):
+        """
+        actor がこのアクションで追加投入できる上限。
+        ノーリミットのルール上、相手がコールできる額(有効スタック)を超えるベットは
+        意味を持たない（超過分は返還される）ため、
+        min(自分のスタック, 相手の残りコール可能額) でキャップする。
+        """
+        if actor == "HERO":
+            own_stack, own_inv = self.hero_stack, self.hero_invested
+            opp_stack, opp_inv = self.cpu_stack, self.cpu_invested
+        else:
+            own_stack, own_inv = self.cpu_stack, self.cpu_invested
+            opp_stack, opp_inv = self.hero_stack, self.hero_invested
+        callable_total = opp_inv + opp_stack   # 相手が全額コールした場合の到達額
+        return max(0.0, min(own_stack, callable_total - own_inv))
+
+    def is_all_in(self, actor):
+        stack = self.hero_stack if actor == "HERO" else self.cpu_stack
+        return stack <= 0.01
+
+    def run_out_board(self):
+        """オールイン成立後、残りのストリートを全て配りショーダウンへ進める"""
+        order = ["FLOP", "TURN", "RIVER"]
+        while self.street != "RIVER":
+            if self.street == "PREFLOP":
+                nxt = "FLOP"
+            else:
+                nxt = order[order.index(self.street) + 1]
+            self.advance_street(nxt)
+
     def get_hand_str(self, cards):
         if not cards: return "[]"
         if not isinstance(cards, list):
@@ -1191,14 +1221,33 @@ class PokerEngine:
         if opponent_action in ["BET", "RAISE"]:
             # CPU faces a bet
             e_req = self.evaluator.calculate_required_equity(opponent_bet_size, self.pot_size)
-            
+
             # Note: `cpu_equity` is pre-calculated and passed natively from the engine router (e.g. app.py).
-            # The value CPU thinks it has when it looks down at its hand vs User's actual play in this test framework. 
+            # The value CPU thinks it has when it looks down at its hand vs User's actual play in this test framework.
             # Actually in the MVP PokerEngine, self.hero_hand belongs to the HUMAN.
             # And the CPU doesn't have explicit hole cards! It defines itself BY its range.
             # Therefore, 'cpu_equity' is actually the average equity of the CPU's RANGE against the Human's known cards.
-            
+
             is_preflop = (self.street == "PREFLOP")
+
+            if is_preflop:
+                # ▼ 修正(カンニング排除): cpu_equity はヒーローの実カードに対するレンジ平均
+                #   エクイティのため、ヒーローがAA等の強いハンドをオープンすると
+                #   CPUがほぼ100%即フォールドする「透視」挙動になっていた。
+                #   プリフロップは「レンジ内のどのハンドを引いたか」を一様パーセンタイルで
+                #   サンプリングし、ベットサイズから導く防衛頻度(GTOのMDF近似)で
+                #   継続/フォールドを決める。ヒーローの実カードには依存しない。
+                # 下限0.15: 巨大なオーバーベット/シャブ(必要エクイティ~0.5)へは防衛頻度を絞る
+                defend_freq = max(0.15, min(0.80, 1.0 - e_req * 1.6))
+                hand_percentile = random.random()   # 0=レンジ最弱, 1=最強
+                if hand_percentile < (1.0 - defend_freq):
+                    self.cpu_last_action_intent = "FOLD"
+                    self.cpu_effective_equity = 0.25 + hand_percentile * 0.15
+                    return "FOLD", 0
+                # 継続レンジ内での相対的な強さを [0.33, 0.63] のエクイティに写像
+                p_norm = (hand_percentile - (1.0 - defend_freq)) / max(defend_freq, 1e-9)
+                effective_equity = 0.33 + p_norm * 0.30
+                self.cpu_effective_equity = effective_equity
             if is_preflop:
                 # --- RNG混合戦略による3-Bet判定 ---
                 # GTO_3BET_MATRIX からポジション対ポジションの適正3-Bet頻度を取得
@@ -1445,6 +1494,12 @@ class PokerEngine:
             # Additional logic for Preflop Limp (action_if_pass == "CALL")
             if action_if_pass == "CALL":
                  call_cost = self.current_bet - self.cpu_invested
+                 # ▼ 修正(ルール): 追加コストが無いのにFOLDは不可（チェックはタダ）
+                 if call_cost <= 0.01:
+                     if is_value_bet or is_bluff_bet or is_semibluff_bet:
+                         self.cpu_last_action_intent = "VALUE" if is_value_bet else "BLUFF"
+                         return action_if_bet, ideal_bet_size
+                     return "CHECK", 0
                  ev_call = self.evaluator.ev_call(effective_equity, self.pot_size, call_cost)
                  if is_value_bet or is_bluff_bet or is_semibluff_bet:
                      self.cpu_last_action_intent = "VALUE" if is_value_bet else "BLUFF"
