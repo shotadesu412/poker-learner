@@ -10,6 +10,19 @@ document.addEventListener("DOMContentLoaded", () => {
         settingsBtn.onclick = () => openHomeSettings();
     }
 
+    // プレミアムステータス表示の描画
+    function renderPremiumStatus(isPremium) {
+        const premStatus = document.getElementById("home-premium-status");
+        if (!premStatus) return;
+        if (isPremium) {
+            premStatus.textContent = "加入中";
+            premStatus.className = "home-premium-status is-premium";
+        } else {
+            premStatus.innerHTML = '<button class="home-premium-upgrade-btn" onclick="location.href=\'/play#premium\'">アップグレード</button>';
+            premStatus.className = "home-premium-status";
+        }
+    }
+
     window.openHomeSettings = function() {
         const modal = document.getElementById("settings-modal");
         if (!modal) return;
@@ -25,21 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
             segFast.classList.toggle("active", currentSettings.speed === "fast");
         }
 
-        // プレミアムステータス
-        const premStatus = document.getElementById("home-premium-status");
-        if (premStatus) {
-            const isPremium = localStorage.getItem("poker_is_premium") === "true";
-            if (isPremium) {
-                premStatus.textContent = "✓ 加入中";
-                premStatus.className = "home-premium-status is-premium";
-            } else {
-                premStatus.innerHTML = '<button class="home-premium-upgrade-btn" onclick="location.href=\'/play#premium\'">アップグレード</button>';
-                premStatus.className = "home-premium-status";
-            }
-        }
+        // プレミアムステータス: まずキャッシュ値で即描画 → APIで最新化
+        // （従来は localStorage の poker_is_premium を読むだけで、どこにも
+        //   書き込まれていなかったため加入済みでも常に「アップグレード」表示だった）
+        renderPremiumStatus(localStorage.getItem("poker_is_premium") === "true");
+        const uid = localStorage.getItem("poker_user_id") || "";
+        fetch(`/api/subscription?user_id=${encodeURIComponent(uid)}`)
+            .then(r => r.json())
+            .then(d => {
+                const p = !!d.is_premium;
+                localStorage.setItem("poker_is_premium", p ? "true" : "false");
+                renderPremiumStatus(p);
+            })
+            .catch(() => {});
 
         modal.classList.remove("hidden");
     };
+
+    // iOS StoreKitの復元/購入通知（ホーム画面には script.js が無く、
+    // 通知が届いても無視されていたためここで受ける）
+    window.onRestoreSuccess = function() {
+        localStorage.setItem("poker_is_premium", "true");
+        renderPremiumStatus(true);
+    };
+    window.onPurchaseSuccess = function() {
+        localStorage.setItem("poker_is_premium", "true");
+        renderPremiumStatus(true);
+    };
+    window.onPurchaseCancel = window.onPurchaseCancel || function() {};
+    window.onAdDismissed = window.onAdDismissed || function() {};
 
     window.closeHomeSettings = function() {
         const modal = document.getElementById("settings-modal");

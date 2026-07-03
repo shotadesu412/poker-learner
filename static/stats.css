@@ -133,9 +133,7 @@ body {
     font-size: 3.5rem;
     font-weight: 900;
     line-height: 1;
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--accent-green);
 }
 
 .gto-label {
@@ -153,7 +151,7 @@ body {
 
 .gauge-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+    background: var(--accent-green);
     border-radius: 5px;
     transition: width 0.8s cubic-bezier(.4, 0, .2, 1);
 }
@@ -476,14 +474,15 @@ body {
     gap: 10px;
 }
 .premium-lock-icon {
-    font-size: 2rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
 }
 .premium-lock-text {
     font-size: 0.9rem;
     color: var(--text-muted);
 }
 .pro-badge {
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    background: #b45309;
     color: #fff;
     font-size: 0.6rem;
     padding: 2px 6px;

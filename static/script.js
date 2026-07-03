@@ -29,6 +29,8 @@ async function loadSubscriptionStatus() {
         const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`);
         const data = await res.json();
         isPremium = data.is_premium || false;
+        // ホーム画面の設定表示が参照するため localStorage にも同期
+        localStorage.setItem("poker_is_premium", isPremium ? "true" : "false");
     } catch (e) {
         isPremium = false;
     }
@@ -653,18 +655,17 @@ function showShowdownResult(result) {
     const msgArea = el('message-area');
     if (!msgArea) return;
 
-    let icon, label, colorStyle;
+    let label, colorStyle;
     if (result.winner === "YOU") {
-        icon = "🏆"; label = "You Win!"; colorStyle = "color: var(--eval-optimal);";
+        label = "You Win"; colorStyle = "color: var(--eval-optimal);";
     } else if (result.winner === "CPU") {
-        icon = "💀"; label = "CPU Wins"; colorStyle = "color: var(--eval-bad);";
+        label = "CPU Wins"; colorStyle = "color: var(--eval-bad);";
     } else {
-        icon = "🤝"; label = "TIE"; colorStyle = "color: var(--text-muted);";
+        label = "Tie"; colorStyle = "color: var(--text-muted);";
     }
 
     msgArea.innerHTML = `
         <div class="showdown-banner" style="${colorStyle}">
-            <div class="showdown-icon">${icon}</div>
             <div class="showdown-label">${label}</div>
         </div>
         <div class="showdown-hands">
@@ -1185,7 +1186,7 @@ function openPurchaseModal() {
     const statusEl = el('purchase-status');
     if (statusEl) statusEl.textContent = '';
     if (isPremium) {
-        if (statusEl) statusEl.textContent = '✅ プレミアムプランご利用中です';
+        if (statusEl) statusEl.textContent = 'プレミアムプランご利用中です';
     }
     // ネイティブ(StoreKit)から最新の価格を取得して表示
     try {
@@ -1233,8 +1234,9 @@ window.onPurchaseSuccess = async function(info) {
 
     // StoreKit が成功した時点で即座にプレミアム有効化（サーバー応答を待たない）
     isPremium = true;
+    localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
-    if (statusEl) statusEl.textContent = '✅ プレミアム有効化しました！';
+    if (statusEl) statusEl.textContent = 'プレミアムを有効化しました';
 
     // サーバーへの同期はバックグラウンドで行う（失敗してもisPremium=trueは維持）
     try {
@@ -1261,6 +1263,7 @@ window.onPurchaseSuccess = async function(info) {
 window.onRestoreSuccess = async function() {
     // isPremiumをすぐに反映（起動時の自動呼び出しでも即時有効化）
     isPremium = true;
+    localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
 
     const modal = el('purchase-modal');
@@ -1269,7 +1272,7 @@ window.onRestoreSuccess = async function() {
     // モーダルが開いている場合（手動復元ボタン押下時）のみUI更新
     if (isModalOpen) {
         const statusEl = el('purchase-status');
-        if (statusEl) statusEl.textContent = '✅ 購入を復元しました！';
+        if (statusEl) statusEl.textContent = '購入を復元しました';
         setTimeout(closePurchaseModal, 1500);
     }
 
@@ -1371,7 +1374,7 @@ function toggleSpotMode() {
     const selector = el('spot-pos-selector');
     if (btn) {
         btn.classList.toggle('spot-active', isSpotMode);
-        btn.textContent = isSpotMode ? '🎯 スポット練習 ON' : '🎯 スポット練習';
+        btn.textContent = isSpotMode ? 'スポット練習 ON' : 'スポット練習';
     }
     if (selector) {
         selector.classList.toggle('hidden', !isSpotMode);
