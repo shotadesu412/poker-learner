@@ -445,25 +445,29 @@ class Evaluator:
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, spr=fold_spr, street=street)
         realized_equity = Evaluator.realize_equity(equity, eqr)
         
+        # ▼ 修正(フォールドの否定しすぎ): GTOではオッズ近辺のハンドは「無差別」
+        #   （コールとフォールドのEVがほぼ等しいブラフキャッチャー）であり、
+        #   その フォールドは決してブランダーではない。さらにMC由来のエクイティは
+        #   相手のレイズレンジを緩めに見積もるため過大になりやすい。
+        #   × は「明確なバリューハンドを捨てた」場合のみに限定する。
         result_eval = EVAL_OPTIMAL
         result_reason = ""
-        
-        if realized_equity >= e_req * Evaluator.FOLD_OPTIMAL_THRESHOLD:
+
+        if realized_equity >= e_req * 1.5:
             result_eval = EVAL_BAD
-            result_reason = f"【リスク回避過多】十分に勝てる見込みがあるハンド({realized_equity*100:.1f}%)を捨ててしまいました。期待値の観点からマイナスのプレイであり、コールかレイズすべきでした。"
-        elif realized_equity >= e_req:
+            result_reason = f"【明確な損失】必要勝率({e_req*100:.1f}%)を大きく上回るハンド({realized_equity*100:.1f}%)を捨ててしまいました。これはバリューハンドであり、コールかレイズで戦うべき場面です。"
+        elif realized_equity >= e_req * 1.15:
             result_eval = EVAL_MARGINAL
-            result_reason = f"【フォールド過多】オッズに見合う勝率({realized_equity*100:.1f}%)を持っています。フォールドは消極的すぎるかもしれません。"
-        elif realized_equity >= (e_req - 0.02):
-            # ▼ MDF考慮: 勝率がオッズに2%以内のボーダーラインスポット
-            result_eval = EVAL_MARGINAL
+            result_reason = f"【ややタイト】勝率({realized_equity*100:.1f}%)はオッズ({e_req*100:.1f}%)を上回っています。毎回降りると相手のブラフに搾取されるため、この強さのハンドは一定頻度で防衛したいところです。"
+        elif realized_equity >= e_req * 0.85:
+            result_eval = EVAL_GOOD
             result_reason = (
-                f"【ボーダーライン】オッズにわずかに届きません（あなたの勝率: {realized_equity*100:.1f}% / 必要: {e_req*100:.1f}%）。"
-                f"毎回フォールドすると相手に読まれやすくなるため、時にはコールも検討できます。"
+                f"【妥当な選択】勝率({realized_equity*100:.1f}%)がオッズ({e_req*100:.1f}%)に近いブラフキャッチャーです。"
+                f"この位置のハンドはコールとフォールドの期待値がほぼ等しく、どちらを選んでも大きな損はありません。"
             )
         else:
             result_eval = EVAL_OPTIMAL
-            result_reason = f"逆転の確率({realized_equity*100:.1f}%)が低いため、無駄なチップの支払いを避ける適切なフォールドです。"
+            result_reason = f"逆転の確率({realized_equity*100:.1f}%)が必要勝率({e_req*100:.1f}%)に届かないため、無駄なチップの支払いを避ける適切なフォールドです。"
             
         return {
             "ev": 0.0,  # Fold EV is always 0

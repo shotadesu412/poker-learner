@@ -139,12 +139,17 @@ def filter_range_by_action(range_dict: dict, action_taken: str, board_cards: lis
             continue
 
         if action_taken in ("RAISE", "LARGE_BET"):
-            # レイズ/大きなベット → 弱いハンド（strength < 0.3）の確率を大幅削減
-            # ブラフの可能性を残すため 0 にはしない
+            # レイズ/大きなベット → 弱いハンドの確率を大幅削減
+            # ▼ 修正: 従来の削減率(0.05/0.15)では弱いハンドが残りすぎ、
+            #   このレンジに対するヒーローのエクイティが過大評価されて
+            #   正しいフォールドが×判定される一因になっていた。
+            #   さらに中間ハンド(0.35-0.50)もレイズ頻度は低い(大半はコール)ため減衰。
             if strength < 0.20:
-                new_weight *= 0.05   # ほぼ除外（完全空振り）
+                new_weight *= 0.03   # ほぼ除外（完全空振り。純ブラフの名残のみ）
             elif strength < 0.35:
-                new_weight *= 0.15   # 弱いハンドは基本コール/フォールド
+                new_weight *= 0.10   # 弱いハンドは基本コール/フォールド
+            elif strength < 0.50:
+                new_weight *= 0.60   # 中間ハンドのレイズは低頻度
             # 強いハンドはそのまま
 
         elif action_taken == "CALL":
