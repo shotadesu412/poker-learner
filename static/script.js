@@ -1132,13 +1132,21 @@ window.onAdDismissed = function(earned) {
     if (_adResolve) { _adResolve(earned === true); _adResolve = null; }
 };
 
+// 広告を用意できなかった場合（在庫なし/通信障害/表示失敗）にiOS側から呼ばれる。
+// ユーザー都合ではないためゲートを通過させる（コーチを閉じ込めない）。
+window.onAdUnavailable = function() {
+    if (_adResolve) { _adResolve(true); _adResolve = null; }
+};
+
 function showRewardedAd() {
     return new Promise(resolve => {
         _adResolve = resolve;
         try {
             window.webkit.messageHandlers.showRewardedAd.postMessage({});
         } catch (e) {
-            resolve(false); // iOSアプリ外では報酬なし
+            // iOSアプリ外（ブラウザ等）に広告は存在しない → 閉じ込めず通過させる
+            _adResolve = null;
+            resolve(true);
         }
     });
 }

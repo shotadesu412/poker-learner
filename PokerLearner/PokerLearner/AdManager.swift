@@ -68,8 +68,8 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     /// リワード広告（AIコーチのゲート用）。ユーザーが視聴を選んだときのみ呼ぶ。
     func showRewarded() {
         guard let root = Self.rootViewController() else {
-            print("[Ad] showRewarded: no root — earned=false")
-            notifyRewardDismissed(earned: false)
+            print("[Ad] showRewarded: no root — unavailable")
+            notifyRewardUnavailable()
             return
         }
         // プリロード済みならそのまま表示。未ロードならその場で読み込んでから表示。
@@ -84,8 +84,9 @@ final class AdManager: NSObject, FullScreenContentDelegate {
                     self.rewarded = ad
                     self.presentRewarded(ad, from: root)
                 } catch {
-                    print("[Ad] On-demand rewarded load failed: \(error.localizedDescription)")
-                    self.notifyRewardDismissed(earned: false)
+                    // 広告在庫なし/通信障害: ユーザー都合ではないため閉じ込めず通過させる
+                    print("[Ad] On-demand rewarded load failed: \(error.localizedDescription) — unavailable")
+                    self.notifyRewardUnavailable()
                 }
             }
         }
@@ -128,7 +129,8 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     nonisolated func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         Task { @MainActor in
             if self.presentingRewarded {
-                self.notifyRewardDismissed(earned: false)
+                // 表示自体の失敗（SDK都合）もユーザー都合ではない → 通過させる
+                self.notifyRewardUnavailable()
             } else {
                 self.preloadInterstitial()
             }
@@ -137,8 +139,16 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     // MARK: - Helpers
 
+    /// ユーザーが広告を閉じた（earned=最後まで視聴したか）
     private func notifyRewardDismissed(earned: Bool) {
         sendJS("window.onAdDismissed(\(earned ? "true" : "false"))")
+        preloadRewarded()
+    }
+
+    /// 広告を用意できなかった（在庫なし/通信障害/表示失敗）。
+    /// ユーザー都合ではないためJS側でゲートを通過させる。
+    private func notifyRewardUnavailable() {
+        sendJS("window.onAdUnavailable && window.onAdUnavailable()")
         preloadRewarded()
     }
 
