@@ -1235,23 +1235,35 @@ class PokerEngine:
             is_preflop = (self.street == "PREFLOP")
 
             if is_preflop:
-                # ▼ 修正(カンニング排除): cpu_equity はヒーローの実カードに対するレンジ平均
-                #   エクイティのため、ヒーローがAA等の強いハンドをオープンすると
-                #   CPUがほぼ100%即フォールドする「透視」挙動になっていた。
-                #   プリフロップは「レンジ内のどのハンドを引いたか」を一様パーセンタイルで
-                #   サンプリングし、ベットサイズから導く防衛頻度(GTOのMDF近似)で
-                #   継続/フォールドを決める。ヒーローの実カードには依存しない。
-                # 下限0.15: 巨大なオーバーベット/シャブ(必要エクイティ~0.5)へは防衛頻度を絞る
-                defend_freq = max(0.15, min(0.80, 1.0 - e_req * 1.6))
+                # ▼ カンニング排除: ヒーローの実カードには依存せず、
+                #   「レンジ内のどのハンドを引いたか」を一様パーセンタイルでサンプリング。
+                #
+                # ▼ 防衛方針（仕様）:
+                #   - 標準サイズのオープン(合計~5bb以下) → フォールドなし。
+                #     95%コール / 5%3ベット（練習相手として必ずポットに参加する）
+                #   - 3ベット以上 or 特大オープン(シャブ等) → 確率的フォールド
+                num_raises = sum(1 for a in self.action_history if a["action"] in ["BET", "RAISE"])
+                is_standard_open = (num_raises <= 1 and self.current_bet <= 5.0)
                 hand_percentile = random.random()   # 0=レンジ最弱, 1=最強
-                if hand_percentile < (1.0 - defend_freq):
-                    self.cpu_last_action_intent = "FOLD"
-                    self.cpu_effective_equity = 0.25 + hand_percentile * 0.15
-                    return "FOLD", 0
-                # 継続レンジ内での相対的な強さを [0.33, 0.63] のエクイティに写像
-                p_norm = (hand_percentile - (1.0 - defend_freq)) / max(defend_freq, 1e-9)
-                effective_equity = 0.33 + p_norm * 0.30
-                self.cpu_effective_equity = effective_equity
+
+                if is_standard_open:
+                    self._pf_vs_open = True
+                    # 全域継続: レンジの強さを [0.30, 0.65] のエクイティに写像
+                    effective_equity = 0.30 + hand_percentile * 0.35
+                    self.cpu_effective_equity = effective_equity
+                else:
+                    self._pf_vs_open = False
+                    # vs 3ベット/特大ベット: ベットサイズから導く防衛頻度で確率的フォールド
+                    # 下限0.15: 巨大なオーバーベット/シャブ(必要エクイティ~0.5)へは防衛を絞る
+                    defend_freq = max(0.15, min(0.80, 1.0 - e_req * 1.6))
+                    if hand_percentile < (1.0 - defend_freq):
+                        self.cpu_last_action_intent = "FOLD"
+                        self.cpu_effective_equity = 0.25 + hand_percentile * 0.15
+                        return "FOLD", 0
+                    # 継続レンジ内での相対的な強さを [0.33, 0.63] のエクイティに写像
+                    p_norm = (hand_percentile - (1.0 - defend_freq)) / max(defend_freq, 1e-9)
+                    effective_equity = 0.33 + p_norm * 0.30
+                    self.cpu_effective_equity = effective_equity
             if is_preflop:
                 # --- RNG混合戦略による3-Bet判定 ---
                 # GTO_3BET_MATRIX からポジション対ポジションの適正3-Bet頻度を取得
@@ -1331,6 +1343,14 @@ class PokerEngine:
             
             # プリフロップとポストフロップで判定ロジックを分岐
             if is_preflop:
+                # --- 標準オープンへの防衛（仕様: フォールドなし・95%コール・5%3ベット）---
+                if getattr(self, "_pf_vs_open", False):
+                    # 3ベットはレンジ上位(バリュー4%)+最下位(ブラフ1%)の計5%
+                    if hand_percentile >= 0.96 or hand_percentile <= 0.01:
+                        self.cpu_last_action_intent = "VALUE" if hand_percentile >= 0.96 else "BLUFF"
+                        return "RAISE", min(self.cpu_stack, base_raise_amount)
+                    return "CALL", opponent_bet_size
+
                 # --- プリフロップ 3-Bet: RNG混合戦略 ---
                 # バリュー3-Bet (AA/KK/QQ/AKs等の強いハンド): 常時RAISE
                 if effective_equity >= e_req * 2.5:
