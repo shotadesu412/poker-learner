@@ -28,11 +28,14 @@ async function loadSubscriptionStatus() {
     try {
         const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`);
         const data = await res.json();
+        // StoreKitの実権利状態が既に届いていればそちらを正とする
+        // （サーバーDBは解約後も premium が残るため上書きしない）
+        if (_entitlementReported) return;
         isPremium = data.is_premium || false;
         // ホーム画面の設定表示が参照するため localStorage にも同期
         localStorage.setItem("poker_is_premium", isPremium ? "true" : "false");
     } catch (e) {
-        isPremium = false;
+        if (!_entitlementReported) isPremium = false;
     }
 }
 
@@ -839,13 +842,17 @@ async function watchAdForCoach() {
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.add('hidden');   // closeを呼ぶとゲートがfalseになるため直接閉じる
     const earned = await showRewardedAd();
-    if (earned) {
+    if (earned === true) {
         // 視聴完了 → ロック解除、また無料分を付与
         coachLocked = false;
         coachFreeUsesLeft = AD_COACH_INTERVAL;
         if (_coachGateResolve) { _coachGateResolve(true); _coachGateResolve = null; }
     } else {
-        // 途中で閉じた → ロック維持、続行しない（次も2択が出る）
+        if (earned === 'unavailable') {
+            // 広告を用意できなかった → 通過させず理由を伝える
+            alert("広告を読み込めませんでした。通信環境をご確認のうえ、しばらくしてからもう一度お試しください。");
+        }
+        // 途中で閉じた/用意できなかった → ロック維持、続行しない（次も2択が出る）
         if (_coachGateResolve) { _coachGateResolve(false); _coachGateResolve = null; }
     }
 }
@@ -1133,9 +1140,9 @@ window.onAdDismissed = function(earned) {
 };
 
 // 広告を用意できなかった場合（在庫なし/通信障害/表示失敗）にiOS側から呼ばれる。
-// ユーザー都合ではないためゲートを通過させる（コーチを閉じ込めない）。
+// フェイルクローズ: 広告なしでゲートを通過させない（'unavailable' でエラー表示させる）。
 window.onAdUnavailable = function() {
-    if (_adResolve) { _adResolve(true); _adResolve = null; }
+    if (_adResolve) { _adResolve('unavailable'); _adResolve = null; }
 };
 
 function showRewardedAd() {
@@ -1270,6 +1277,7 @@ window.onPurchaseSuccess = async function(info) {
 
 window.onRestoreSuccess = async function() {
     // isPremiumをすぐに反映（起動時の自動呼び出しでも即時有効化）
+    _entitlementReported = true;   // StoreKit由来の正 → サーバー応答で上書きさせない
     isPremium = true;
     localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
@@ -1305,6 +1313,33 @@ window.onPurchaseCancel = function() {
     const btn = el('btn-purchase');
     if (statusEl) statusEl.textContent = 'キャンセルされました';
     if (btn) btn.disabled = false;
+};
+
+// 復元を試みたが有効な購入が見つからなかった（iOS側から呼ばれる）
+window.onRestoreNotFound = function() {
+    const statusEl = el('purchase-status');
+    if (statusEl) statusEl.textContent = '復元できる購入が見つかりませんでした';
+};
+
+// StoreKitの実権利状態（起動時にiOS側から必ず呼ばれる）。
+// StoreKitを正とし、サーバーDBに残った古いプレミアム状態（解約・期限切れ・返金後）を解除する。
+let _entitlementReported = false;
+window.onEntitlementStatus = function(active) {
+    _entitlementReported = true;
+    if (active) {
+        isPremium = true;
+        localStorage.setItem("poker_is_premium", "true");
+        applyPremiumUI();
+    } else {
+        const wasPremium = isPremium || localStorage.getItem("poker_is_premium") === "true";
+        isPremium = false;
+        localStorage.setItem("poker_is_premium", "false");
+        if (wasPremium) {
+            // サーバーDBにも解除を反映（失敗しても次回起動時に再試行される）
+            fetch(`/api/subscription/cancel?user_id=${encodeURIComponent(currentUserId)}`, { method: 'POST' })
+                .catch(() => {});
+        }
+    }
 };
 
 function applyPremiumUI() {

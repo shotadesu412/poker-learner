@@ -28,9 +28,18 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     /// UMP 同意取得後に呼ぶ
     func initializeAndLoad() {
-        MobileAds.initialize()
-        preloadRewarded()
-        preloadInterstitial()
+        // 注意: MobileAds.initialize() は NSObject の +initialize が解決されるだけで
+        // SDK は起動しない。必ず shared.start() を使うこと。
+        MobileAds.shared.start { status in
+            let states = status.adapterStatusesByClassName
+                .map { "\($0.key)=\($0.value.state.rawValue)" }
+                .joined(separator: ", ")
+            print("[Ad] MobileAds started: \(states)")
+            Task { @MainActor in
+                AdManager.shared.preloadRewarded()
+                AdManager.shared.preloadInterstitial()
+            }
+        }
     }
 
     // MARK: - Load
@@ -146,7 +155,7 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     }
 
     /// 広告を用意できなかった（在庫なし/通信障害/表示失敗）。
-    /// ユーザー都合ではないためJS側でゲートを通過させる。
+    /// JS側でエラーメッセージを表示し、ゲートは通過させない（フェイルクローズ）。
     private func notifyRewardUnavailable() {
         sendJS("window.onAdUnavailable && window.onAdUnavailable()")
         preloadRewarded()

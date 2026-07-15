@@ -55,8 +55,13 @@ final class StoreKitManager: ObservableObject {
         for await result in Transaction.updates {
             if case .verified(let tx) = result {
                 await tx.finish()
-                if tx.productID == productID && tx.revocationDate == nil {
-                    sendJS("window.onRestoreSuccess()")
+                if tx.productID == productID {
+                    if tx.revocationDate == nil {
+                        sendJS("window.onRestoreSuccess()")
+                    } else {
+                        // 返金・取り消し → プレミアム解除
+                        sendJS("window.onEntitlementStatus && window.onEntitlementStatus(false)")
+                    }
                 }
             }
         }
@@ -64,13 +69,17 @@ final class StoreKitManager: ObservableObject {
 
     // MARK: - Entitlements Check（起動時）
 
+    /// StoreKit の実権利状態をJSへ通知する。
+    /// 有効なサブスクがない場合も必ず false を通知し、サーバーDBに残った
+    /// 古いプレミアム状態（解約後・期限切れ）をJS側で解除させる。
     func checkEntitlements() async {
         for await result in Transaction.currentEntitlements {
             if case .verified(let tx) = result, tx.productID == productID {
-                sendJS("window.onRestoreSuccess()")
+                sendJS("window.onEntitlementStatus ? window.onEntitlementStatus(true) : window.onRestoreSuccess()")
                 return
             }
         }
+        sendJS("window.onEntitlementStatus && window.onEntitlementStatus(false)")
     }
 
     // MARK: - Purchase
@@ -104,6 +113,9 @@ final class StoreKitManager: ObservableObject {
     // MARK: - Restore
 
     func restore() async {
+        // 明示的な「購入を復元」: App Store と同期してから確認する。
+        // これがないと機種変更後などの新端末で購入が見つからないことがある。
+        try? await AppStore.sync()
         var found = false
         for await result in Transaction.currentEntitlements {
             if case .verified(let tx) = result, tx.productID == productID {
@@ -111,7 +123,9 @@ final class StoreKitManager: ObservableObject {
                 break
             }
         }
-        sendJS(found ? "window.onRestoreSuccess()" : "window.onPurchaseCancel()")
+        sendJS(found
+            ? "window.onRestoreSuccess()"
+            : "window.onRestoreNotFound ? window.onRestoreNotFound() : window.onPurchaseCancel()")
     }
 
     // MARK: - JS Bridge

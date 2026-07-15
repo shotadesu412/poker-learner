@@ -67,6 +67,22 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     window.onPurchaseCancel = window.onPurchaseCancel || function() {};
     window.onAdDismissed = window.onAdDismissed || function() {};
+    window.onRestoreNotFound = window.onRestoreNotFound || function() {};
+
+    // StoreKitの実権利状態（起動時にiOS側から必ず呼ばれる）。
+    // 解約・期限切れ・返金後はここでプレミアム解除し、サーバーDBにも反映する。
+    window.onEntitlementStatus = function(active) {
+        const wasPremium = localStorage.getItem("poker_is_premium") === "true";
+        localStorage.setItem("poker_is_premium", active ? "true" : "false");
+        renderPremiumStatus(active);
+        if (!active && wasPremium) {
+            const uid = localStorage.getItem("poker_user_id") || "";
+            if (uid) {
+                fetch(`/api/subscription/cancel?user_id=${encodeURIComponent(uid)}`, { method: "POST" })
+                    .catch(() => {});
+            }
+        }
+    };
 
     window.closeHomeSettings = function() {
         const modal = document.getElementById("settings-modal");
