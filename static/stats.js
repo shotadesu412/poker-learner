@@ -175,37 +175,78 @@ function renderAiHistory(historyData) {
 // ==============================
 // ハンド履歴
 // ==============================
+// "Ah,Kd" 形式のカード文字列をスート記号付きチップHTMLに変換
+function formatCards(cardsStr) {
+    if (!cardsStr) return "";
+    const suitMap = { h: "♥", d: "♦", s: "♠", c: "♣" };
+    return cardsStr.split(",").filter(Boolean).map(c => {
+        c = c.trim();
+        const rank = c.slice(0, -1);
+        const suit = c.slice(-1).toLowerCase();
+        const red = (suit === "h" || suit === "d") ? " card-red" : "";
+        return `<span class="hh-card${red}">${rank}${suitMap[suit] || suit}</span>`;
+    }).join("");
+}
+
 function renderHandHistory(hands) {
     const container = document.getElementById("hand-history-list");
     if (!hands || hands.length === 0) {
         container.innerHTML = `<div class="no-data">ハンド履歴がまだありません</div>`;
         return;
     }
-    const evalIcon = { "◎": "◎", "◯": "◯", "△": "△", "×": "×" };
     const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
     const actionLabel = { FOLD: "フォールド", CALL: "コール", BET: "ベット", RAISE: "レイズ", CHECK: "チェック" };
+    const streetLabel = { PREFLOP: "プリフロップ", FLOP: "フロップ", TURN: "ターン", RIVER: "リバー" };
+    const winnerBadge = {
+        YOU: '<span class="hh-result hh-win">WIN</span>',
+        CPU: '<span class="hh-result hh-lose">LOSE</span>',
+        TIE: '<span class="hh-result hh-tie">TIE</span>',
+    };
 
     container.innerHTML = hands.map((h, i) => {
         const dt = new Date(h.date);
         const dateStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const cards = h.hole_cards || "??";
+        const cards = formatCards(h.hole_cards) || "??";
         const pos = h.position || "?";
-        const actionsHtml = (h.actions || []).map(a => {
-            const cls = evalClass[a.evaluation] || "";
-            const lbl = actionLabel[a.action] || a.action;
-            const amt = a.amount > 0 ? ` ${a.amount.toFixed(1)}bb` : "";
-            return `<span class="hh-action ${cls}">[${a.street.slice(0,2)}] ${lbl}${amt}</span>`;
-        }).join(" ");
+
+        // ストリートごとにグループ化（時系列順を維持）
+        const streets = [];
+        (h.actions || []).forEach(a => {
+            const last = streets[streets.length - 1];
+            if (!last || last.street !== a.street) streets.push({ street: a.street, items: [a] });
+            else last.items.push(a);
+        });
+        const rowsHtml = streets.map(g => {
+            const chips = g.items.map(a => {
+                const isHero = a.actor !== "CPU";
+                const cls = isHero ? (evalClass[a.evaluation] || "") : "hh-cpu";
+                const who = isHero ? "あなた" : "CPU";
+                const lbl = actionLabel[a.action] || a.action;
+                const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+                const ev = isHero && a.evaluation ? ` ${a.evaluation}` : "";
+                return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>`;
+            }).join("");
+            return `<div class="hh-street-row"><span class="hh-street">${streetLabel[g.street] || g.street}</span>${chips}</div>`;
+        }).join("");
+
+        const boardHtml = h.board
+            ? `<div class="hh-detail-row"><span class="hh-detail-label">ボード</span>${formatCards(h.board)}</div>` : "";
+        const cpuHtml = h.cpu_hand
+            ? `<div class="hh-detail-row"><span class="hh-detail-label">CPU</span>${formatCards(h.cpu_hand)}</div>` : "";
+        const potHtml = h.final_pot > 0 ? `<span class="hh-pot">POT ${Number(h.final_pot).toFixed(1)}bb</span>` : "";
+        const badge = winnerBadge[h.winner] || "";
 
         return `<div class="hh-item">
             <div class="hh-header" onclick="toggleCollapse('hh-body-${i}', 'hh-toggle-${i}')">
                 <span class="hh-cards">${cards}</span>
                 <span class="hh-pos">${pos}</span>
+                ${badge}${potHtml}
                 <span class="hh-date">${dateStr}</span>
                 <span class="hh-toggle" id="hh-toggle-${i}">▼</span>
             </div>
             <div class="hh-body" id="hh-body-${i}">
-                <div class="hh-actions">${actionsHtml || "アクションなし"}</div>
+                ${boardHtml}${cpuHtml}
+                <div class="hh-streets">${rowsHtml || "アクションなし"}</div>
             </div>
         </div>`;
     }).join("");

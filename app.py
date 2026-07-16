@@ -208,7 +208,9 @@ def take_action(req: ActionRequest):
             eng.hand_finished = True
             # プリフロップのフォールドではCPUのハンドを公開しない
             show_cpu = (eng.street != "PREFLOP")
-            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": get_game_state(eng, finished=True, show_cpu_hand=show_cpu), "message": "You Folded"}
+            state = get_game_state(eng, finished=True, show_cpu_hand=show_cpu)
+            _save_hand_record(eng, current_session_id, state, winner="CPU")
+            return {"evaluation": eval_dict["evaluation"], "reason": eval_dict["reason"], "ev_loss": round(ev_loss_fold, 3), "metrics": eval_dict, "state": state, "message": "You Folded"}
 
         elif action == "CALL":
             call_amount = min(hero_facing, eng.hero_stack)  # オールインコール対応
@@ -337,7 +339,9 @@ def take_action(req: ActionRequest):
                  eng.record_action("CPU", "FOLD", 0, cpu_eq, eng.pot_size)
                  eng.hand_finished = True
                  cpu_actions.append({"street": eng.street, "action": "FOLD", "amount": 0, "allIn": False})
-                 return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": "CPU Folded. You Win.", "cpuAction": "FOLD", "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
+                 state = get_game_state(eng, finished=True)
+                 _save_hand_record(eng, current_session_id, state, winner="YOU")
+                 return {"evaluation": eval_result, "reason": eval_reason, "state": state, "message": "CPU Folded. You Win.", "cpuAction": "FOLD", "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
             if cpu_action in ["CALL", "BET", "RAISE"]:
                  if cpu_action == "CALL":
@@ -367,12 +371,16 @@ def take_action(req: ActionRequest):
             if eng.is_all_in("HERO") or eng.is_all_in("CPU"):
                 eng.run_out_board()
                 eng.hand_finished = True
-                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => All-in! Showdown!".strip(), "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
+                state = get_game_state(eng, finished=True)
+                _save_hand_record(eng, current_session_id, state)
+                return {"evaluation": eval_result, "reason": eval_reason, "state": state, "message": f"{cpu_msg.strip()} => All-in! Showdown!".strip(), "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
             # 4. Advance Street
             if eng.street == "RIVER":
                 eng.hand_finished = True
-                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
+                state = get_game_state(eng, finished=True)
+                _save_hand_record(eng, current_session_id, state)
+                return {"evaluation": eval_result, "reason": eval_reason, "state": state, "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
             current_idx = eng.STREETS.index(eng.street)
             if current_idx + 1 < len(eng.STREETS):
@@ -398,7 +406,9 @@ def take_action(req: ActionRequest):
                           cpu_actions.append({"street": eng.street, "action": "CHECK", "amount": 0, "allIn": False})
             else:
                 eng.hand_finished = True
-                return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng, finished=True), "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
+                state = get_game_state(eng, finished=True)
+                _save_hand_record(eng, current_session_id, state)
+                return {"evaluation": eval_result, "reason": eval_reason, "state": state, "message": f"{cpu_msg.strip()} => Showdown!", "cpuAction": cpu_action, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
 
         return {"evaluation": eval_result, "reason": eval_reason, "state": get_game_state(eng), "cpuAction": cpu_action, "cpuMessage": cpu_msg, "cpuActions": cpu_actions, "heroAmount": round(amount, 1), "heroAllIn": hero_all_in}
     except Exception as e:
@@ -406,6 +416,33 @@ def take_action(req: ActionRequest):
         with open('trace.txt', 'w') as f:
             f.write(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
+def _save_hand_record(eng: PokerEngine, session_id: str, state: dict, winner: str = ""):
+    """ハンド終了時に両者の全アクション・ボード・勝敗をDBへ保存する（ハンド履歴用）。
+    winner を省略した場合は state のショーダウン結果から判定する。"""
+    try:
+        if not winner:
+            sd = state.get("showdownResult") or {}
+            winner = sd.get("winner", "")
+        stats_logger.finish_hand(
+            session_id=session_id,
+            winner=winner,
+            final_pot=round(eng.pot_size, 2),
+            board=",".join(Card.int_to_str(c) for c in eng.board),
+            cpu_hand=",".join(state.get("cpuHand") or []),
+            action_log=[
+                {
+                    "street": a["street"],
+                    "actor": a["actor"],
+                    "action": a["action"],
+                    "amount": round(a["amount"], 2),
+                }
+                for a in eng.action_history
+            ],
+        )
+    except Exception:
+        pass  # 履歴保存の失敗でゲーム進行を止めない
+
 
 def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
     hero_eq, cpu_eq = EquityCalculator.calc_equity_monte_carlo(eng.hero_hand, eng.board, eng.hero_range_dict, eng.cpu_range_dict, iterations=500)
@@ -447,9 +484,10 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
             cpu_score  = eng.treys_evaluator.evaluate(eng.board, eng.cpu_hand)
             hero_class = eng.treys_evaluator.get_rank_class(hero_score)
             cpu_class  = eng.treys_evaluator.get_rank_class(cpu_score)
-            from treys import Evaluator as TreysEval
-            hero_hand_name = TreysEval.class_to_string(hero_class)
-            cpu_hand_name  = TreysEval.class_to_string(cpu_class)
+            # class_to_string はインスタンスメソッド。クラスから直接呼ぶと
+            # TypeError になり勝敗判定全体が None になっていた
+            hero_hand_name = eng.treys_evaluator.class_to_string(hero_class)
+            cpu_hand_name  = eng.treys_evaluator.class_to_string(cpu_class)
             if hero_score < cpu_score:
                 winner = "YOU"
             elif cpu_score < hero_score:

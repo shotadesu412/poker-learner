@@ -616,3 +616,55 @@ body {
 .hh-action.eval-good    { border-color: var(--eval-good);    color: var(--eval-good); }
 .hh-action.eval-marginal{ border-color: var(--eval-marginal);color: var(--eval-marginal); }
 .hh-action.eval-bad     { border-color: var(--eval-bad);     color: var(--eval-bad); }
+.hh-action.hh-cpu       { border-color: rgba(255,255,255,0.14); color: var(--text-muted); }
+
+/* ハンド履歴: 勝敗バッジ・ポット・カード・ストリート行 */
+.hh-result {
+    font-size: 0.68rem;
+    font-weight: bold;
+    padding: 1px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.03em;
+}
+.hh-win  { background: rgba(16,185,129,0.15); color: #10b981; }
+.hh-lose { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.hh-tie  { background: rgba(156,163,175,0.15); color: #9ca3af; }
+.hh-pot {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.hh-card {
+    font-weight: bold;
+    margin-right: 3px;
+}
+.hh-card.card-red { color: #f87171; }
+.hh-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 0.84rem;
+}
+.hh-detail-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    min-width: 48px;
+}
+.hh-streets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.hh-street-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.hh-street {
+    color: var(--accent-orange);
+    font-size: 0.72rem;
+    font-weight: bold;
+    min-width: 72px;
+}

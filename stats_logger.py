@@ -3,6 +3,7 @@ stats_logger.py
 ポーカーアクション履歴をSQLiteに永続保存し、各種分析メトリクスを集計するモジュール。
 Render Starterプランの永続ディスクを活用。
 """
+import json
 import sqlite3
 import os
 from datetime import datetime, timedelta, timezone
@@ -86,6 +87,18 @@ def setup_db():
         conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT DEFAULT ''")
     except Exception:
         pass
+    # ハンド履歴の詳細化（両者のアクション・ボード・勝敗を保存）のマイグレーション
+    for ddl in (
+        "ALTER TABLE sessions ADD COLUMN board TEXT DEFAULT ''",
+        "ALTER TABLE sessions ADD COLUMN cpu_hand TEXT DEFAULT ''",
+        "ALTER TABLE sessions ADD COLUMN final_pot REAL DEFAULT 0.0",
+        "ALTER TABLE sessions ADD COLUMN winner TEXT DEFAULT ''",
+        "ALTER TABLE sessions ADD COLUMN action_log TEXT DEFAULT ''",
+    ):
+        try:
+            conn.execute(ddl)
+        except Exception:
+            pass
     conn.commit()
     conn.close()
 
@@ -134,6 +147,23 @@ def start_session(session_id: str, hero_pos: str, hero_hand: str = "", user_id: 
         "INSERT OR IGNORE INTO sessions (session_id, started_at, hero_pos, hero_hand, user_id) VALUES (?, ?, ?, ?, ?)",
         (session_id, datetime.now(timezone.utc).isoformat(), hero_pos, hero_hand, user_id),
     )
+    conn.commit()
+    conn.close()
+
+
+def finish_hand(session_id: str, winner: str, final_pot: float,
+                board: str, cpu_hand: str, action_log: list):
+    """ハンド終了時に全アクション履歴（HERO/CPU両方）・ボード・勝敗をセッションに保存する。
+
+    action_log: [{"street", "actor", "action", "amount"}, ...] の時系列リスト
+    """
+    conn = _get_conn()
+    conn.execute("""
+        UPDATE sessions
+        SET winner = ?, final_pot = ?, board = ?, cpu_hand = ?, action_log = ?, result = ?
+        WHERE session_id = ?
+    """, (winner, final_pot, board, cpu_hand,
+          json.dumps(action_log, ensure_ascii=False), winner, session_id))
     conn.commit()
     conn.close()
 
@@ -455,7 +485,8 @@ def deactivate_premium(user_id: str) -> None:
 def get_hand_history(user_id: str, limit: int = 30) -> list:
     conn = _get_conn()
     sessions = conn.execute("""
-        SELECT session_id, started_at, hero_pos, hero_hand, result
+        SELECT session_id, started_at, hero_pos, hero_hand, result,
+               board, cpu_hand, final_pot, winner, action_log
         FROM sessions
         WHERE user_id = ?
         ORDER BY started_at DESC
@@ -464,12 +495,50 @@ def get_hand_history(user_id: str, limit: int = 30) -> list:
 
     result = []
     for s in sessions:
-        actions = conn.execute("""
-            SELECT street, actor, action, amount, evaluation
+        hero_rows = conn.execute("""
+            SELECT street, action, amount, evaluation
             FROM actions
             WHERE session_id = ? AND actor = 'HERO'
             ORDER BY id ASC
         """, (s["session_id"],)).fetchall()
+
+        actions = []
+        action_log = []
+        if s["action_log"]:
+            try:
+                action_log = json.loads(s["action_log"])
+            except Exception:
+                action_log = []
+
+        if action_log:
+            # 全アクション（HERO/CPU）の時系列。HEROのアクションには
+            # actionsテーブルの評価(◎◯△×)を出現順で対応付ける
+            hero_evals = [r["evaluation"] for r in hero_rows]
+            hero_i = 0
+            for a in action_log:
+                ev = ""
+                if a.get("actor") == "HERO" and hero_i < len(hero_evals):
+                    ev = hero_evals[hero_i]
+                    hero_i += 1
+                actions.append({
+                    "street": a.get("street", ""),
+                    "actor": a.get("actor", ""),
+                    "action": a.get("action", ""),
+                    "amount": a.get("amount", 0),
+                    "evaluation": ev,
+                })
+        else:
+            # 旧データ（action_log保存前）はHEROのアクションのみ
+            actions = [
+                {
+                    "street": a["street"],
+                    "actor": "HERO",
+                    "action": a["action"],
+                    "amount": a["amount"],
+                    "evaluation": a["evaluation"],
+                }
+                for a in hero_rows
+            ]
 
         result.append({
             "session_id": s["session_id"],
@@ -477,15 +546,11 @@ def get_hand_history(user_id: str, limit: int = 30) -> list:
             "position": s["hero_pos"],
             "hole_cards": s["hero_hand"],
             "result": s["result"],
-            "actions": [
-                {
-                    "street": a["street"],
-                    "action": a["action"],
-                    "amount": a["amount"],
-                    "evaluation": a["evaluation"],
-                }
-                for a in actions
-            ],
+            "board": s["board"] or "",
+            "cpu_hand": s["cpu_hand"] or "",
+            "final_pot": s["final_pot"] or 0,
+            "winner": s["winner"] or "",
+            "actions": actions,
         })
 
     conn.close()
