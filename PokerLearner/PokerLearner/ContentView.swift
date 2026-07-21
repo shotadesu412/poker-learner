@@ -134,6 +134,10 @@ private final class WeakMessageHandler: NSObject, WKScriptMessageHandler {
                 AdManager.shared.showRewarded()
             } else if message.name == "showInterstitialAd" {
                 AdManager.shared.showInterstitial()
+            } else if message.name == "prepareRewardedAd" {
+                AdManager.shared.preloadRewarded()
+            } else if message.name == "prepareInterstitialAd" {
+                AdManager.shared.preloadInterstitial()
             }
         }
     }
@@ -152,6 +156,8 @@ struct WebViewContainer: UIViewRepresentable {
         config.userContentController.add(handler, name: "requestPrice")
         config.userContentController.add(handler, name: "showRewardedAd")
         config.userContentController.add(handler, name: "showInterstitialAd")
+        config.userContentController.add(handler, name: "prepareRewardedAd")
+        config.userContentController.add(handler, name: "prepareInterstitialAd")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.1, alpha: 1)

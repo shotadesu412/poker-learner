@@ -17,16 +17,30 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     private var rewarded: RewardedAd?
     private var interstitial: InterstitialAd?
+    private var rewardedLoadedAt: Date?
+    private var interstitialLoadedAt: Date?
+    private var rewardedLoadTask: Task<RewardedAd?, Never>?
+    private var interstitialLoadTask: Task<InterstitialAd?, Never>?
     private var didEarnReward = false
     private var presentingRewarded = false
     weak var webView: WKWebView?
+
+    /// AdMobの広告は約1時間で失効するため、余裕をもって55分で作り直す
+    private let adTTL: TimeInterval = 55 * 60
+
+    private func isFresh(_ loadedAt: Date?) -> Bool {
+        guard let loadedAt else { return false }
+        return Date().timeIntervalSince(loadedAt) < adTTL
+    }
 
     private override init() {
         super.init()
         // MobileAds の初期化は UMP 同意取得後に initializeAndLoad() で行う
     }
 
-    /// UMP 同意取得後に呼ぶ
+    /// UMP 同意取得後に呼ぶ。SDKの起動のみ行い、広告のロードはしない。
+    /// 広告は表示が近づいたタイミングでJSから prepare 系メッセージが来たときに
+    /// ロードする（起動ごとの無駄なリクエストで表示率が下がるのを防ぐ）。
     func initializeAndLoad() {
         // 注意: MobileAds.initialize() は NSObject の +initialize が解決されるだけで
         // SDK は起動しない。必ず shared.start() を使うこと。
@@ -35,40 +49,60 @@ final class AdManager: NSObject, FullScreenContentDelegate {
                 .map { "\($0.key)=\($0.value.state.rawValue)" }
                 .joined(separator: ", ")
             print("[Ad] MobileAds started: \(states)")
-            Task { @MainActor in
-                AdManager.shared.preloadRewarded()
-                AdManager.shared.preloadInterstitial()
-            }
         }
     }
 
-    // MARK: - Load
+    // MARK: - Load（表示直前にJSからの prepare で呼ばれる）
 
+    /// コーチ制限モーダルが開いたときに呼ばれる。ロード済み・ロード中なら何もしない。
     func preloadRewarded() {
-        Task {
+        if rewarded != nil && isFresh(rewardedLoadedAt) { return }
+        if rewardedLoadTask != nil { return }
+        rewarded = nil
+        print("[Ad] Loading rewarded ad...")
+        let task = Task { () -> RewardedAd? in
             do {
-                print("[Ad] Loading rewarded ad...")
-                rewarded = try await RewardedAd.load(with: rewardedAdUnitID, request: Request())
-                rewarded?.fullScreenContentDelegate = self
+                let ad = try await RewardedAd.load(with: rewardedAdUnitID, request: Request())
                 print("[Ad] Rewarded ad loaded")
+                return ad
             } catch {
                 print("[Ad] Failed to load rewarded ad: \(error.localizedDescription)")
-                rewarded = nil
+                return nil
             }
+        }
+        rewardedLoadTask = task
+        Task {
+            let ad = await task.value
+            ad?.fullScreenContentDelegate = self
+            self.rewarded = ad
+            self.rewardedLoadedAt = ad != nil ? Date() : nil
+            self.rewardedLoadTask = nil
         }
     }
 
+    /// 25ハンド目（表示5ハンド前）にJSから呼ばれる。ロード済み・ロード中なら何もしない。
     func preloadInterstitial() {
-        Task {
+        if interstitial != nil && isFresh(interstitialLoadedAt) { return }
+        if interstitialLoadTask != nil { return }
+        interstitial = nil
+        print("[Ad] Loading interstitial ad...")
+        let task = Task { () -> InterstitialAd? in
             do {
-                print("[Ad] Loading interstitial ad...")
-                interstitial = try await InterstitialAd.load(with: interstitialAdUnitID, request: Request())
-                interstitial?.fullScreenContentDelegate = self
+                let ad = try await InterstitialAd.load(with: interstitialAdUnitID, request: Request())
                 print("[Ad] Interstitial ad loaded")
+                return ad
             } catch {
                 print("[Ad] Failed to load interstitial ad: \(error.localizedDescription)")
-                interstitial = nil
+                return nil
             }
+        }
+        interstitialLoadTask = task
+        Task {
+            let ad = await task.value
+            ad?.fullScreenContentDelegate = self
+            self.interstitial = ad
+            self.interstitialLoadedAt = ad != nil ? Date() : nil
+            self.interstitialLoadTask = nil
         }
     }
 
@@ -81,22 +115,30 @@ final class AdManager: NSObject, FullScreenContentDelegate {
             notifyRewardUnavailable()
             return
         }
-        // プリロード済みならそのまま表示。未ロードならその場で読み込んでから表示。
-        if let rewarded {
+        // 準備済み（失効前）ならそのまま表示
+        if let rewarded, isFresh(rewardedLoadedAt) {
             presentRewarded(rewarded, from: root)
-        } else {
-            print("[Ad] Rewarded not preloaded — loading on demand...")
-            Task {
-                do {
-                    let ad = try await RewardedAd.load(with: rewardedAdUnitID, request: Request())
-                    ad.fullScreenContentDelegate = self
-                    self.rewarded = ad
-                    self.presentRewarded(ad, from: root)
-                } catch {
-                    // 広告在庫なし/通信障害: ユーザー都合ではないため閉じ込めず通過させる
-                    print("[Ad] On-demand rewarded load failed: \(error.localizedDescription) — unavailable")
-                    self.notifyRewardUnavailable()
-                }
+            return
+        }
+        Task {
+            // prepare によるロードが進行中なら完了を待つ（二重リクエスト防止）
+            var ad: RewardedAd?
+            if let task = rewardedLoadTask {
+                ad = await task.value
+            }
+            // それでも無ければ最後の手段としてその場でロード
+            if ad == nil {
+                print("[Ad] Rewarded not ready — loading on demand...")
+                ad = try? await RewardedAd.load(with: rewardedAdUnitID, request: Request())
+            }
+            if let ad {
+                ad.fullScreenContentDelegate = self
+                self.rewarded = ad
+                self.rewardedLoadedAt = Date()
+                self.presentRewarded(ad, from: root)
+            } else {
+                print("[Ad] Rewarded unavailable")
+                self.notifyRewardUnavailable()
             }
         }
     }
@@ -112,15 +154,18 @@ final class AdManager: NSObject, FullScreenContentDelegate {
     }
 
     /// インタースティシャル広告（30ハンドごとの自動表示用）。
+    /// 未準備・失効時はスキップ（ゲーム進行を止めない）。次の prepare で再ロードされる。
     func showInterstitial() {
-        guard let interstitial, let root = Self.rootViewController() else {
+        guard let interstitial, isFresh(interstitialLoadedAt),
+              let root = Self.rootViewController() else {
             print("[Ad] showInterstitial: not ready — skip")
-            preloadInterstitial()
             return
         }
         print("[Ad] Presenting interstitial ad")
         presentingRewarded = false
         interstitial.present(from: root)
+        self.interstitial = nil
+        self.interstitialLoadedAt = nil
     }
 
     // MARK: - Delegate
@@ -129,19 +174,20 @@ final class AdManager: NSObject, FullScreenContentDelegate {
         Task { @MainActor in
             if self.presentingRewarded {
                 self.notifyRewardDismissed(earned: self.didEarnReward)
-            } else {
-                self.preloadInterstitial()
             }
+            // 次の広告は必要になったタイミングの prepare でロードする（先読みしない）
         }
     }
 
     nonisolated func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         Task { @MainActor in
             if self.presentingRewarded {
-                // 表示自体の失敗（SDK都合）もユーザー都合ではない → 通過させる
+                self.rewarded = nil
+                self.rewardedLoadedAt = nil
                 self.notifyRewardUnavailable()
             } else {
-                self.preloadInterstitial()
+                self.interstitial = nil
+                self.interstitialLoadedAt = nil
             }
         }
     }
@@ -150,15 +196,15 @@ final class AdManager: NSObject, FullScreenContentDelegate {
 
     /// ユーザーが広告を閉じた（earned=最後まで視聴したか）
     private func notifyRewardDismissed(earned: Bool) {
+        rewarded = nil
+        rewardedLoadedAt = nil
         sendJS("window.onAdDismissed(\(earned ? "true" : "false"))")
-        preloadRewarded()
     }
 
     /// 広告を用意できなかった（在庫なし/通信障害/表示失敗）。
     /// JS側でエラーメッセージを表示し、ゲートは通過させない（フェイルクローズ）。
     private func notifyRewardUnavailable() {
         sendJS("window.onAdUnavailable && window.onAdUnavailable()")
-        preloadRewarded()
     }
 
     private static func rootViewController() -> UIViewController? {

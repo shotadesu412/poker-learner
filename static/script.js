@@ -828,6 +828,9 @@ function handleCoachInputKeyPress(event) {
 function showCoachLimitModal() {
     const modal = el('coach-limit-modal');
     if (modal) modal.classList.remove('hidden');
+    // ユーザーが「広告を見る」を押す可能性が高いのでこの時点でロード開始
+    // （起動時プリロードをやめた分、ここで準備して表示までの待ちを無くす）
+    prepareRewardedAd();
 }
 
 function closeCoachLimitModal() {
@@ -1165,10 +1168,27 @@ function showInterstitialAd() {
     } catch (e) { /* iOSアプリ外では無視 */ }
 }
 
+// 表示直前ロード用の prepare 通知（旧バージョンのアプリにはハンドラが無いため try/catch）
+function prepareRewardedAd() {
+    try {
+        window.webkit.messageHandlers.prepareRewardedAd.postMessage({});
+    } catch (e) { /* 旧アプリ・iOSアプリ外では無視 */ }
+}
+
+function prepareInterstitialAd() {
+    try {
+        window.webkit.messageHandlers.prepareInterstitialAd.postMessage({});
+    } catch (e) { /* 旧アプリ・iOSアプリ外では無視 */ }
+}
+
 function maybeShowHandAd() {
     if (isPremium) return;
     handPlayCount++;
-    if (handPlayCount % AD_HAND_INTERVAL === 0) {
+    const phase = handPlayCount % AD_HAND_INTERVAL;
+    if (phase === AD_HAND_INTERVAL - 5) {
+        // 表示5ハンド前にロード開始（起動時プリロードをやめた分の先読み）
+        prepareInterstitialAd();
+    } else if (phase === 0) {
         showInterstitialAd();
     }
 }
