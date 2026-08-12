@@ -1727,6 +1727,12 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
+/* 言語セグメント: "English" は「通常/速い」より横幅を食うので詰めて折り返しを防ぐ */
+#seg-lang-ja, #seg-lang-en {
+    padding: 5px 10px;
+    white-space: nowrap;
+}
+
 /* スポット練習ボタン */
 .btn-spot {
     background: rgba(139, 92, 246, 0.15);

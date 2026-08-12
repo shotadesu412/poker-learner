@@ -1,5 +1,7 @@
 # bet_sizing.py
 
+from i18n import t
+
 # GTO Theory Constraints
 PREFLOP_OPENS = {
     "UTG": 2.5,
@@ -93,7 +95,7 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
     ※ 閾値を大幅に緩和し、ポラライズされた大きなベットも許容する。
     """
     if pot <= 0:
-        return {"evaluation": EVAL_MARGINAL, "reason": "ポットサイズが不明のため評価できません。"}
+        return {"evaluation": EVAL_MARGINAL, "reason": t("sizing.no_pot")}
 
     fraction = bet_amount / pot
 
@@ -107,18 +109,11 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
         if fraction > 0.75 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
-                "reason": (
-                    f"モノトーンボードに対してベットサイズ({fraction*100:.0f}%ポット)が大きすぎます。"
-                    "同スート3枚のボードではフラッシュの警戒が必要ですが、大きく打ちすぎる必要はありません。"
-                )
+                "reason": t("sizing.monotone.too_big", pct=fraction * 100)
             }
         return {
             "evaluation": EVAL_GOOD,
-            "reason": (
-                f"モノトーンボードへの小額ベット({fraction*100:.0f}%ポット)は適切なブロックベットです。"
-                "フラッシュを持っているかのようにフォールドエクイティを得つつ、"
-                "コールされた場合の損失を最小化できます。"
-            )
+            "reason": t("sizing.monotone.good", pct=fraction * 100)
         }
 
     # --- ペアボード (KK5, 884等) ---
@@ -126,17 +121,11 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
         if fraction > 1.00 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
-                "reason": (
-                    f"ペアボードでの極端なオーバーベット({fraction*100:.0f}%ポット)はリスクが高いです。"
-                    "通常は25〜33%の小額ベットが高頻度で使われますが、大きなサイズを打つ場合は強いポラライズレンジが必要です。"
-                )
+                "reason": t("sizing.paired.too_big", pct=fraction * 100)
             }
         return {
             "evaluation": EVAL_GOOD,
-            "reason": (
-                f"ペアボードへのベット({fraction*100:.0f}%ポット)は適切なサイズです。"
-                "このボードは静的で役の変化が少ないため、小さく頻度を高めてバリューを取りましょう。"
-            )
+            "reason": t("sizing.paired.good", pct=fraction * 100)
         }
 
     # --- ウェット・ダイナミックボード (986o, KQTo等) ---
@@ -144,28 +133,16 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
         if fraction < 0.40 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_BAD,
-                "reason": (
-                    f"ウェットボードに対してベットサイズ({fraction*100:.0f}%ポット)が小さすぎます。"
-                    "ストレート/フラッシュドロー両方が絡むダイナミックなボードでは、"
-                    "相手のドローに利益的なポットオッズを与えないために55〜80%以上のサイズが必要です。"
-                    "小額ベットはフリーカードを与え、自分のバリューハンドを弱めます。"
-                )
+                "reason": t("sizing.wet.too_small", pct=fraction * 100)
             }
         if fraction > 1.10 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
-                "reason": (
-                    f"ウェットボードへのオーバーベット({fraction*100:.0f}%ポット)はリスクが高いです。"
-                    "ドローが豊富なボードでナッツ優位がない場合、過大なベットはコールされたときの"
-                    "損失が大きくなります。55〜80%を推奨します。"
-                )
+                "reason": t("sizing.wet.too_big", pct=fraction * 100)
             }
         return {
             "evaluation": EVAL_GOOD,
-            "reason": (
-                f"ウェットボードへのベット({fraction*100:.0f}%ポット)は適切です。"
-                "ドローのエクイティ実現を阻止しつつ、バリューを得ることができます。"
-            )
+            "reason": t("sizing.wet.good", pct=fraction * 100)
         }
 
     # --- セミウェットボード ---
@@ -173,14 +150,11 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
         if fraction < 0.25 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
-                "reason": (
-                    f"セミウェットボードに対してベットサイズ({fraction*100:.0f}%ポット)は少し小さめです。"
-                    "ある程度のドロー可能性があるため、33〜55%程度が推奨されます。"
-                )
+                "reason": t("sizing.semiwet.small", pct=fraction * 100)
             }
         return {
             "evaluation": EVAL_GOOD,
-            "reason": f"セミウェットボードへのベット({fraction*100:.0f}%ポット)は概ね適切なサイジングです。"
+            "reason": t("sizing.semiwet.good", pct=fraction * 100)
         }
 
     # --- ドライ・静的ボード (A83r, K72r等) ---
@@ -188,17 +162,10 @@ def evaluate_bet_sizing(pot: float, bet_amount: float, board_texture: str, spr: 
         if fraction > 1.20 * adjusted_threshold_multiplier:
             return {
                 "evaluation": EVAL_MARGINAL,
-                "reason": (
-                    f"ドライボードでの極端な巨大ベット({fraction*100:.0f}%ポット)です。"
-                    "ポラライズ効果は高いものの、相手のエアーハンドからのコールを得にくくなります。"
-                )
+                "reason": t("sizing.dry.too_big", pct=fraction * 100)
             }
         return {
             "evaluation": EVAL_GOOD,
-            "reason": (
-                f"ドライボードへのベット({fraction*100:.0f}%ポット)は適切です。"
-                "ドライボードでは小さく高頻度にベットすることで、"
-                "相手のレンジ全体から少しずつエクイティを奪えます。"
-            )
+            "reason": t("sizing.dry.good", pct=fraction * 100)
         }
 

@@ -12,6 +12,7 @@ from equity import EquityCalculator
 from ev_calculator import EVCalculator
 from hand_classifier import HandClassifier
 import range_utils
+from i18n import t
 class Evaluator:
     # --- EV Threshold Constants ---
     CALL_IMPLIED_ODDS_THRESHOLD = 0.9
@@ -291,7 +292,7 @@ class Evaluator:
         if facing_bet == 0:
             call_range = pos_ranges.get("open", {})
             raise_range = pos_ranges.get("open", {})
-            fold_msg = "オープン可能なハンドです。"
+            fold_msg = t("preflop.foldmsg.open")
         elif not is_3bet_pot:
             if hero_pos == "BB":
                 # BBは相手のポジションによってコールレンジが変わるが、デフォルトとしてvs_open_callを使用
@@ -299,11 +300,11 @@ class Evaluator:
             else:
                 call_range = pos_ranges.get("vs_open_call", {})
             raise_range = pos_ranges.get("vs_open_3bet", pos_ranges.get("3bet", {}))
-            fold_msg = "このポジションの推奨レンジでは参加しにくいハンドです。"
+            fold_msg = t("preflop.foldmsg.vs_open")
         else:
             call_range = pos_ranges.get("vs_3bet_call", {})
             raise_range = pos_ranges.get("vs_3bet_4bet", pos_ranges.get("4bet_bluff", {}))
-            fold_msg = "3-Bet/4-Betに対してはフォールドが基本となるハンドです。"
+            fold_msg = t("preflop.foldmsg.vs_3bet")
             
         combo_str = Evaluator.get_combo_str(cards, ranges.ALL_HANDS_DICT)
         reason_txt = ranges.get_hand_reason(combo_str)
@@ -315,39 +316,39 @@ class Evaluator:
         if action_taken == "CALL":
             if call_weight > 0:
                 classification = ranges.classify_range(call_weight)
-                return "play", EVAL_GOOD, f"【良い選択】このハンドでのコールは基本的なプレイです。 {reason_txt}"
+                return "play", EVAL_GOOD, t("preflop.call.good", reason=reason_txt)
             elif raise_weight > 0:
                 classification = ranges.classify_range(raise_weight)
-                return "fold", EVAL_BAD, f"【レイズ推奨】このハンドはコールよりレイズして主導権を握る方が効果的です。 {reason_txt}"
+                return "fold", EVAL_BAD, t("preflop.call.should_raise", reason=reason_txt)
             else:
-                return "fold", EVAL_BAD, f"【改善余地あり】{fold_msg} {reason_txt}"
+                return "fold", EVAL_BAD, t("preflop.call.out_of_range", fold_msg=fold_msg, reason=reason_txt)
 
         elif action_taken == "RAISE":
             if raise_weight > 0:
                 classification = ranges.classify_range(raise_weight)
-                return "play", EVAL_OPTIMAL, f"【推奨】良いレイズ(3-Bet/4-Bet)です。主導権を握りましょう。 {reason_txt}"
+                return "play", EVAL_OPTIMAL, t("preflop.raise.optimal", reason=reason_txt)
             elif call_weight > 0:
                 classification = ranges.classify_range(call_weight)
-                return "mix", EVAL_MARGINAL, f"【コール推奨】このハンドはレイズよりコールで参加する方が無難です。 {reason_txt}"
+                return "mix", EVAL_MARGINAL, t("preflop.raise.should_call", reason=reason_txt)
             else:
-                return "fold", EVAL_BAD, f"【改善余地あり】{fold_msg} {reason_txt}\n(ブラフとして打つ場合は頻度に注意してください)"
+                return "fold", EVAL_BAD, t("preflop.raise.out_of_range", fold_msg=fold_msg, reason=reason_txt)
 
         elif action_taken == "FOLD":
             if raise_weight > 0.5:
-                return "mix", EVAL_BAD, f"【フォールド過多】強いハンドです。レイズで参加することを検討しましょう。 {reason_txt}"
+                return "mix", EVAL_BAD, t("preflop.fold.too_strong", reason=reason_txt)
             elif call_weight > 0.5:
-                return "mix", EVAL_BAD, f"【フォールド過多】コールできる強さのハンドです。相手にブラフの余地を与えすぎないようにしましょう。 {reason_txt}"
+                return "mix", EVAL_BAD, t("preflop.fold.callable", reason=reason_txt)
             elif raise_weight > 0 or call_weight > 0:
-                return "play", EVAL_MARGINAL, f"【やや降り過ぎ】プレイできるハンドです。頻繁にフォールドすると相手に読まれやすくなります。 {reason_txt}"
+                return "play", EVAL_MARGINAL, t("preflop.fold.slightly_tight", reason=reason_txt)
             else:
-                return "play", EVAL_OPTIMAL, f"【推奨】このハンドではフォールドが無難な選択です。 {fold_msg}"
+                return "play", EVAL_OPTIMAL, t("preflop.fold.optimal", fold_msg=fold_msg)
                 
         return "play", EVAL_GOOD, reason_txt
 
     @staticmethod
     def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None, street=None):
         if call_amount == 0:
-            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": "チェック可能な状況です。無料でカードを見られるときはチェックが基本です。"}
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_OPTIMAL, "reason": t("call.free_check")}
             
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
@@ -390,25 +391,25 @@ class Evaluator:
         # equity が高い順に判定する（低equity + implied odds が高equity より良い評価になる逆転を防ぐ）
         if realized_equity >= e_req * Evaluator.CALL_OPTIMAL_THRESHOLD:
             result_eval = EVAL_OPTIMAL
-            result_reason += f"リスクに対して勝率({realized_equity*100:.1f}%)が十分に高く、極めて優位なコールです。"
+            result_reason += t("call.optimal", eq=realized_equity * 100)
         elif realized_equity >= e_req:
             result_eval = EVAL_GOOD
-            result_reason += f"ベット額に対して見合う勝率({realized_equity*100:.1f}%)があり、妥当な防衛（コール）です。"
+            result_reason += t("call.good", eq=realized_equity * 100)
         elif realized_equity >= e_req * Evaluator.CALL_MARGINAL_THRESHOLD:
             if ev_call_val > 0:
                 # オッズにわずかに届かないが、インプライドオッズでプラスEV
                 result_eval = EVAL_GOOD
-                result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにわずかに届いていませんが、後のラウンドで稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
+                result_reason += t("call.implied_good", eq=realized_equity * 100)
             else:
                 result_eval = EVAL_MARGINAL
-                result_reason += f"勝率({realized_equity*100:.1f}%)がオッズに届いていません。相手のブラフをキャッチするなどの明確な理由がない限り、頻繁なコールは控えましょう。"
+                result_reason += t("call.marginal", eq=realized_equity * 100)
         elif ev_call_val > 0:
             # 大きくオッズに届かないが、強いインプライドオッズ（強いドロー等）でプラスEV
             result_eval = EVAL_MARGINAL
-            result_reason += f"現在の勝率({realized_equity*100:.1f}%)はオッズにあっていませんが、後のラウンドで大きく稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。"
+            result_reason += t("call.implied_marginal", eq=realized_equity * 100)
         else:
             result_eval = EVAL_BAD
-            result_reason += f"【見送り推奨】相手のベット額に対してハンドの強さが見合っていません。フォールドも選択肢として検討してみましょう。"
+            result_reason += t("call.bad")
             
         return {
             "ev": ev_call_val,
@@ -421,7 +422,7 @@ class Evaluator:
     @staticmethod
     def evaluate_fold(equity, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, range_adv=0.5, effective_stack=0.0, street=None):
         if opponent_bet_size == 0:
-            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": "ベットがない状況でのフォールドは不利な選択です。無料でカードを見られる場合はチェックを選びましょう。"}
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_BAD, "reason": t("fold.no_bet")}
             
         # PREFLOP RANGE CHECK
         if not board:
@@ -455,19 +456,16 @@ class Evaluator:
 
         if realized_equity >= e_req * 1.5:
             result_eval = EVAL_BAD
-            result_reason = f"【明確な損失】必要勝率({e_req*100:.1f}%)を大きく上回るハンド({realized_equity*100:.1f}%)を捨ててしまいました。これはバリューハンドであり、コールかレイズで戦うべき場面です。"
+            result_reason = t("fold.clear_loss", req=e_req * 100, eq=realized_equity * 100)
         elif realized_equity >= e_req * 1.15:
             result_eval = EVAL_MARGINAL
-            result_reason = f"【ややタイト】勝率({realized_equity*100:.1f}%)はオッズ({e_req*100:.1f}%)を上回っています。毎回降りると相手のブラフに搾取されるため、この強さのハンドは一定頻度で防衛したいところです。"
+            result_reason = t("fold.tight", eq=realized_equity * 100, req=e_req * 100)
         elif realized_equity >= e_req * 0.85:
             result_eval = EVAL_GOOD
-            result_reason = (
-                f"【妥当な選択】勝率({realized_equity*100:.1f}%)がオッズ({e_req*100:.1f}%)に近いブラフキャッチャーです。"
-                f"この位置のハンドはコールとフォールドの期待値がほぼ等しく、どちらを選んでも大きな損はありません。"
-            )
+            result_reason = t("fold.bluffcatcher", eq=realized_equity * 100, req=e_req * 100)
         else:
             result_eval = EVAL_OPTIMAL
-            result_reason = f"逆転の確率({realized_equity*100:.1f}%)が必要勝率({e_req*100:.1f}%)に届かないため、無駄なチップの支払いを避ける適切なフォールドです。"
+            result_reason = t("fold.optimal", eq=realized_equity * 100, req=e_req * 100)
             
         return {
             "ev": 0.0,  # Fold EV is always 0
@@ -515,26 +513,26 @@ class Evaluator:
         if board and len(board) >= 3:
             sizing_result = evaluate_bet_sizing(pot_size, bet_amount, texture, spr=spr)
             if sizing_result["evaluation"] in ("△", "×"):
-                sizing_feedback = f"\n\n📐 サイジング: {sizing_result['reason']}"
+                sizing_feedback = t("bet.sizing_prefix", reason=sizing_result["reason"])
         
         result_eval = EVAL_BAD
         if ev_betting > ev_checking + (margin_pct * pot_size):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
-                result_reason = f"【推奨】レンジ優位がある状況でのベットは効果的です。アグレッシブに主導権を握りましょう。"
+                result_reason = t("bet.optimal.range_adv")
             elif realized_equity < 0.35:
-                result_reason = f"【推奨】ハンドは弱めですが、相手を降ろせる可能性（フォールドエクイティ）を活かしたブラフとして機能します。"
+                result_reason = t("bet.optimal.bluff")
             else:
-                result_reason = f"【推奨・バリュー】チェックよりベットの方が期待値が高い状況です。バリューとプレッシャーを兼ね備えた良い選択です。"
+                result_reason = t("bet.optimal.value")
         elif ev_betting >= ev_checking:
             result_eval = EVAL_GOOD
-            result_reason = f"【良い選択】ベットによる期待値がチェックをわずかに上回っています。プレッシャーをかける妥当なアクションです。"
+            result_reason = t("bet.good")
         elif ev_betting >= ev_checking - (margin_pct * pot_size):
             result_eval = EVAL_MARGINAL
-            result_reason = "【どちらでも】ベットとチェックの期待値が拮抗しています。状況に応じてアクションを混ぜることで相手に読まれにくくなります。"
+            result_reason = t("bet.marginal")
         else:
             result_eval = EVAL_BAD
-            result_reason = f"【改善余地あり】この状況ではチェックして様子を見る方が期待値が高い可能性があります。"
+            result_reason = t("bet.bad")
 
         return {
             "ev": ev_betting,
@@ -583,20 +581,20 @@ class Evaluator:
         if ev_raising > ev_calling + (raise_margin_pct * total_pot):
             result_eval = EVAL_OPTIMAL
             if range_adv > 0.55:
-                result_reason = preflop_prefix + f"【推奨】レンジ優位がある状況でのレイズは効果的です。アグレッシブに主導権を握りましょう。"
+                result_reason = preflop_prefix + t("raise.optimal.range_adv")
             elif realized_equity < 0.35:
-                result_reason = preflop_prefix + f"【推奨】ハンドは弱めですが、相手を降ろせる可能性（フォールドエクイティ）を活かしたブラフレイズとして機能します。"
+                result_reason = preflop_prefix + t("raise.optimal.bluff")
             else:
-                result_reason = preflop_prefix + f"【推奨・バリュー】コールよりレイズの方が期待値が高い状況です。バリューとプレッシャーを兼ね備えた良い選択です。"
+                result_reason = preflop_prefix + t("raise.optimal.value")
         elif ev_raising >= ev_calling:
             result_eval = EVAL_GOOD
-            result_reason = preflop_prefix + f"【良い選択】レイズの期待値がコールをわずかに上回っています。積極的なアクションとして妥当です。"
+            result_reason = preflop_prefix + t("raise.good")
         elif ev_raising >= ev_calling - (raise_margin_pct * total_pot):
             result_eval = EVAL_MARGINAL
-            result_reason = preflop_prefix + "【どちらでも】レイズとコールの期待値が拮抗しています。状況に応じてアクションを混ぜることで相手に読まれにくくなります。"
+            result_reason = preflop_prefix + t("raise.marginal")
         else:
             result_eval = EVAL_BAD
-            result_reason = preflop_prefix + f"【改善余地あり】この状況ではコールかフォールドの方が期待値が高い可能性があります。レイズはリスクが高めです。"
+            result_reason = preflop_prefix + t("raise.bad")
 
         return {
             "ev": ev_raising,
@@ -610,7 +608,7 @@ class Evaluator:
     def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None):
         if not has_initiative and not is_hero_ip:
             # OOP で先にチェック: 標準的なパッシブプレイ（ドンクベットは上級者向け）
-            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_GOOD, "reason": "ポジション不利（OOP）でアグレッサーでもない場合、まずチェックして相手のアクションを見てからディフェンスするのが基本です。"}
+            return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_GOOD, "reason": t("check.oop_default")}
         # IP かつ no-initiative（相手がチェック → ヒーローにベット/チェックバックの選択権）は
         # has_initiative=True と同様に EV 評価へ。強いハンドでのチェックバックを正しく罰する。
             
@@ -626,7 +624,7 @@ class Evaluator:
                 "req_eq": 0.0,
                 "realized_eq": realized_equity,
                 "evaluation": EVAL_BAD,
-                "reason": "【バリューの取り逃し】非常に強いハンドです。チェックすると相手に無料でカードを見せてしまいます。バリューベットして相手からチップを引き出しましょう。"
+                "reason": t("check.missed_value")
             }
 
         # Compare vs half-pot bet using realistic fold equity.
@@ -642,18 +640,18 @@ class Evaluator:
         if ev_checking >= ev_betting_half_pot:
             result_eval = EVAL_OPTIMAL
             if range_adv < 0.45:
-                result_reason = "【推奨】相手のレンジが強い可能性が高いため、チェックでポットを抑えるのが無難な選択です。"
+                result_reason = t("check.optimal.weak_range")
             else:
-                result_reason = "【推奨】チェックして様子を見るのが良い選択です。無駄なリスクを避けられます。"
+                result_reason = t("check.optimal")
         elif ev_checking >= ev_betting_half_pot * 0.75:
             result_eval = EVAL_GOOD
-            result_reason = "【妥当】チェックしてポットを小さく保つ（ポットコントロール）のは妥当な選択です。"
+            result_reason = t("check.good")
         elif ev_checking >= ev_betting_half_pot * 0.55:
             result_eval = EVAL_MARGINAL
-            result_reason = "【やや消極的】ベットしてプレッシャーをかけるべき状況かもしれませんが、チェックで様子を見るのも手です。"
+            result_reason = t("check.marginal")
         else:
             result_eval = EVAL_BAD
-            result_reason = "【ブラフの機会損失】ハンドは弱いですが、ベットすることで相手を降ろせる可能性（フォールドエクイティ）があります。この状況でチェックするとフォールドエクイティを無駄にしています。"
+            result_reason = t("check.bad")
 
         return {
             "ev": ev_checking,

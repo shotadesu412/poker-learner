@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ポーカーラッシュ</title>
+    <title data-i18n="app.name">ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css?v=10">
+    <link rel="stylesheet" href="/static/style.css?v=11">
+    <script src="/static/i18n.js?v=1"></script>
 </head>
 
 <body>
@@ -14,15 +15,15 @@
     <!-- トップナビゲーションバー -->
     <nav class="top-nav">
         <div class="top-nav-left">
-            <a href="/" class="nav-btn nav-icon-btn" title="ホーム">
+            <a href="/" class="nav-btn nav-icon-btn" data-i18n-title="nav.home" title="ホーム">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </a>
-            <button onclick="openSettings()" class="nav-btn nav-btn-dim nav-icon-btn" title="設定">
+            <button onclick="openSettings()" class="nav-btn nav-btn-dim nav-icon-btn" data-i18n-title="nav.settings" title="設定">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a6.96 6.96 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4a.484.484 0 0 0-.48.41l-.36 2.54a7.3 7.3 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.64 8.47a.48.48 0 0 0 .12.61l2.03 1.58a7.23 7.23 0 0 0-.07.94c0 .32.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.07.27.3.47.58.47h4c.28 0 .51-.2.58-.47l.36-2.54a7.3 7.3 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
             </button>
         </div>
         <div class="top-nav-right">
-            <button onclick="openPreflopRangeModal()" class="nav-btn nav-btn-green">レンジ表</button>
+            <button onclick="openPreflopRangeModal()" class="nav-btn nav-btn-green" data-i18n="nav.range_chart">レンジ表</button>
         </div>
     </nav>
 
@@ -35,7 +36,7 @@
             <div class="empty-card"></div>
             <div class="empty-card"></div>
         </div>
-        <div id="board-tap-hint" class="board-tap-hint">履歴 / ボード</div>
+        <div id="board-tap-hint" class="board-tap-hint" data-i18n="game.board_tap_hint">履歴 / ボード</div>
     </div>
 
     <!-- Middle Area: Info -->
@@ -55,7 +56,7 @@
         <div class="hands-info">
             <div class="hand-col" onclick="openRangeModal('HERO')" style="cursor: pointer;">
                 <div style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">You
-                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ)</span>
+                    <span style="font-size: 0.65rem; opacity: 0.6;" data-i18n="game.tap_for_range">(タップでレンジ)</span>
                 </div>
                 <div id="hero-cards" class="card-container">
                     <div class="empty-card"></div>
@@ -65,7 +66,7 @@
 
             <div class="hand-col" onclick="openRangeModal('CPU')" style="cursor: pointer;">
                 <div style="color: var(--accent-orange); font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">CPU
-                    <span style="font-size: 0.65rem; opacity: 0.6;">(タップでレンジ)</span>
+                    <span style="font-size: 0.65rem; opacity: 0.6;" data-i18n="game.tap_for_range">(タップでレンジ)</span>
                 </div>
                 <div id="cpu-cards" class="card-container">
                     <div class="face-down-card"></div>
@@ -88,7 +89,7 @@
     <!-- 評価ドロワーツマミ（アクションの上に表示） -->
     <div id="eval-handle" class="eval-handle hidden" onclick="toggleReasonDrawer()">
         <span id="handle-eval-symbol" class="handle-symbol">◎</span>
-        <span class="handle-label">評価詳細</span>
+        <span class="handle-label" data-i18n="game.eval_detail">評価詳細</span>
         <span class="handle-arrow">▲</span>
     </div>
 
@@ -97,7 +98,7 @@
         <div class="reason-header">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span id="reason-symbol" class="reason-symbol"></span>
-                <span class="reason-title">アクション解説</span>
+                <span class="reason-title" data-i18n="game.reason_title.explain">アクション解説</span>
             </div>
             <button class="close-btn" id="close-reason-btn" onclick="closeReasonArea()"
                 style="margin-left: auto; font-size: 1.2rem;">✕</button>
@@ -108,28 +109,28 @@
     <!-- Bottom Area: Actions -->
     <div class="action-area" id="action-area">
         <div class="action-row">
-            <button class="action-btn btn-danger" id="btn-fold" onclick="takeAction('FOLD')">フォールド</button>
-            <button class="action-btn" id="btn-check" onclick="takeAction('CHECK')">チェック</button>
-            <button class="action-btn" id="btn-call" onclick="takeAction('CALL')">コール</button>
+            <button class="action-btn btn-danger" id="btn-fold" onclick="takeAction('FOLD')" data-i18n="action.fold">フォールド</button>
+            <button class="action-btn" id="btn-check" onclick="takeAction('CHECK')" data-i18n="action.check">チェック</button>
+            <button class="action-btn" id="btn-call" onclick="takeAction('CALL')" data-i18n="action.call">コール</button>
         </div>
         <div class="action-row">
-            <button class="action-btn btn-primary" id="btn-bet" onclick="openBetPanel('BET')">ベット</button>
-            <button class="action-btn btn-raise" id="btn-raise" onclick="openBetPanel('RAISE')">レイズ</button>
+            <button class="action-btn btn-primary" id="btn-bet" onclick="openBetPanel('BET')" data-i18n="action.bet">ベット</button>
+            <button class="action-btn btn-raise" id="btn-raise" onclick="openBetPanel('RAISE')" data-i18n="action.raise">レイズ</button>
         </div>
     </div>
 
     <!-- Bottom Action (Finished State) -->
     <div class="action-area hidden" id="restart-area">
-        <button class="action-btn btn-primary full-width" onclick="startHand()">次のハンドへ (Next Hand)</button>
+        <button class="action-btn btn-primary full-width" onclick="startHand()" data-i18n="game.next_hand">次のハンドへ (Next Hand)</button>
         <button class="action-btn btn-secondary full-width" id="btn-ai-coach" onclick="requestCoachExplanation()"
-            style="margin-top: 10px;"> AIコーチに相談する</button>
+            style="margin-top: 10px;" data-i18n="game.ask_coach">AIコーチに相談する</button>
         <button class="action-btn btn-spot full-width" id="btn-spot-mode" onclick="toggleSpotMode()"
-            style="margin-top: 8px;">スポット練習</button>
+            style="margin-top: 8px;" data-i18n="game.spot_mode">スポット練習</button>
         <!-- スポット練習: ポジション固定セレクター（spot ON時のみ表示） -->
         <div id="spot-pos-selector" class="spot-pos-selector hidden">
-            <div class="spot-pos-label">ポジション固定</div>
+            <div class="spot-pos-label" data-i18n="game.spot_fix_position">ポジション固定</div>
             <div class="spot-pos-btns">
-                <button class="spot-pos-btn" data-pos="" onclick="setSpotPosition('')">ランダム</button>
+                <button class="spot-pos-btn" data-pos="" onclick="setSpotPosition('')" data-i18n="game.spot_random">ランダム</button>
                 <button class="spot-pos-btn" data-pos="UTG" onclick="setSpotPosition('UTG')">UTG</button>
                 <button class="spot-pos-btn" data-pos="HJ" onclick="setSpotPosition('HJ')">HJ</button>
                 <button class="spot-pos-btn" data-pos="CO" onclick="setSpotPosition('CO')">CO</button>
@@ -140,7 +141,7 @@
             <div class="spot-participated-row">
                 <label class="spot-participated-label">
                     <input type="checkbox" id="spot-participated-only" onchange="setSpotParticipated(this.checked)">
-                    <span>参加ハンドのみ（フォールドは自動スキップ）</span>
+                    <span data-i18n="game.spot_participated_only">参加ハンドのみ（フォールドは自動スキップ）</span>
                 </label>
             </div>
         </div>
@@ -149,22 +150,22 @@
     <!-- AI Coach Chat Area -->
     <div id="ai-coach-area" class="ai-coach-area hidden">
         <div class="coach-header">
-            <span>AI ポーカーコーチ</span>
+            <span data-i18n="coach.title">AI ポーカーコーチ</span>
             <button class="close-btn" onclick="closeCoachArea()">✕</button>
         </div>
         <div id="coach-chat-history" class="coach-chat-history"></div>
 
         <div class="coach-input-area">
-            <input type="text" id="coach-input" placeholder="質問を入力... (例: リバーでコールすべきだった？)"
+            <input type="text" id="coach-input" data-i18n-placeholder="coach.input_placeholder" placeholder="質問を入力... (例: リバーでコールすべきだった？)"
                 onkeypress="handleCoachInputKeyPress(event)">
-            <button id="btn-coach-send" onclick="sendCoachMessage()">送信</button>
+            <button id="btn-coach-send" onclick="sendCoachMessage()" data-i18n="coach.send">送信</button>
         </div>
     </div>
 
     <!-- Bet Sizing Modal (Slide Up) -->
     <div id="bet-panel" class="bet-panel">
         <div class="bet-panel-header">
-            <h3>ベットサイズ選択</h3>
+            <h3 id="bet-panel-title" data-i18n="bet.panel_title.bet">ベットサイズ選択</h3>
             <button class="close-btn" onclick="closeBetPanel()">✕</button>
         </div>
 
@@ -180,15 +181,15 @@
     <div id="range-modal" class="modal-overlay hidden">
         <div class="range-panel">
             <div class="range-panel-header">
-                <h3 id="range-modal-title">レンジ表</h3>
+                <h3 id="range-modal-title" data-i18n="range.title">レンジ表</h3>
                 <button class="close-btn" onclick="closeRangeModal()">✕</button>
             </div>
             <!-- モード切り替えボタン -->
             <div class="range-mode-tabs">
                 <button id="btn-range-hero" class="range-tab-btn active" onclick="setRangeMode('hero')">You</button>
                 <button id="btn-range-cpu" class="range-tab-btn" onclick="setRangeMode('cpu')">CPU</button>
-                <button id="btn-range-compare" class="range-tab-btn" onclick="setRangeMode('compare')">比較</button>
-                <button id="btn-range-preflop" class="range-tab-btn" onclick="setRangeMode('preflop')">推奨レンジ</button>
+                <button id="btn-range-compare" class="range-tab-btn" onclick="setRangeMode('compare')" data-i18n="range.tab_compare">比較</button>
+                <button id="btn-range-preflop" class="range-tab-btn" onclick="setRangeMode('preflop')" data-i18n="range.tab_preflop">推奨レンジ</button>
             </div>
             <!-- スタンドアロン時のポジション選択（ゲーム外で推奨レンジを見るとき） -->
             <div id="standalone-pos-selector" style="display:none; flex-wrap:wrap; gap:6px; padding:6px 0; justify-content:center;">
@@ -201,22 +202,22 @@
             </div>
             <!-- 凡例 -->
             <div id="range-legend-normal" class="range-legend">
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> ペア</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> スーテッド</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> オフスート</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: #333;"></div> 圏外</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> <span data-i18n="range.legend_pair">ペア</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> <span data-i18n="range.legend_suited">スーテッド</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> <span data-i18n="range.legend_offsuit">オフスート</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: #333;"></div> <span data-i18n="range.legend_out">圏外</span></div>
             </div>
             <div id="range-legend-compare" class="range-legend hidden">
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> Heroのみ</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> CPUのみ</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(139, 92, 246, 0.9);"></div> 両方</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(59, 130, 246, 0.9);"></div> <span data-i18n="range.legend_hero_only">Heroのみ</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(245, 158, 11, 0.9);"></div> <span data-i18n="range.legend_cpu_only">CPUのみ</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(139, 92, 246, 0.9);"></div> <span data-i18n="range.legend_both">両方</span></div>
             </div>
             <div id="range-legend-preflop" class="range-legend hidden">
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> 推奨範囲内</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(239, 68, 68, 0.7);"></div> アンダー</div>
-                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(253, 224, 71, 0.8);"></div> オーバー</div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(16, 185, 129, 0.9);"></div> <span data-i18n="range.legend_in_range">推奨範囲内</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(239, 68, 68, 0.7);"></div> <span data-i18n="range.legend_under">アンダー</span></div>
+                <div class="range-legend-item"><div class="legend-dot" style="background: rgba(253, 224, 71, 0.8);"></div> <span data-i18n="range.legend_over">オーバー</span></div>
             </div>
-            <div style="text-align: center; margin-bottom: 5px; font-size: 0.7rem; color: #888;">※ 色の濃さ = 残存可能性（重み）　セルをタップで詳細</div>
+            <div style="text-align: center; margin-bottom: 5px; font-size: 0.7rem; color: #888;" data-i18n="range.note">※ 色の濃さ = 残存可能性（重み）　セルをタップで詳細</div>
             <div id="range-grid" class="range-grid">
                 <!-- 13x13 grid injected by JS -->
             </div>
@@ -230,34 +231,30 @@
     <div id="purchase-modal" class="ad-modal-overlay hidden" onclick="closePurchaseModal()">
         <div class="purchase-modal-content" onclick="event.stopPropagation()">
             <div class="purchase-modal-header">
-                <span>プレミアムプラン</span>
+                <span data-i18n="purchase.title">プレミアムプラン</span>
                 <button onclick="closePurchaseModal()" class="purchase-close-btn">✕</button>
             </div>
             <div class="purchase-modal-body">
                 <div class="purchase-plan-info">
-                    <div class="purchase-plan-name">プレミアムプラン</div>
-                    <div class="purchase-plan-price" id="purchase-price-display">読み込み中…</div>
-                    <div class="purchase-plan-renew">月額の自動更新サブスクリプション。次回更新日の24時間前までにキャンセルしない限り自動更新されます。いつでもキャンセル可能。</div>
+                    <div class="purchase-plan-name" data-i18n="purchase.plan_name">プレミアムプラン</div>
+                    <div class="purchase-plan-price" id="purchase-price-display" data-i18n="purchase.price_loading">読み込み中…</div>
+                    <div class="purchase-plan-renew" data-i18n="purchase.renew_note">月額の自動更新サブスクリプション。次回更新日の24時間前までにキャンセルしない限り自動更新されます。いつでもキャンセル可能。</div>
                 </div>
                 <ul class="purchase-features">
-                    <li>広告なし</li>
-                    <li>AIコーチ無制限</li>
-                    <li>ポジション別詳細統計</li>
-                    <li>よくあるミス分析（リーク）</li>
-                    <li>ハンド履歴（直近30件）</li>
-                    <li>スポット練習モード</li>
+                    <li data-i18n="purchase.feature.no_ads">広告なし</li>
+                    <li data-i18n="purchase.feature.unlimited_coach">AIコーチ無制限</li>
+                    <li data-i18n="purchase.feature.position_stats">ポジション別詳細統計</li>
+                    <li data-i18n="purchase.feature.leaks">よくあるミス分析（リーク）</li>
+                    <li data-i18n="purchase.feature.hand_history">ハンド履歴（直近30件）</li>
+                    <li data-i18n="purchase.feature.spot_mode">スポット練習モード</li>
                 </ul>
                 <div id="purchase-status" class="purchase-status"></div>
-                <button onclick="startPurchase()" id="btn-purchase" class="purchase-btn-primary">
-                    サブスクリプションを開始
-                </button>
-                <button onclick="restorePurchase()" class="purchase-btn-secondary">
-                    購入を復元
-                </button>
+                <button onclick="startPurchase()" id="btn-purchase" class="purchase-btn-primary" data-i18n="purchase.start">サブスクリプションを開始</button>
+                <button onclick="restorePurchase()" class="purchase-btn-secondary" data-i18n="purchase.restore">購入を復元</button>
                 <div class="purchase-legal">
-                    <a href="https://worried-seaplane-250.notion.site/35ef58c9a02080ff9ecafeaad8f5df69" target="_blank" class="purchase-legal-link">プライバシーポリシー</a>
+                    <a href="https://worried-seaplane-250.notion.site/35ef58c9a02080ff9ecafeaad8f5df69" target="_blank" class="purchase-legal-link" data-i18n="purchase.privacy">プライバシーポリシー</a>
                     <span class="purchase-legal-sep">｜</span>
-                    <a href="https://worried-seaplane-250.notion.site/37af58c9a0208059b916d9e3ce1ba8e5" target="_blank" class="purchase-legal-link">利用規約</a>
+                    <a href="https://worried-seaplane-250.notion.site/37af58c9a0208059b916d9e3ce1ba8e5" target="_blank" class="purchase-legal-link" data-i18n="purchase.terms">利用規約</a>
                 </div>
             </div>
         </div>
@@ -267,16 +264,16 @@
     <div id="settings-modal" class="settings-overlay hidden" onclick="closeSettings()">
         <div class="settings-sheet" onclick="event.stopPropagation()">
             <div class="settings-header">
-                <span class="settings-title">設定</span>
-                <button onclick="closeSettings()" class="settings-done-btn">完了</button>
+                <span class="settings-title" data-i18n="settings.title">設定</span>
+                <button onclick="closeSettings()" class="settings-done-btn" data-i18n="common.done">完了</button>
             </div>
             <div class="settings-scroll">
 
                 <!-- セクション: 表示設定 -->
-                <div class="settings-section-label">表示</div>
+                <div class="settings-section-label" data-i18n="settings.section.display">表示</div>
                 <div class="settings-group">
                     <div class="settings-row">
-                        <span class="settings-row-label">アクション評価</span>
+                        <span class="settings-row-label" data-i18n="settings.feedback">アクション評価</span>
                         <label class="ios-toggle">
                             <input type="checkbox" id="setting-feedback" onchange="saveSetting('showFeedback', this.checked)">
                             <span class="ios-toggle-track"></span>
@@ -284,49 +281,61 @@
                     </div>
                     <div class="settings-separator"></div>
                     <div class="settings-row">
-                        <span class="settings-row-label">表示速度</span>
+                        <span class="settings-row-label" data-i18n="settings.speed">表示速度</span>
                         <div class="settings-segmented">
-                            <button class="seg-btn" id="seg-normal" onclick="setSpeedSetting('normal')">通常</button>
-                            <button class="seg-btn" id="seg-fast" onclick="setSpeedSetting('fast')">速い</button>
+                            <button class="seg-btn" id="seg-normal" onclick="setSpeedSetting('normal')" data-i18n="settings.speed_normal">通常</button>
+                            <button class="seg-btn" id="seg-fast" onclick="setSpeedSetting('fast')" data-i18n="settings.speed_fast">速い</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- セクション: 言語 -->
+                <div class="settings-section-label" data-i18n="settings.section.language">言語 / Language</div>
+                <div class="settings-group">
+                    <div class="settings-row">
+                        <span class="settings-row-label" data-i18n="settings.language_label">表示言語</span>
+                        <div class="settings-segmented">
+                            <button class="seg-btn" id="seg-lang-ja" onclick="setLang('ja')">日本語</button>
+                            <button class="seg-btn" id="seg-lang-en" onclick="setLang('en')">English</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- セクション: プレミアムプラン -->
-                <div class="settings-section-label">プラン</div>
+                <div class="settings-section-label" data-i18n="settings.section.plan">プラン</div>
                 <div class="settings-group">
                     <div class="settings-row" id="settings-premium-row">
-                        <span class="settings-row-label">プレミアムプラン</span>
+                        <span class="settings-row-label" data-i18n="settings.premium_plan">プレミアムプラン</span>
                         <span id="settings-premium-status" class="settings-premium-status"></span>
                     </div>
                 </div>
 
                 <!-- セクション: ゲームルール -->
-                <div class="settings-section-label">ゲームルール（変更不可）</div>
+                <div class="settings-section-label" data-i18n="settings.section.rules">ゲームルール（変更不可）</div>
                 <div class="settings-group">
                     <div class="settings-row settings-readonly">
-                        <span class="settings-row-label">形式</span>
-                        <span class="settings-row-value">ヘッズアップ</span>
+                        <span class="settings-row-label" data-i18n="settings.rule.format">形式</span>
+                        <span class="settings-row-value" data-i18n="settings.rule.format_value">ヘッズアップ</span>
                     </div>
                     <div class="settings-separator"></div>
                     <div class="settings-row settings-readonly">
-                        <span class="settings-row-label">スタック</span>
+                        <span class="settings-row-label" data-i18n="settings.rule.stack">スタック</span>
                         <span class="settings-row-value">100bb</span>
                     </div>
                     <div class="settings-separator"></div>
                     <div class="settings-row settings-readonly">
-                        <span class="settings-row-label">ブラインド</span>
+                        <span class="settings-row-label" data-i18n="settings.rule.blinds">ブラインド</span>
                         <span class="settings-row-value">0.5bb / 1bb</span>
                     </div>
                     <div class="settings-separator"></div>
                     <div class="settings-row settings-readonly">
-                        <span class="settings-row-label">対戦相手</span>
+                        <span class="settings-row-label" data-i18n="settings.rule.opponent">対戦相手</span>
                         <span class="settings-row-value">CPU (GTO)</span>
                     </div>
                     <div class="settings-separator"></div>
                     <div class="settings-row settings-readonly">
-                        <span class="settings-row-label">ポジション</span>
-                        <span class="settings-row-value">ランダム</span>
+                        <span class="settings-row-label" data-i18n="settings.rule.position">ポジション</span>
+                        <span class="settings-row-value" data-i18n="settings.rule.position_value">ランダム</span>
                     </div>
                 </div>
 
@@ -348,23 +357,19 @@
     <div id="coach-limit-modal" class="ad-modal-overlay hidden" onclick="closeCoachLimitModal()">
         <div class="coach-limit-content" onclick="event.stopPropagation()">
             <div class="coach-limit-header">
-                <span>AIコーチ</span>
+                <span data-i18n="coach.limit_title">AIコーチ</span>
                 <button onclick="closeCoachLimitModal()" class="purchase-close-btn">✕</button>
             </div>
             <div class="coach-limit-body">
-                <p class="coach-limit-msg">続けるには広告の視聴が必要です<br><span class="coach-limit-sub">広告を見るか、プレミアムで広告なしに</span></p>
-                <button onclick="watchAdForCoach()" class="coach-limit-btn-ad">
-                    広告を見て続ける
-                </button>
-                <div class="coach-limit-or">── または ──</div>
-                <button onclick="closeCoachLimitModal(); openPurchaseModal();" class="coach-limit-btn-premium">
-                    プレミアムで広告なしにする
-                </button>
+                <p class="coach-limit-msg" data-i18n-html="coach.limit_msg">続けるには広告の視聴が必要です<br><span class="coach-limit-sub">広告を見るか、プレミアムで広告なしに</span></p>
+                <button onclick="watchAdForCoach()" class="coach-limit-btn-ad" data-i18n="coach.limit_watch_ad">広告を見て続ける</button>
+                <div class="coach-limit-or" data-i18n="coach.limit_or">── または ──</div>
+                <button onclick="closeCoachLimitModal(); openPurchaseModal();" class="coach-limit-btn-premium" data-i18n="coach.limit_go_premium">プレミアムで広告なしにする</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/script.js?v=26"></script>
+    <script src="/static/script.js?v=27"></script>
 </body>
 
 </html>

@@ -15,10 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const premStatus = document.getElementById("home-premium-status");
         if (!premStatus) return;
         if (isPremium) {
-            premStatus.textContent = "加入中";
+            premStatus.textContent = t("home.premium_active");
             premStatus.className = "home-premium-status is-premium";
         } else {
-            premStatus.innerHTML = '<button class="home-premium-upgrade-btn" onclick="location.href=\'/play#premium\'">アップグレード</button>';
+            premStatus.innerHTML = '<button class="home-premium-upgrade-btn" onclick="location.href=\'/play#premium\'">' + t("home.premium_upgrade") + '</button>';
             premStatus.className = "home-premium-status";
         }
     }
@@ -38,12 +38,20 @@ document.addEventListener("DOMContentLoaded", () => {
             segFast.classList.toggle("active", currentSettings.speed === "fast");
         }
 
+        // 言語セグメントの選択状態
+        const segJa = document.getElementById("home-seg-lang-ja");
+        const segEn = document.getElementById("home-seg-lang-en");
+        if (segJa && segEn) {
+            segJa.classList.toggle("active", getLang() === "ja");
+            segEn.classList.toggle("active", getLang() === "en");
+        }
+
         // プレミアムステータス: まずキャッシュ値で即描画 → APIで最新化
         // （従来は localStorage の poker_is_premium を読むだけで、どこにも
         //   書き込まれていなかったため加入済みでも常に「アップグレード」表示だった）
         renderPremiumStatus(localStorage.getItem("poker_is_premium") === "true");
         const uid = localStorage.getItem("poker_user_id") || "";
-        fetch(`/api/subscription?user_id=${encodeURIComponent(uid)}`)
+        fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(uid)}`))
             .then(r => r.json())
             .then(d => {
                 const p = !!d.is_premium;
@@ -78,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!active && wasPremium) {
             const uid = localStorage.getItem("poker_user_id") || "";
             if (uid) {
-                fetch(`/api/subscription/cancel?user_id=${encodeURIComponent(uid)}`, { method: "POST" })
+                fetch(withLang(`/api/subscription/cancel?user_id=${encodeURIComponent(uid)}`), { method: "POST" })
                     .catch(() => {});
             }
         }

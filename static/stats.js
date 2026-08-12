@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // サブスク状態を取得してからコンテンツをロード
     try {
-        const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(userId)}`);
+        const res = await fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(userId)}`));
         const data = await res.json();
         isPremium = data.is_premium || false;
     } catch (e) {
@@ -40,18 +40,18 @@ async function loadAll(period) {
     const userId = localStorage.getItem("poker_user_id") || "";
     try {
         const [overview, streets] = await Promise.all([
-            fetch(`/api/stats/overview?period=${period}&user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/streets?user_id=${userId}`).then(r => r.json()),
+            fetch(withLang(`/api/stats/overview?period=${period}&user_id=${userId}`)).then(r => r.json()),
+            fetch(withLang(`/api/stats/streets?user_id=${userId}`)).then(r => r.json()),
         ]);
         renderOverview(overview);
         renderStreets(streets);
 
         const [position, leaks, aiHistory, handHistory, personalRange] = await Promise.all([
-            fetch(`/api/stats/position?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/leaks?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/saved_hands?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/hand_history?user_id=${userId}`).then(r => r.json()),
-            fetch(`/api/stats/personal_range?period=${period}&user_id=${userId}`).then(r => r.json()),
+            fetch(withLang(`/api/stats/position?user_id=${userId}`)).then(r => r.json()),
+            fetch(withLang(`/api/stats/leaks?user_id=${userId}`)).then(r => r.json()),
+            fetch(withLang(`/api/stats/saved_hands?user_id=${userId}`)).then(r => r.json()),
+            fetch(withLang(`/api/stats/hand_history?user_id=${userId}`)).then(r => r.json()),
+            fetch(withLang(`/api/stats/personal_range?period=${period}&user_id=${userId}`)).then(r => r.json()),
         ]);
         renderPosition(position);
         renderLeaks(leaks);
@@ -83,12 +83,12 @@ function renderOverview(data) {
 function renderPosition(rows) {
     const tbody = document.getElementById("pos-table-body");
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="no-data">データがありません</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="no-data">${t("stats.no_data")}</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map(r => {
         const gtoClass = r.gto_rate >= 70 ? "gto-high" : r.gto_rate >= 50 ? "gto-mid" : "gto-low";
-        const handsLabel = r.hands === 0 ? "—" : r.hands + "回";
+        const handsLabel = r.hands === 0 ? "—" : t("stats.hands_count", { n: r.hands });
         return `<tr>
             <td class="pos-name">${r.pos}</td>
             <td>${handsLabel}</td>
@@ -103,23 +103,23 @@ function renderPosition(rows) {
 function renderStreets(data) {
     const container = document.getElementById("street-bars");
     const streets = ["PREFLOP", "FLOP", "TURN", "RIVER"];
-    const labels = { PREFLOP: "プリフロップ", FLOP: "フロップ", TURN: "ターン", RIVER: "リバー" };
+    const labels = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
 
     container.innerHTML = streets.map(st => {
         const d = data[st] || { "◎": 0, "◯": 0, "△": 0, "×": 0 };
         const total = d["◎"] + d["◯"] + d["△"] + d["×"];
         const pct = (n) => total > 0 ? Math.round(n / total * 100) : 0;
-        const oo = pct(d["◎"]), o = pct(d["◯"]), t = pct(d["△"]), x = pct(d["×"]);
+        const oo = pct(d["◎"]), o = pct(d["◯"]), mg = pct(d["△"]), x = pct(d["×"]);
         const seg = (w, cls, label) => w > 0
             ? `<div class="bar-seg ${cls}" style="width:${w}%">${w > 8 ? label : ""}</div>`
             : "";
         const barHTML = total > 0
-            ? seg(oo, "bar-optimal", "◎") + seg(o, "bar-good", "◯") + seg(t, "bar-marginal", "△") + seg(x, "bar-bad", "×")
+            ? seg(oo, "bar-optimal", "◎") + seg(o, "bar-good", "◯") + seg(mg, "bar-marginal", "△") + seg(x, "bar-bad", "×")
             : `<div class="bar-empty"></div>`;
         return `<div class="street-row">
             <div class="street-label">${labels[st]}</div>
             <div class="stacked-bar">${barHTML}</div>
-            <div class="street-total">${total > 0 ? total + "回" : "—"}</div>
+            <div class="street-total">${total > 0 ? t("stats.hands_count", { n: total }) : "—"}</div>
         </div>`;
     }).join("");
 }
@@ -130,18 +130,18 @@ function renderStreets(data) {
 function renderLeaks(leaks) {
     const container = document.getElementById("leak-list");
     if (!leaks || leaks.length === 0) {
-        container.innerHTML = `<div class="no-data">目立ったミスは見つかりませんでした</div>`;
+        container.innerHTML = `<div class="no-data">${t("stats.no_leaks")}</div>`;
         return;
     }
-    const actionLabel = { FOLD: "フォールド", CALL: "コール", BET: "ベット", RAISE: "レイズ", CHECK: "チェック" };
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
     container.innerHTML = leaks.map((lk, i) => {
         const isMarginal = lk.evaluation === "△";
         return `<div class="leak-item ${isMarginal ? "marginal" : ""}">
             <div class="leak-desc">${i + 1}. ${lk.description}</div>
             <div class="leak-meta">
                 <span>${lk.pos} / ${lk.street}</span>
-                <span>${actionLabel[lk.action] || lk.action} × ${lk.count}回</span>
-                <span class="leak-ev-loss">平均損失 -${lk.avg_ev_loss.toFixed(2)} bb</span>
+                <span>${actionLabel[lk.action] || lk.action} × ${t("stats.hands_count", { n: lk.count })}</span>
+                <span class="leak-ev-loss">${t("stats.avg_loss", { v: lk.avg_ev_loss.toFixed(2) })}</span>
             </div>
         </div>`;
     }).join("");
@@ -153,16 +153,16 @@ function renderLeaks(leaks) {
 function renderAiHistory(historyData) {
     const container = document.getElementById("ai-history-list");
     if (!historyData || historyData.length === 0) {
-        container.innerHTML = `<div class="no-data">AIコーチに相談した履歴はまだありません</div>`;
+        container.innerHTML = `<div class="no-data">${t("stats.no_coach_history")}</div>`;
         return;
     }
     container.innerHTML = historyData.map((h, i) => {
         const dt = new Date(h.timestamp);
-        const dateStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         return `<div class="ai-history-item">
             <div class="ai-history-header" onclick="toggleCollapse('ai-body-${i}', 'ai-toggle-${i}')">
-                <span style="font-weight:bold;">ハンド ${historyData.length - i} <span class="ai-history-date">(${dateStr})</span></span>
-                <span class="ai-history-toggle" id="ai-toggle-${i}">▼ 詳細を見る</span>
+                <span style="font-weight:bold;">${t("stats.hand_n", { n: historyData.length - i })} <span class="ai-history-date">(${dateStr})</span></span>
+                <span class="ai-history-toggle" id="ai-toggle-${i}">${t("stats.show_detail")}</span>
             </div>
             <div class="ai-history-body" id="ai-body-${i}">
                 <div class="ai-context-box">${h.hand_context}</div>
@@ -191,12 +191,12 @@ function formatCards(cardsStr) {
 function renderHandHistory(hands) {
     const container = document.getElementById("hand-history-list");
     if (!hands || hands.length === 0) {
-        container.innerHTML = `<div class="no-data">ハンド履歴がまだありません</div>`;
+        container.innerHTML = `<div class="no-data">${t("stats.no_hand_history")}</div>`;
         return;
     }
     const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
-    const actionLabel = { FOLD: "フォールド", CALL: "コール", BET: "ベット", RAISE: "レイズ", CHECK: "チェック" };
-    const streetLabel = { PREFLOP: "プリフロップ", FLOP: "フロップ", TURN: "ターン", RIVER: "リバー" };
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
+    const streetLabel = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
     const winnerBadge = {
         YOU: '<span class="hh-result hh-win">WIN</span>',
         CPU: '<span class="hh-result hh-lose">LOSE</span>',
@@ -205,7 +205,7 @@ function renderHandHistory(hands) {
 
     container.innerHTML = hands.map((h, i) => {
         const dt = new Date(h.date);
-        const dateStr = dt.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const cards = formatCards(h.hole_cards) || "??";
         const pos = h.position || "?";
 
@@ -220,7 +220,7 @@ function renderHandHistory(hands) {
             const chips = g.items.map(a => {
                 const isHero = a.actor !== "CPU";
                 const cls = isHero ? (evalClass[a.evaluation] || "") : "hh-cpu";
-                const who = isHero ? "あなた" : "CPU";
+                const who = isHero ? t("stats.you") : "CPU";
                 const lbl = actionLabel[a.action] || a.action;
                 const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
                 const ev = isHero && a.evaluation ? ` ${a.evaluation}` : "";
@@ -230,7 +230,7 @@ function renderHandHistory(hands) {
         }).join("");
 
         const boardHtml = h.board
-            ? `<div class="hh-detail-row"><span class="hh-detail-label">ボード</span>${formatCards(h.board)}</div>` : "";
+            ? `<div class="hh-detail-row"><span class="hh-detail-label">${t("stats.board")}</span>${formatCards(h.board)}</div>` : "";
         const cpuHtml = h.cpu_hand
             ? `<div class="hh-detail-row"><span class="hh-detail-label">CPU</span>${formatCards(h.cpu_hand)}</div>` : "";
         const potHtml = h.final_pot > 0 ? `<span class="hh-pot">POT ${Number(h.final_pot).toFixed(1)}bb</span>` : "";
@@ -246,7 +246,7 @@ function renderHandHistory(hands) {
             </div>
             <div class="hh-body" id="hh-body-${i}">
                 ${boardHtml}${cpuHtml}
-                <div class="hh-streets">${rowsHtml || "アクションなし"}</div>
+                <div class="hh-streets">${rowsHtml || t("stats.no_actions")}</div>
             </div>
         </div>`;
     }).join("");
@@ -263,7 +263,7 @@ function renderPersonalRange(data) {
     const hasData = data && Object.keys(data).length > 0;
 
     if (!hasData) {
-        container.innerHTML = `<div class="no-data" style="grid-column:span 13;padding:16px;text-align:center;font-size:0.8rem;color:#666;">プリフロップデータがまだありません。ゲームをプレイすると表示されます。</div>`;
+        container.innerHTML = `<div class="no-data" style="grid-column:span 13;padding:16px;text-align:center;font-size:0.8rem;color:#666;">${t("stats.no_preflop_data")}</div>`;
         return;
     }
 
@@ -300,7 +300,7 @@ function renderPersonalRange(data) {
                 }
                 cell.style.background = bg;
 
-                const tip = `${combo}: オープン${d.OPEN||0} 3Bet${d["3BET"]||0} コール${d.CALL||0} フォールド${d.FOLD||0}`;
+                const tip = t("stats.pr_tooltip", { combo: combo, open: d.OPEN||0, threebet: d["3BET"]||0, call: d.CALL||0, fold: d.FOLD||0 });
                 cell.innerHTML += `<span class="pr-tooltip">${tip}</span>`;
             }
 
@@ -315,7 +315,7 @@ function toggleCollapse(bodyId, toggleId) {
     if (!body) return;
     const isOpen = body.classList.contains('active');
     body.classList.toggle('active', !isOpen);
-    if (toggle) toggle.textContent = isOpen ? "▼ 詳細を見る" : "▲ 閉じる";
+    if (toggle) toggle.textContent = isOpen ? t("stats.show_detail") : t("stats.hide_detail");
 }
 
 function showLoading(on) {

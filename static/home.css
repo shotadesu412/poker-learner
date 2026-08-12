@@ -238,6 +238,12 @@ body {
     color: #fff;
     border-radius: 6px;
 }
+/* 言語セグメント: "English" は「通常/速い」より横幅を食うので詰めて折り返しを防ぐ */
+#home-seg-lang-ja, #home-seg-lang-en {
+    padding: 6px 11px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
 /* iOS トグル (ゲーム画面と共通スタイル再定義) */
 .ios-toggle {
     position: relative;

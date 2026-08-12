@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ポーカーラッシュ</title>
+    <title data-i18n="app.name">ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/home.css?v=5">
+    <link rel="stylesheet" href="/static/home.css?v=6">
+    <script src="/static/i18n.js?v=1"></script>
 </head>
 <body>
     <div class="home-container">
         <!-- Header -->
         <header class="home-header">
-            <h1 class="logo-title">ポーカー<span>ラッシュ</span></h1>
-            <p class="subtitle">Poker Strategy Training</p>
+            <h1 class="logo-title"><span data-i18n="home.logo_a">ポーカー</span><span data-i18n="home.logo_b">ラッシュ</span></h1>
+            <p class="subtitle" data-i18n="app.subtitle">Poker Strategy Training</p>
         </header>
 
         <!-- Main Menu -->
         <main class="menu-container">
             <button class="menu-btn primary" onclick="location.href='/play'">
-                <span class="icon"></span> ゲームスタート (Play)
+                <span class="icon"></span> <span data-i18n="home.play">ゲームスタート (Play)</span>
             </button>
             <button class="menu-btn secondary" onclick="location.href='/stats'">
-                <span class="icon"></span> 分析データ (Stats)
+                <span class="icon"></span> <span data-i18n="home.stats">分析データ (Stats)</span>
             </button>
             <button class="menu-btn outline" id="settings-btn">
-                <span class="icon"></span> 設定 (Settings)
+                <span class="icon"></span> <span data-i18n="home.settings">設定 (Settings)</span>
             </button>
         </main>
     </div>
@@ -33,17 +34,17 @@
     <div id="settings-modal" class="home-settings-overlay hidden" onclick="closeHomeSettings()">
         <div class="home-settings-sheet" onclick="event.stopPropagation()">
             <div class="home-settings-header">
-                <span class="home-settings-title">設定</span>
-                <button onclick="closeHomeSettings()" class="home-settings-done-btn">完了</button>
+                <span class="home-settings-title" data-i18n="settings.title">設定</span>
+                <button onclick="closeHomeSettings()" class="home-settings-done-btn" data-i18n="common.done">完了</button>
             </div>
             <div class="home-settings-scroll">
 
-                <div class="home-settings-section-label">表示</div>
+                <div class="home-settings-section-label" data-i18n="home.section.display">表示</div>
                 <div class="home-settings-group">
                     <div class="home-settings-row">
                         <div class="home-settings-row-info">
-                            <span class="home-settings-row-label">アクション評価</span>
-                            <span class="home-settings-row-desc">アクションごとの解説コメントを表示</span>
+                            <span class="home-settings-row-label" data-i18n="home.feedback_label">アクション評価</span>
+                            <span class="home-settings-row-desc" data-i18n="home.feedback_desc">アクションごとの解説コメントを表示</span>
                         </div>
                         <label class="ios-toggle">
                             <input type="checkbox" id="toggle-feedback" checked>
@@ -52,18 +53,29 @@
                     </div>
                     <div class="home-settings-separator"></div>
                     <div class="home-settings-row">
-                        <span class="home-settings-row-label">表示速度</span>
+                        <span class="home-settings-row-label" data-i18n="home.speed_label">表示速度</span>
                         <div class="home-settings-segmented">
-                            <button class="home-seg-btn active" id="home-seg-normal" onclick="setHomeSpeed('normal')">通常</button>
-                            <button class="home-seg-btn" id="home-seg-fast" onclick="setHomeSpeed('fast')">速い</button>
+                            <button class="home-seg-btn active" id="home-seg-normal" onclick="setHomeSpeed('normal')" data-i18n="home.speed_normal">通常</button>
+                            <button class="home-seg-btn" id="home-seg-fast" onclick="setHomeSpeed('fast')" data-i18n="home.speed_fast">速い</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="home-settings-section-label">アカウント</div>
+                <div class="home-settings-section-label" data-i18n="settings.section.language">言語 / Language</div>
                 <div class="home-settings-group">
                     <div class="home-settings-row">
-                        <span class="home-settings-row-label">プレミアムプラン</span>
+                        <span class="home-settings-row-label" data-i18n="settings.language_label">表示言語</span>
+                        <div class="home-settings-segmented">
+                            <button class="home-seg-btn" id="home-seg-lang-ja" onclick="setLang('ja')">日本語</button>
+                            <button class="home-seg-btn" id="home-seg-lang-en" onclick="setLang('en')">English</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="home-settings-section-label" data-i18n="home.section.account">アカウント</div>
+                <div class="home-settings-group">
+                    <div class="home-settings-row">
+                        <span class="home-settings-row-label" data-i18n="home.premium_plan">プレミアムプラン</span>
                         <span id="home-premium-status" class="home-premium-status"></span>
                     </div>
                 </div>
@@ -72,6 +84,6 @@
         </div>
     </div>
 
-    <script src="/static/home.js?v=3"></script>
+    <script src="/static/home.js?v=4"></script>
 </body>
 </html>

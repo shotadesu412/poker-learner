@@ -26,7 +26,7 @@ let spotParticipatedOnly = false;  // スポット練習: 参加ハンドのみ
 
 async function loadSubscriptionStatus() {
     try {
-        const res = await fetch(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`));
         const data = await res.json();
         // StoreKitの実権利状態が既に届いていればそちらを正とする
         // （サーバーDBは解約後も premium が残るため上書きしない）
@@ -43,19 +43,7 @@ async function loadSubscriptionStatus() {
 let coachMessages = [];
 // AIコーチ・広告のカウンターは「広告システム」セクションで管理
 
-const POKER_GLOSSARY = {
-    "GTO": "Game Theory Optimal の略。\nお互いが最適な防衛戦略をとることで誰も搾取されない、数学的な理論上の最適戦略。このアプリの推奨はその考え方を参考にしたものです。",
-    "MDF": "Minimum Defense Frequency（最低防衛頻度）の略。\n相手のベットに対して、自分が最低限コールやレイズで守るべき割合。この頻度より少ない守りでは相手のブラフが得をしてしまいます。",
-    "SPR": "Stack to Pot Ratio（スタック対ポット比）の略。\n残りのチップがポットの何倍かを示します。SPRが低いほど「オールインしやすい状況」になります。",
-    "EV": "Expected Value（期待値）の略。\nある選択を長期間繰り返したとき、平均的にどれだけ得するかを示します。EV+ならプラスの選択、EV-ならマイナスの選択です。",
-    "ポットオッズ": "コールに必要なチップに対して、ポットがどれだけ大きいかの割合。\n例：ポット100bbに50bbのコールなら33%の勝率があれば損益分岐点です。",
-    "フォールドエクイティ": "ベットやレイズで相手を降ろせる確率から得られる追加利益のこと。\nブラフが成立する根拠のひとつです。",
-    "ドンクベット": "前のストリートでベットしていなかった（アグレッサーでない）側が、先にベットすること。\n意外性はありますが、レンジが読まれやすくなるリスクもあります。",
-    "ポラライズ": "極端に強いハンドと弱いハンド（ブラフ）の2種類だけでプレイするレンジ構成のこと。\n大きなベットサイズに向いています。",
-    "Cベット": "コンティニュエーション・ベット（継続ベット）の略。\n前のストリートでレイズしたプレイヤーが、次のストリートでも続けてベットすること。",
-    "レンジアドバンテージ": "自分のレンジ全体の平均的な強さが、相手より高い状態。\nレンジ優位があるとベットやブラフが通りやすくなります。",
-    "エクイティ": "勝率のこと。\nそのハンドが最終的にポットを獲得できる確率を表します。"
-};
+// 用語集 (POKER_GLOSSARY) と linkifyGlossary() は i18n.js が持つ
 
 // ==============================
 // 用語解説ポップアップ
@@ -78,23 +66,10 @@ document.addEventListener('click', function(e) {
     if (termEl) {
         e.stopPropagation();
         const term = termEl.textContent;
-        const definition = POKER_GLOSSARY[term] || termEl.dataset.tooltip || '';
+        const definition = glossaryLookup(term) || termEl.dataset.tooltip || '';
         openGlossaryPopup(term, definition);
     }
 });
-
-function linkifyGlossary(text) {
-    if (!text) return text;
-    let replacedText = text;
-    Object.keys(POKER_GLOSSARY).forEach(term => {
-        // Simple global string replace ignoring context bounds for MVP
-        // In robust production this would use Regex word boundaries (\b またはポジティブ先読み等)
-        const regex = new RegExp(`(${term})`, 'g');
-        const tooltip = POKER_GLOSSARY[term];
-        replacedText = replacedText.replace(regex, `<span class="glossary-term" data-tooltip="${tooltip}">$1</span>`);
-    });
-    return replacedText;
-}
 
 // Utility UI Handlers
 function el(id) { return document.getElementById(id); }
@@ -197,7 +172,7 @@ function updateUI() {
 
             el('btn-call').style.display = '';
             el('btn-raise').style.display = '';
-            el('btn-call').innerText = `コール (${currentState.facingBet.toFixed(1)}bb)`;
+            el('btn-call').innerText = t('action.call_amount', { amount: currentState.facingBet.toFixed(1) });
             el('btn-fold').disabled = false;
         } else {
             el('btn-raise').style.display = 'none';
@@ -205,7 +180,7 @@ function updateUI() {
             // Unopened pot: if facing the 1bb blind (or limp) we can still Call (Limp)
             if (currentState.facingBet > 0) {
                 el('btn-call').style.display = '';
-                el('btn-call').innerText = `コール (${currentState.facingBet.toFixed(1)}bb)`;
+                el('btn-call').innerText = t('action.call_amount', { amount: currentState.facingBet.toFixed(1) });
                 el('btn-check').style.display = 'none';
             } else {
                 el('btn-call').style.display = 'none';
@@ -228,11 +203,11 @@ function applyHistoryBoardZIndex() {
     if (historyOnTop) {
         if (history) history.style.zIndex = '60';
         if (boardArea) boardArea.style.zIndex = '10';
-        if (hint) hint.textContent = '▲ ボードを見る';
+        if (hint) hint.textContent = t('game.show_board');
     } else {
         if (history) history.style.zIndex = '10';
         if (boardArea) boardArea.style.zIndex = '60';
-        if (hint) hint.textContent = '▲ 履歴を見る';
+        if (hint) hint.textContent = t('game.show_history');
     }
 }
 function toggleHistoryBoard() {
@@ -265,7 +240,7 @@ async function startHand() {
 
     try {
         const spotParam = isSpotMode ? `&spot=true&position=${encodeURIComponent(spotPosition)}` : "";
-        const res = await fetch(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`);
+        const res = await fetch(withLang(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`));
         currentState = await res.json();
         updateUI();
 
@@ -304,7 +279,7 @@ async function takeAction(actionType, amount = 0) {
     if (handle) handle.classList.add('hidden');
 
     try {
-        const res = await fetch('/api/action', {
+        const res = await fetch(withLang('/api/action'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: actionType, amount: amount, user_id: currentUserId })
@@ -412,18 +387,18 @@ function getActionSizes(actionType) {
             if (street === "RIVER") mults = [0.33, 0.75, 1.5];
 
             options = [
-                { label: `小 Small (${Math.round(mults[0] * 100)}% pot)`, amount: pot * mults[0] },
-                { label: `中 Medium (${Math.round(mults[1] * 100)}% pot)`, amount: pot * mults[1] },
-                { label: `大 Large (${Math.round(mults[2] * 100)}% pot)`, amount: pot * mults[2] }
+                { label: t('bet.size_small_pot', { pct: Math.round(mults[0] * 100) }), amount: pot * mults[0] },
+                { label: t('bet.size_medium_pot', { pct: Math.round(mults[1] * 100) }), amount: pot * mults[1] },
+                { label: t('bet.size_large_pot', { pct: Math.round(mults[2] * 100) }), amount: pot * mults[2] }
             ];
         } else { // RAISE POSTFLOP
             let mults = [2.5, 3.5, 4.5]; // FLOP / TURN
             if (street === "RIVER") mults = [2.5, 3.5, 5.0];
 
             options = [
-                { label: `小 Small (${mults[0]}x)`, amount: facing * mults[0] },
-                { label: `中 Medium (${mults[1]}x)`, amount: facing * mults[1] },
-                { label: street === "RIVER" ? "All-in (5.0x)" : `大 Large (${mults[2]}x)`, amount: facing * mults[2] }
+                { label: t('bet.size_small_x', { mult: mults[0] }), amount: facing * mults[0] },
+                { label: t('bet.size_medium_x', { mult: mults[1] }), amount: facing * mults[1] },
+                { label: street === "RIVER" ? t('bet.size_allin') : t('bet.size_large_x', { mult: mults[2] }), amount: facing * mults[2] }
             ];
         }
     }
@@ -448,7 +423,7 @@ function openBetPanel(actionType) {
     // Update Modal Title
     const headerTitle = el('bet-panel').querySelector('h3');
     if (headerTitle) {
-        headerTitle.innerText = isRaising ? "レイズサイズ選択" : "ベットサイズ選択";
+        headerTitle.innerText = isRaising ? t('bet.panel_title.raise') : t('bet.panel_title.bet');
     }
 
     const container = el('dynamic-bet-options');
@@ -558,10 +533,10 @@ function showReason(symbol, text) {
 
     if (!appSettings.showFeedback) {
         textDiv.style.display = 'none';
-        document.querySelector('.reason-title').innerText = "アクション評価";
+        document.querySelector('.reason-title').innerText = t('game.reason_title.eval');
     } else {
         textDiv.style.display = 'block';
-        document.querySelector('.reason-title').innerText = "アクション解説";
+        document.querySelector('.reason-title').innerText = t('game.reason_title.explain');
     }
 
     // 評価後は閉じた状態でスタート（ツマミのみ表示）
@@ -687,8 +662,9 @@ function showShowdownResult(result) {
 function formatCoachText(text) {
     if (!text) return '';
     let html = text
-        // 【見出し】を太字ブロックに
+        // 見出しを太字ブロックに（日本語は【】、英語は[]をコーチに使わせている）
         .replace(/【([^】]+)】/g, '<strong class="coach-heading">【$1】</strong>')
+        .replace(/\[([^\][\n]{1,40})\]/g, '<strong class="coach-heading">[$1]</strong>')
         // 番号付きリスト行
         .replace(/^(\d+)\.\s+/gm, '<span class="coach-num">$1.</span> ')
         // 箇条書き行（- で始まる）
@@ -742,7 +718,7 @@ async function requestCoachExplanation() {
 
     // Build the request array if empty
     if (coachMessages.length === 0) {
-        coachMessages.push({ role: "user", content: "このハンド全体を通じて私が改善するべき点や、良かった点を簡潔に解説してください。" });
+        coachMessages.push({ role: "user", content: t('coach.initial_question') });
 
         // Push a loading placeholder
         coachMessages.push({ role: "assistant", isLoading: true });
@@ -754,7 +730,7 @@ async function requestCoachExplanation() {
             coachMessages.push({ role: "assistant", content: reply });
         } catch (e) {
             coachMessages.pop();
-            coachMessages.push({ role: "assistant", content: "コーチに接続できませんでした。しばらく後に再試行してください。" });
+            coachMessages.push({ role: "assistant", content: t('coach.connect_failed') });
         }
 
         renderCoachChat();
@@ -769,7 +745,7 @@ async function fetchCoachWithRetry(messages, retries = 2) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒タイムアウト
-            const response = await fetch('/api/ai_coach', {
+            const response = await fetch(withLang('/api/ai_coach'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages, user_id: currentUserId }),
@@ -809,7 +785,7 @@ async function sendCoachMessage() {
         coachMessages.push({ role: "assistant", content: reply });
     } catch (e) {
         coachMessages.pop();
-        coachMessages.push({ role: "assistant", content: "送信に失敗しました。再度お試しください。" });
+        coachMessages.push({ role: "assistant", content: t('coach.send_failed') });
     }
 
     input.disabled = false;
@@ -853,7 +829,7 @@ async function watchAdForCoach() {
     } else {
         if (earned === 'unavailable') {
             // 広告を用意できなかった → 通過させず理由を伝える
-            alert("広告を読み込めませんでした。通信環境をご確認のうえ、しばらくしてからもう一度お試しください。");
+            alert(t('ad.load_failed'));
         }
         // 途中で閉じた/用意できなかった → ロック維持、続行しない（次も2択が出る）
         if (_coachGateResolve) { _coachGateResolve(false); _coachGateResolve = null; }
@@ -878,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ページ再読み込み時、まず既存のゲーム状態を復元を試みる
     try {
-        const res = await fetch(`/api/state?user_id=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(withLang(`/api/state?user_id=${encodeURIComponent(currentUserId)}`));
         const data = await res.json();
 
         if (data.has_hand_in_progress) {
@@ -908,7 +884,7 @@ let standaloneRangePos = 'BTN'; // スタンドアロン（ゲーム外）プリ
 async function fetchPreflopRanges() {
     if (cachedPreflopRanges) return;
     try {
-        const res = await fetch('/api/preflop_ranges');
+        const res = await fetch(withLang('/api/preflop_ranges'));
         cachedPreflopRanges = await res.json();
     } catch (e) {
         console.warn('preflop_ranges fetch failed:', e);
@@ -987,12 +963,12 @@ function renderRangeGrid() {
 
     // タイトル更新
     const titleMap = {
-        hero: `Hero (${heroPos}) レンジ`,
-        cpu: `CPU (${cpuPos}) レンジ`,
-        compare: 'Hero vs CPU 比較',
-        preflop: `${heroPos} 推奨レンジ`
+        hero: t('range.title_hero', { pos: heroPos }),
+        cpu: t('range.title_cpu', { pos: cpuPos }),
+        compare: t('range.title_compare'),
+        preflop: t('range.title_preflop', { pos: heroPos })
     };
-    if (el('range-modal-title')) el('range-modal-title').innerText = titleMap[rangeModalMode] || 'レンジ表';
+    if (el('range-modal-title')) el('range-modal-title').innerText = titleMap[rangeModalMode] || t('range.title');
 
     // プリフロップモードの標準レンジを選択
     let stdRange = null;
@@ -1063,12 +1039,12 @@ function renderRangeGrid() {
                     // Heroのみ → 青
                     cell.style.backgroundColor = `rgba(59, 130, 246, ${heroW})`;
                     cell.style.color = "white";
-                    cell.title = `Hero: ${Math.round(heroW*100)}% / CPU: なし`;
+                    cell.title = t('range.tip_hero_cpu', { hero: Math.round(heroW*100) + '%', cpu: t('common.none') });
                 } else if (hasCpu) {
                     // CPUのみ → オレンジ
                     cell.style.backgroundColor = `rgba(245, 158, 11, ${cpuW})`;
                     cell.style.color = "white";
-                    cell.title = `Hero: なし / CPU: ${Math.round(cpuW*100)}%`;
+                    cell.title = t('range.tip_hero_cpu', { hero: t('common.none'), cpu: Math.round(cpuW*100) + '%' });
                 } else {
                     cell.style.backgroundColor = "#111";
                     cell.style.color = "#444";
@@ -1079,17 +1055,17 @@ function renderRangeGrid() {
                     // 両方あり → 緑（推奨通り）
                     cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.max(stdW, heroW)})`;
                     cell.style.color = "white";
-                    cell.title = `推奨: あり / あなたの実績: ${Math.round(heroW*100)}%`;
+                    cell.title = t('range.tip_rec_yours', { rec: t('common.yes'), yours: Math.round(heroW*100) + '%' });
                 } else if (stdW > 0) {
                     // 推奨だがプレイしていない → 赤（見逃し）
                     cell.style.backgroundColor = `rgba(239, 68, 68, ${stdW * 0.7})`;
                     cell.style.color = "white";
-                    cell.title = `推奨: あり / あなたの実績: なし（少なめ）`;
+                    cell.title = t('range.tip_under');
                 } else if (heroW > 0) {
                     // 推奨外だがプレイした → 黄（過剰）
                     cell.style.backgroundColor = `rgba(253, 224, 71, ${heroW * 0.8})`;
                     cell.style.color = "#111";
-                    cell.title = `推奨: なし / あなたの実績: ${Math.round(heroW*100)}%（多め）`;
+                    cell.title = t('range.tip_over', { yours: Math.round(heroW*100) + '%' });
                 } else {
                     cell.style.backgroundColor = "#111";
                     cell.style.color = "#444";
@@ -1221,7 +1197,7 @@ function openPurchaseModal() {
     const statusEl = el('purchase-status');
     if (statusEl) statusEl.textContent = '';
     if (isPremium) {
-        if (statusEl) statusEl.textContent = 'プレミアムプランご利用中です';
+        if (statusEl) statusEl.textContent = t('purchase.status.active');
     }
     // ネイティブ(StoreKit)から最新の価格を取得して表示
     try {
@@ -1238,7 +1214,7 @@ function closePurchaseModal() {
 function startPurchase() {
     const statusEl = el('purchase-status');
     const btn = el('btn-purchase');
-    if (statusEl) statusEl.textContent = '処理中...';
+    if (statusEl) statusEl.textContent = t('purchase.status.processing');
     if (btn) btn.disabled = true;
 
     try {
@@ -1246,19 +1222,19 @@ function startPurchase() {
         window.webkit.messageHandlers.purchaseRequest.postMessage({});
     } catch (e) {
         // iOS以外（ブラウザ等）では非対応
-        if (statusEl) statusEl.textContent = 'iOSアプリからのみ購入できます';
+        if (statusEl) statusEl.textContent = t('purchase.status.ios_only_buy');
         if (btn) btn.disabled = false;
     }
 }
 
 function restorePurchase() {
     const statusEl = el('purchase-status');
-    if (statusEl) statusEl.textContent = '復元中...';
+    if (statusEl) statusEl.textContent = t('purchase.status.restoring');
 
     try {
         window.webkit.messageHandlers.restoreRequest.postMessage({});
     } catch (e) {
-        if (statusEl) statusEl.textContent = 'iOSアプリからのみ復元できます';
+        if (statusEl) statusEl.textContent = t('purchase.status.ios_only_restore');
     }
 }
 
@@ -1271,7 +1247,7 @@ window.onPurchaseSuccess = async function(info) {
     isPremium = true;
     localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
-    if (statusEl) statusEl.textContent = 'プレミアムを有効化しました';
+    if (statusEl) statusEl.textContent = t('purchase.status.activated');
 
     // サーバーへの同期はバックグラウンドで行う（失敗してもisPremium=trueは維持）
     try {
@@ -1308,7 +1284,7 @@ window.onRestoreSuccess = async function() {
     // モーダルが開いている場合（手動復元ボタン押下時）のみUI更新
     if (isModalOpen) {
         const statusEl = el('purchase-status');
-        if (statusEl) statusEl.textContent = '購入を復元しました';
+        if (statusEl) statusEl.textContent = t('purchase.status.restored');
         setTimeout(closePurchaseModal, 1500);
     }
 
@@ -1331,14 +1307,14 @@ window.onRestoreSuccess = async function() {
 window.onPurchaseCancel = function() {
     const statusEl = el('purchase-status');
     const btn = el('btn-purchase');
-    if (statusEl) statusEl.textContent = 'キャンセルされました';
+    if (statusEl) statusEl.textContent = t('purchase.status.cancelled');
     if (btn) btn.disabled = false;
 };
 
 // 復元を試みたが有効な購入が見つからなかった（iOS側から呼ばれる）
 window.onRestoreNotFound = function() {
     const statusEl = el('purchase-status');
-    if (statusEl) statusEl.textContent = '復元できる購入が見つかりませんでした';
+    if (statusEl) statusEl.textContent = t('purchase.status.not_found');
 };
 
 // StoreKitの実権利状態（起動時にiOS側から必ず呼ばれる）。
@@ -1391,14 +1367,22 @@ function openSettings() {
         segFast.classList.toggle('active', appSettings.speed === 'fast');
     }
 
+    // 言語セグメントの選択状態
+    const segJa = el('seg-lang-ja');
+    const segEn = el('seg-lang-en');
+    if (segJa && segEn) {
+        segJa.classList.toggle('active', getLang() === 'ja');
+        segEn.classList.toggle('active', getLang() === 'en');
+    }
+
     // プレミアムステータス表示
     const premStatus = el('settings-premium-status');
     if (premStatus) {
         if (isPremium) {
-            premStatus.textContent = '✓ 加入中';
+            premStatus.textContent = t('settings.premium_active');
             premStatus.className = 'settings-premium-status is-premium';
         } else {
-            premStatus.innerHTML = '<button class="settings-premium-btn" onclick="openPurchaseModal(); closeSettings();">アップグレード</button>';
+            premStatus.innerHTML = '<button class="settings-premium-btn" onclick="openPurchaseModal(); closeSettings();">' + t('settings.premium_upgrade') + '</button>';
             premStatus.className = 'settings-premium-status';
         }
     }
@@ -1437,7 +1421,7 @@ function toggleSpotMode() {
     const selector = el('spot-pos-selector');
     if (btn) {
         btn.classList.toggle('spot-active', isSpotMode);
-        btn.textContent = isSpotMode ? 'スポット練習 ON' : 'スポット練習';
+        btn.textContent = isSpotMode ? t('game.spot_mode_on') : t('game.spot_mode');
     }
     if (selector) {
         selector.classList.toggle('hidden', !isSpotMode);

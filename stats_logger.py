@@ -9,6 +9,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from i18n import t
+
 # DBファイルのパス — 環境変数で上書き可能
 DB_PATH = os.environ.get("POKER_DB_PATH", "poker_stats.db")
 
@@ -374,11 +376,11 @@ def get_leaks(user_id: str = "") -> list:
 
 
 def _leak_description(street: str, action: str, pos: str, evaluation: str) -> str:
-    """リーク内容を人間が読みやすい日本語に変換"""
-    ev_label = {"△": "やや問題", "×": "大きな問題"}
-    prefix = ev_label.get(evaluation, "")
-    action_jp = {"FOLD": "フォールド過多", "CALL": "コール（ステーション傾向）", "RAISE": "オーバーベット", "BET": "ベットサイジング不正確", "CHECK": "パッシブなチェック"}.get(action, action)
-    return f"[{prefix}] {pos}ポジション {street}での{action_jp}"
+    """リーク内容を人間が読みやすい文章に変換（表示時に現在の言語で組み立てる）"""
+    severity_key = {"△": "leak.severity.marginal", "×": "leak.severity.bad"}.get(evaluation)
+    severity = t(severity_key) if severity_key else ""
+    action_label = t(f"leak.action.{action}") if action in ("FOLD", "CALL", "RAISE", "BET", "CHECK") else action
+    return t("leak.message", severity=severity, pos=pos, street=street, action=action_label)
 
 
 def reset_all():

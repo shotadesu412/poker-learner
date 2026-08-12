@@ -4,35 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>プレイ分析 | ポーカーラッシュ</title>
+    <title data-i18n="stats.page_title">プレイ分析 | ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/stats.css?v=4">
+    <script src="/static/i18n.js?v=1"></script>
 </head>
 
 <body>
 
     <header class="stats-header">
-        <h1>プレイ分析</h1>
-        <a href="/" class="back-btn">← 戻る</a>
+        <h1 data-i18n="stats.title">プレイ分析</h1>
+        <a href="/" class="back-btn" data-i18n="common.back">← 戻る</a>
     </header>
 
     <div class="period-bar">
-        <button class="period-btn active" data-period="all">全期間</button>
-        <button class="period-btn" data-period="30d">直近30日</button>
-        <button class="period-btn" data-period="7d">直近7日</button>
-        <button class="period-btn" data-period="last">直近1セッション</button>
+        <button class="period-btn active" data-period="all" data-i18n="stats.period.all">全期間</button>
+        <button class="period-btn" data-period="30d" data-i18n="stats.period.30d">直近30日</button>
+        <button class="period-btn" data-period="7d" data-i18n="stats.period.7d">直近7日</button>
+        <button class="period-btn" data-period="last" data-i18n="stats.period.last">直近1セッション</button>
     </div>
 
-    <div id="loading-overlay" class="loading" style="display:none;">データ読み込み中...</div>
+    <div id="loading-overlay" class="loading" style="display:none;" data-i18n="stats.loading_data">データ読み込み中...</div>
 
     <main class="stats-container">
 
         <!-- 総合スコア（無料） -->
         <section class="section-card">
-            <div class="section-title">総合スコア</div>
+            <div class="section-title" data-i18n="stats.section.overview">総合スコア</div>
             <div class="gto-gauge-wrap">
                 <div class="gto-score" id="gto-score">—%</div>
-                <div class="gto-label">正解率（良い選択の割合）</div>
+                <div class="gto-label" data-i18n="stats.gto_label">正解率（良い選択の割合）</div>
                 <div class="gauge-bar-wrap">
                     <div class="gauge-bar" id="gauge-bar" style="width:0%"></div>
                 </div>
@@ -40,113 +41,113 @@
             <div class="stat-badges">
                 <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-vpip">—</div>
-                    <div class="stat-badge-label">参加率</div>
+                    <div class="stat-badge-label" data-i18n="stats.badge.vpip">参加率</div>
                 </div>
                 <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-pfr">—</div>
-                    <div class="stat-badge-label">レイズ率</div>
+                    <div class="stat-badge-label" data-i18n="stats.badge.pfr">レイズ率</div>
                 </div>
                 <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-actions">—</div>
-                    <div class="stat-badge-label">練習回数</div>
+                    <div class="stat-badge-label" data-i18n="stats.badge.hands">練習回数</div>
                 </div>
                 <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-ev-loss" style="font-size:1.1rem;color:var(--accent-red)">—</div>
-                    <div class="stat-badge-label">平均損失 (bb)</div>
+                    <div class="stat-badge-label" data-i18n="stats.badge.avg_loss">平均損失 (bb)</div>
                 </div>
             </div>
         </section>
 
         <!-- ストリート別分布（無料） -->
         <section class="section-card">
-            <div class="section-title">ストリート別 正解・ミスの割合</div>
+            <div class="section-title" data-i18n="stats.section.streets">ストリート別 正解・ミスの割合</div>
             <div class="eval-legend">
-                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-optimal)"></div> ◎ 最適</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-good)"></div> ◯ 良好</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-marginal)"></div> △ 要改善</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-bad)"></div> × ミス</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-optimal)"></div> <span data-i18n="stats.legend.optimal">◎ 最適</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-good)"></div> <span data-i18n="stats.legend.good">◯ 良好</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-marginal)"></div> <span data-i18n="stats.legend.marginal">△ 要改善</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--eval-bad)"></div> <span data-i18n="stats.legend.bad">× ミス</span></div>
             </div>
             <div class="street-bars" id="street-bars">
-                <div class="loading">読み込み中...</div>
+                <div class="loading" data-i18n="common.loading">読み込み中...</div>
             </div>
         </section>
 
         <!-- パーソナルプリフロップレンジ表（無料） -->
         <section class="section-card">
-            <div class="section-title">マイ プリフロップ レンジ表</div>
+            <div class="section-title" data-i18n="stats.section.personal_range">マイ プリフロップ レンジ表</div>
             <div class="pr-legend">
-                <span><span class="pr-dot" style="background:#10b981"></span>オープン</span>
-                <span><span class="pr-dot" style="background:#8b5cf6"></span>3Bet</span>
-                <span><span class="pr-dot" style="background:#3b82f6"></span>コール</span>
-                <span><span class="pr-dot" style="background:#374151"></span>未プレイ</span>
+                <span><span class="pr-dot" style="background:#10b981"></span><span data-i18n="stats.pr.open">オープン</span></span>
+                <span><span class="pr-dot" style="background:#8b5cf6"></span><span data-i18n="stats.pr.3bet">3Bet</span></span>
+                <span><span class="pr-dot" style="background:#3b82f6"></span><span data-i18n="stats.pr.call">コール</span></span>
+                <span><span class="pr-dot" style="background:#374151"></span><span data-i18n="stats.pr.unplayed">未プレイ</span></span>
             </div>
             <div id="personal-range-grid" class="personal-range-grid">
-                <div class="loading">読み込み中...</div>
+                <div class="loading" data-i18n="common.loading">読み込み中...</div>
             </div>
         </section>
 
         <!-- ポジション別正解率（有料） -->
         <section class="section-card premium-section">
-            <div class="section-title">ポジション別 正解率 <span class="pro-badge">PRO</span></div>
+            <div class="section-title"><span data-i18n="stats.section.position">ポジション別 正解率</span> <span class="pro-badge">PRO</span></div>
             <table class="pos-table">
                 <thead>
                     <tr>
-                        <th>ポジション</th>
-                        <th>参加回数</th>
-                        <th>正解率</th>
+                        <th data-i18n="stats.th.position">ポジション</th>
+                        <th data-i18n="stats.th.hands">参加回数</th>
+                        <th data-i18n="stats.th.accuracy">正解率</th>
                     </tr>
                 </thead>
                 <tbody id="pos-table-body">
-                    <tr><td colspan="3" class="no-data">読み込み中...</td></tr>
+                    <tr><td colspan="3" class="no-data" data-i18n="common.loading">読み込み中...</td></tr>
                 </tbody>
             </table>
             <div class="premium-lock" id="lock-position">
                 <div class="premium-lock-content">
                     <div class="premium-lock-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 10h-1V8a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9 8a3 3 0 0 1 6 0v2H9V8zm3 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg></div>
-                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'">プレミアムプランで解放</div>
+                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'" data-i18n="stats.premium_lock">プレミアムプランで解放</div>
                 </div>
             </div>
         </section>
 
         <!-- よくあるミス（有料） -->
         <section class="section-card premium-section">
-            <div class="section-title">よくあるミス Top5 <span class="pro-badge">PRO</span></div>
+            <div class="section-title"><span data-i18n="stats.section.leaks">よくあるミス Top5</span> <span class="pro-badge">PRO</span></div>
             <div class="leak-list" id="leak-list">
-                <div class="loading">読み込み中...</div>
+                <div class="loading" data-i18n="common.loading">読み込み中...</div>
             </div>
             <div class="premium-lock" id="lock-leaks">
                 <div class="premium-lock-content">
                     <div class="premium-lock-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 10h-1V8a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9 8a3 3 0 0 1 6 0v2H9V8zm3 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg></div>
-                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'">プレミアムプランで解放</div>
+                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'" data-i18n="stats.premium_lock">プレミアムプランで解放</div>
                 </div>
             </div>
         </section>
 
         <!-- AIコーチ履歴（無料） -->
         <section class="section-card">
-            <div class="section-title">AIコーチ フィードバック履歴</div>
+            <div class="section-title" data-i18n="stats.section.coach_history">AIコーチ フィードバック履歴</div>
             <div class="ai-history-list" id="ai-history-list">
-                <div class="loading">読み込み中...</div>
+                <div class="loading" data-i18n="common.loading">読み込み中...</div>
             </div>
         </section>
 
         <!-- ハンド履歴（有料） -->
         <section class="section-card premium-section">
-            <div class="section-title">ハンド履歴 <span class="pro-badge">PRO</span></div>
+            <div class="section-title"><span data-i18n="stats.section.hand_history">ハンド履歴</span> <span class="pro-badge">PRO</span></div>
             <div class="hand-history-list" id="hand-history-list">
-                <div class="loading">読み込み中...</div>
+                <div class="loading" data-i18n="common.loading">読み込み中...</div>
             </div>
             <div class="premium-lock" id="lock-hand-history">
                 <div class="premium-lock-content">
                     <div class="premium-lock-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 10h-1V8a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9 8a3 3 0 0 1 6 0v2H9V8zm3 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg></div>
-                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'">プレミアムプランで解放</div>
+                    <div class="premium-lock-text" onclick="window.location.href='/play#premium'" data-i18n="stats.premium_lock">プレミアムプランで解放</div>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <script src="/static/stats.js?v=2"></script>
+    <script src="/static/stats.js?v=3"></script>
 </body>
 
 </html>

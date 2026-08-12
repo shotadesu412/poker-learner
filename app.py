@@ -9,8 +9,41 @@ import os
 import uuid
 from openai import OpenAI
 import stats_logger
+from i18n import t, set_lang, get_lang
 
 app = FastAPI(title="Poker Evaluator MVP")
+
+
+# ==============================
+# 言語の解決（リクエスト単位）
+# ==============================
+# 評価コメントやリーク文言はサーバー側で生成するため、リクエストごとに言語を決める。
+# 優先順位: ?lang= クエリ > Accept-Language ヘッダ > 日本語。
+# 純粋なASGIミドルウェアにしているのは、BaseHTTPMiddleware だと downstream が
+# 別タスクになり contextvars の伝播が保証されないため（同じコルーチンで await する）。
+class LanguageMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            set_lang(self._resolve(scope))
+        await self.app(scope, receive, send)
+
+    @staticmethod
+    def _resolve(scope) -> str:
+        query = scope.get("query_string", b"").decode("latin-1")
+        for part in query.split("&"):
+            if part.startswith("lang="):
+                return part[5:]
+        for name, value in scope.get("headers", []):
+            if name == b"accept-language":
+                # "ja-JP,ja;q=0.9,en;q=0.8" の先頭のみ見る
+                return value.decode("latin-1").split(",")[0].strip()
+        return "ja"
+
+
+app.add_middleware(LanguageMiddleware)
 
 # OpenAI API Setup
 # Requires OPENAI_API_KEY environment variable.
@@ -528,41 +561,27 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
 @app.post("/api/ai_coach")
 def ai_coach(req: AICoachRequest):
     if not openai_client.api_key:
-        return {"reply": "エラー: OpenAI APIキーが設定されていません。環境変数をご確認ください。"}
+        return {"reply": t("api.coach.no_key")}
 
     try:
         eng = _get_engine(req.user_id)
         current_session_id = _get_session_id(req.user_id)
 
         # Context building
-        context_str = f"=== 現在のハンド情報 ===\nボード: {[Card.int_to_str(c) for c in eng.board]}\nHero(あなた): {[Card.int_to_str(c) for c in eng.hero_hand]}\nCPU: {[Card.int_to_str(c) for c in eng.cpu_hand] if eng.cpu_hand else '不明'}\nPOT: {eng.pot_size}bb\n\n=== アクション履歴 ===\n"
+        context_str = t(
+            "coach.context_header",
+            board=[Card.int_to_str(c) for c in eng.board],
+            hero=[Card.int_to_str(c) for c in eng.hero_hand],
+            cpu=[Card.int_to_str(c) for c in eng.cpu_hand] if eng.cpu_hand else t("coach.unknown_cards"),
+            pot=eng.pot_size,
+        )
 
         for act in eng.action_history:
             amt = act.get('amount', 0)
             amt_str = f" {round(amt, 1)}bb" if amt > 0 else ""
             context_str += f"[{act['street']}] {act['actor']}: {act['action']}{amt_str}\n"
 
-        system_prompt = f"""あなたは経験豊富なポーカーコーチです。
-ユーザーから提供される「ハンド履歴と状況」だけを基に、Hero（プレイヤー）のプレイライン（ストーリー）を標準的なポーカー戦略の観点から評価してください。
-
-以下の観点で、箇条書きを用いて鋭く、かつ論理的にコーチングしてください。
-
-1. 【アクションの妥当性】: 提供されたボードテクスチャとポジション、一般的なハンドレンジの概念から見て、Heroの各ストリートのアクションは戦略的に妥当か？
-2. 【ブラフのストーリー性とライン】: Heroのアクションがブラフの場合、プリフロップからのアクションと矛盾していないか？相手から見て「持っていると主張しているバリューハンド」が本当にそのラインでプレイされるか？
-3. 【混合戦略の可能性】: 状況的に「必ずベット」「必ずチェック」とは言い切れないマージナルなスポットの場合、なぜ頻度でアクションを混ぜるべきなのかを一般論から解説する。
-
-ダメなプレイには「ストーリーに無理がある」「レンジキャップされている」「一般論としてこのボードでそのサイズは打たない」など厳しく指摘し、良いプレイには「完璧なポラライズです」「見事なラインです」と評価してください。
-
-【重要な書式ルール（必ず守ること）】
-- アスタリスク(*)は一切使用禁止。**太字**も*イタリック*も絶対に使わないこと。
-- ハッシュ(#)によるMarkdownヘッダーも使用禁止。
-- 箇条書きには「-」のみ使用すること。
-- 見出しや強調は【】で囲むこと（例: 【良い点】【改善点】）。
-- 番号付きリストは「1. 2. 3.」の形式のみ使用すること。
-- 出力例: 「- レンジアドバンテージがあるためベットが推奨されます。」
-- 出力例（禁止）: 「- **レンジアドバンテージ**があるためベットが推奨されます。」
-
-{context_str}"""
+        system_prompt = t("coach.system_prompt", context=context_str)
 
         api_messages = [{"role": "system", "content": system_prompt}]
         for msg in req.messages:
@@ -603,7 +622,7 @@ def ai_coach(req: AICoachRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"reply": f"コーチAPIでエラーが発生しました: {str(e)}"}
+        return {"reply": t("api.coach.error", error=str(e))}
 
 
 # ==============================
@@ -674,7 +693,7 @@ def stats_reset():
     """統計データをすべてリセット（開発・デバッグ用）"""
     try:
         stats_logger.reset_all()
-        return {"status": "ok", "message": "統計データをリセットしました"}
+        return {"status": "ok", "message": t("api.stats.reset_ok")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -718,7 +737,7 @@ def verify_purchase(req: VerifyPurchaseRequest):
     TODO: Google Play Developer API での実トークン検証を実装する。
     """
     if not req.purchase_token or not req.user_id:
-        raise HTTPException(status_code=400, detail="user_id と purchase_token が必要です")
+        raise HTTPException(status_code=400, detail=t("api.purchase.missing_params"))
 
     # TODO: Google Play Developer API でトークンを検証する
     # 現時点ではトークンの存在をもって有効とみなす

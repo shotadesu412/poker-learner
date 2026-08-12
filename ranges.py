@@ -4,6 +4,8 @@ Defines basic preflop hand ranges for Hero and CPU.
 These are updated simplified default ranges based on 6-max 100bb beginner strategy.
 """
 
+from i18n import t
+
 def generate_all_hands_dict():
     ranks = "AKQJT98765432"
     hands = {}
@@ -203,30 +205,30 @@ def classify_range(weight):
 
 def get_preflop_feedback(classification):
     if classification == "CORE":
-        return "このポジションと状況における標準的な参加レンジです。"
+        return t("hand.range.standard")
     elif classification == "MIXED":
-        return "プレイするかどうか状況次第の境界線のハンドです。頻度でアクションを混ぜることが多いです。"
+        return t("hand.range.borderline")
     else:
-        return "このポジションでは参加しにくいハンドです。フォールドが無難な選択です。"
+        return t("hand.range.out")
 
 def get_hand_reason(combo_str):
     if combo_str in ["A5s", "A4s", "A3s", "A2s", "K5s", "K4s"]:
-        return "スーテッドエースやスーテッドキングで、プレイアビリティとブロッカー効果があります。"
+        return t("hand.suited_ace_king")
     elif combo_str in ["KJo", "KTo", "QJo", "QTo", "JTo"]:
-        return "ドミネートされやすい危険なトラップハンドです。"
+        return t("hand.trap_offsuit")
     elif combo_str in ["AJo", "ATo"]:
-        return "強いレンジに支配されやすく、弱いレンジには強いマージナルなハンドです。"
+        return t("hand.marginal_broadway")
     elif combo_str in ["K9s", "QTs", "Q9s", "J8s"]:
-        return "プレイアビリティは高いものの、トップペア時のキッカー負けリスクがあります。"
+        return t("hand.kicker_risk")
     elif combo_str in ["AA", "KK", "QQ"]:
-        return "最強クラスのプレミアムハンドです。自信を持ってアグレッシブにプレイしましょう。"
+        return t("hand.premium")
     elif combo_str in ["AKs", "AKo"]:
-        return "非常に強力なプレミアムハンドで、3BETや4BETにも適しています。"
+        return t("hand.ak")
     elif combo_str in ["76s", "65s", "54s", "87s", "98s"]:
-        return "ストレートやフラッシュを作りやすい投機的なハンド（スーテッドコネクター）です。"
+        return t("hand.suited_connector")
     elif len(combo_str) == 2 and combo_str[0] == combo_str[1]: # Pocket pairs
-        return "セットマイン（スリーカード狙い）のポテンシャルを持つポケットペアです。"
-    return "ポジションに応じた標準的なレンジ構成ハンドです。"
+        return t("hand.pocket_pair")
+    return t("hand.standard")
 
 # Backward compatibility map for the engine's current structure
 RANGES = {
