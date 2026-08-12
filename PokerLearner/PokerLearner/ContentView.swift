@@ -256,12 +256,19 @@ struct ContentView: View {
 private struct SplashView: View {
     var isWarmingUp: Bool = false
 
+    /// ロゴは2色に塗り分けるため2つの Text を並べている。
+    /// 日本語は「ポーカーラッシュ」で詰めるのが正しいが、英語は "Poker Rush" と
+    /// 単語が分かれるので、日本語以外のときだけ間隔を空ける。
+    private var logoSpacing: CGFloat {
+        Locale.current.language.languageCode?.identifier == "ja" ? 0 : 9
+    }
+
     var body: some View {
         ZStack {
             Color(red: 0.06, green: 0.06, blue: 0.1).ignoresSafeArea()
             VStack(spacing: 32) {
                 VStack(spacing: 8) {
-                    HStack(spacing: 0) {
+                    HStack(spacing: logoSpacing) {
                         Text("splash.logo_a")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundColor(.white)
