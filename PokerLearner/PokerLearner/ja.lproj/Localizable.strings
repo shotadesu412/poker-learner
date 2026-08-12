@@ -1,0 +1,16 @@
+/* ネイティブ側で表示する文言（スプラッシュ・エラー画面・価格表示）。
+   Webの文言は static/i18n.js が持つ。ここはWebが表示される前・失敗時のみ使われる。 */
+
+"splash.logo_a" = "ポーカー";
+"splash.logo_b" = "ラッシュ";
+"splash.subtitle" = "Poker Strategy Training";
+"splash.loading" = "読み込み中...";
+"splash.warming_up" = "サーバー起動中...";
+"splash.first_launch_note" = "初回起動は少し時間がかかります";
+
+"error.offline" = "インターネット接続がありません";
+"error.load_failed" = "読み込みに失敗しました\nしばらく経ってから再試行してください";
+"error.retry" = "再試行";
+
+/* %@ は StoreKit がロケールに応じて整形した価格文字列 */
+"purchase.price_per_month" = "%@ / 月";

@@ -1,0 +1,8 @@
+/* Info.plist の英語ローカライズ。
+   Info.plist に書いた値は日本語のまま残し、英語ロケールではここが優先される。 */
+
+"CFBundleDisplayName" = "Poker Rush";
+"CFBundleName" = "Poker Rush";
+
+/* ATT（App Tracking Transparency）ダイアログの説明文 */
+"NSUserTrackingUsageDescription" = "This is used to show you ads that match your interests.";

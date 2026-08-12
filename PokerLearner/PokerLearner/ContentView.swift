@@ -243,8 +243,8 @@ struct ContentView: View {
             if viewModel.isOffline || viewModel.loadState == .failed {
                 ErrorView(
                     message: viewModel.isOffline
-                        ? "インターネット接続がありません"
-                        : "読み込みに失敗しました\nしばらく経ってから再試行してください",
+                        ? NSLocalizedString("error.offline", comment: "")
+                        : NSLocalizedString("error.load_failed", comment: ""),
                     onRetry: { viewModel.retry() }
                 )
             }
@@ -262,14 +262,14 @@ private struct SplashView: View {
             VStack(spacing: 32) {
                 VStack(spacing: 8) {
                     HStack(spacing: 0) {
-                        Text("ポーカー")
+                        Text("splash.logo_a")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundColor(.white)
-                        Text("ラッシュ")
+                        Text("splash.logo_b")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundColor(Color(red: 0.23, green: 0.72, blue: 0.51))
                     }
-                    Text("Poker Strategy Training")
+                    Text("splash.subtitle")
                         .font(.system(size: 14))
                         .foregroundColor(Color.white.opacity(0.5))
                 }
@@ -277,11 +277,13 @@ private struct SplashView: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.2)
                 VStack(spacing: 8) {
-                    Text(isWarmingUp ? "サーバー起動中..." : "読み込み中...")
+                    // 三項演算子だと Text(String) 側のイニシャライザに解決されて
+                    // ローカライズされないことがあるため、明示的に引く
+                    Text(NSLocalizedString(isWarmingUp ? "splash.warming_up" : "splash.loading", comment: ""))
                         .font(.system(size: 13))
                         .foregroundColor(Color.white.opacity(0.4))
                     if isWarmingUp {
-                        Text("初回起動は少し時間がかかります")
+                        Text("splash.first_launch_note")
                             .font(.system(size: 12))
                             .foregroundColor(Color.white.opacity(0.3))
                     }
@@ -303,7 +305,7 @@ private struct ErrorView: View {
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 Button(action: onRetry) {
-                    Text("再試行")
+                    Text("error.retry")
                         .padding(.horizontal, 32)
                         .padding(.vertical, 12)
                         .background(Color.white.opacity(0.15))

@@ -1,0 +1,7 @@
+/* Info.plist の日本語ローカライズ */
+
+"CFBundleDisplayName" = "ポーカーラッシュ";
+"CFBundleName" = "ポーカーラッシュ";
+
+/* ATT（App Tracking Transparency）ダイアログの説明文 */
+"NSUserTrackingUsageDescription" = "広告をあなたの興味に合わせてカスタマイズするために使用します。";

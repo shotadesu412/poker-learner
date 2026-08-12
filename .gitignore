@@ -5,6 +5,11 @@ __pycache__/
 venv/
 
 # iOS
-ios/PokerLearner.xcodeproj/xcuserdata/
-ios/**/*.xcuserstate
-ios/DerivedData/
+# 実際のプロジェクトは PokerLearner/ 配下（以前は ios/ を指していて効いていなかった）
+PokerLearner/**/xcuserdata/
+PokerLearner/**/*.xcuserstate
+PokerLearner/**/project.xcworkspace/
+DerivedData/
+
+# macOS
+.DS_Store

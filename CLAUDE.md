@@ -73,11 +73,59 @@ iOSアプリ (SwiftUI + WKWebView)
 **新しいブリッジを足すときも必ず両方向の互換を保つこと**（Webは即時更新される
 がアプリは古いバイナリが残るため）。
 
+## 多言語対応 (ja / en) — 2026/8/3 追加
+
+日本語と英語の2言語。**文言はコードに直書きせず必ずカタログ経由にすること。**
+
+### 言語の決まり方
+1. `localStorage.poker_lang`（設定画面で切り替えると保存 → `location.reload()`）
+2. 未設定なら端末/ブラウザ言語で自動判定（`ja*` → ja / それ以外 → en）
+3. サーバーは `?lang=` クエリ > `Accept-Language` ヘッダ > ja の順で解決
+
+既存の日本語ユーザーは今まで通り日本語のまま（自動判定が ja になるため）。
+
+### サーバー側: `i18n.py`
+- `MESSAGES = {key: {"ja": ..., "en": ...}}` の1ファイル集中管理
+- `t("key", **kw)` で解決。`set_lang()` はリクエスト単位で **contextvars** に保持
+- `app.py` の `LanguageMiddleware`（純ASGI）が毎リクエストで `set_lang()` する。
+  **BaseHTTPMiddleware ではダメ**（downstream が別タスクになり contextvars が
+  伝播しない）。同じコルーチンで `await self.app(...)` する形を崩さないこと
+- 利用側: `poker_engine.py`（評価コメント）, `ranges.py`（ハンド解説）,
+  `bet_sizing.py`（サイジング評価）, `stats_logger.py`（リーク文言）, `app.py`
+
+### フロント側: `static/i18n.js`
+- `I18N = { ja: {...}, en: {...} }` + `t(key, params)`（`{name}` を置換）
+- HTML は `data-i18n` / `data-i18n-html` / `data-i18n-placeholder` /
+  `data-i18n-title` 属性。`applyI18n()` が DOMContentLoaded で流し込む。
+  HTMLに書いてある日本語はフォールバック兼ソース
+- **API 呼び出しは必ず `withLang(url)` で包む**（サーバー生成の評価コメントの
+  言語がずれるため）
+- 用語解説（グロッサリー）も i18n.js が持つ。`linkifyGlossary()` は長い語を先に
+  当てる1パス置換。英語は `\b` 語境界必須（無いと "EV" が "leverages" に刺さる）
+
+### iOS ネイティブ
+- `{ja,en}.lproj/InfoPlist.strings`: アプリ表示名（ポーカーラッシュ / Poker Rush）と
+  ATT 説明文。`Info.plist` 本体は日本語のまま残してある
+- `{ja,en}.lproj/Localizable.strings`: スプラッシュ・エラー画面・価格の「/ 月」
+- Xcode 16 の同期フォルダ形式（`objectVersion = 77`）なので **ファイルを置くだけで
+  ターゲットに入る**。pbxproj の編集は `knownRegions` に ja を足しただけ
+- SwiftUI の `Text("key")` は自動でローカライズされるが、**三項演算子を渡すと
+  `Text(String)` 側に解決されて翻訳されない**。その場合は `NSLocalizedString` を使う
+
+### 文言を足すときのチェックリスト
+1. サーバー文言 → `i18n.py` の `MESSAGES` に ja/en 両方
+2. フロント文言 → `static/i18n.js` の `I18N.ja` と `I18N.en` 両方
+3. 新しい fetch → `withLang()` で包む
+4. キーの過不足チェック（未定義参照・未翻訳・未使用）はこのスクリプトで確認できる:
+   `node` で `static/i18n.js` を eval し、HTML の `data-i18n` と JS の `t('...')` を
+   突き合わせる（実装例は過去セッションの scratchpad/check_i18n.js）
+
 ## ディレクトリ / 主要ファイル
 
 ```
 poker-learner/
-├── app.py              # FastAPI 本体 (~770行)。全API・ゲームフロー制御
+├── app.py              # FastAPI 本体 (~800行)。全API・ゲームフロー制御・言語ミドルウェア
+├── i18n.py             # ★サーバー側の多言語カタログ (ja/en) + t()/set_lang()
 ├── poker_engine.py     # ゲームエンジン (~1600行)。Evaluator(評価), PokerEngine
 ├── equity.py           # モンテカルロ・エクイティ計算
 ├── ranges.py           # ポジション別GTOレンジ定義
@@ -85,13 +133,15 @@ poker-learner/
 ├── stats_logger.py     # SQLite 永続化 (~620行)。統計・サブスク・ハンド履歴
 ├── render.yaml         # Render 設定 (uvicorn, /data ディスク, OPENAI_API_KEY)
 ├── static/
+│   ├── i18n.js              # ★フロントの多言語カタログ + t()/applyI18n()/withLang()
 │   ├── home.html/.js/.css   # ホーム画面 ("/")
 │   ├── index.html           # ゲーム画面 ("/play")
 │   ├── script.js            # ゲームJS本体 (~1450行): UI・課金・広告ゲート
 │   ├── style.css
 │   ├── stats.html/.js/.css  # 分析ページ ("/stats")
-│   └── privacy.html, manifest.json
+│   └── privacy.html(未使用), manifest.json
 └── PokerLearner/PokerLearner/   # Xcodeプロジェクト
+    ├── ja.lproj/, en.lproj/     # ★InfoPlist.strings, Localizable.strings
     ├── PokerLearnerApp.swift    # 起動フロー: ATT → UMP → AdMob初期化
     ├── ContentView.swift        # WKWebView・ブリッジ・ロード/リトライUI
     ├── StoreKitManager.swift    # StoreKit 2
@@ -157,8 +207,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=10` / `script.js?v=26` / `home.js?v=3` / `home.css?v=5` /
-   `stats.css?v=4` / `stats.js?v=2`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=11` / `script.js?v=27` / `home.js?v=4` / `home.css?v=6` /
+   `stats.css?v=4` / `stats.js?v=3` / `i18n.js?v=1`（index.html, home.html, stats.html 内）
+   **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
 ### iOS アプリ

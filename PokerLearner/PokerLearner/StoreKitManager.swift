@@ -41,7 +41,12 @@ final class StoreKitManager: ObservableObject {
     /// 購入モーダルの価格表示を更新する（モーダルを開いたときにJSから呼ばれる）
     func pushPrice() {
         if let price = displayPrice {
-            let js = "(function(){var el=document.getElementById('purchase-price-display');if(el)el.textContent='\(price) / 月';})()"
+            // 「/ 月」「/ month」は端末の言語に合わせる（Web側の表示言語ではなく
+            // StoreKit が返す価格と同じロケールに揃える）
+            let priceLabel = String(format: NSLocalizedString("purchase.price_per_month", comment: ""), price)
+            let escaped = priceLabel.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+            let js = "(function(){var el=document.getElementById('purchase-price-display');if(el)el.textContent='\(escaped)';})()"
             sendJS(js)
         } else {
             // まだ価格を取得できていなければ再取得を試みる
