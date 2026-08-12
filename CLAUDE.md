@@ -214,7 +214,10 @@ poker-learner/
 
 ### iOS アプリ
 - バージョンは pbxproj の `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`（2箇所ずつ）。
-  **現在: 1.0.7 (12)**（1.0.6(11) はリリース済み、1.0.7(12) はアーカイブ済み・提出待ち）
+  **現在: 1.0.8 (13)**（1.0.6(11) がリリース済みの最新。1.0.7(12) は未提出のまま
+  破棄し、広告表示率改善＋英語対応をまとめて 1.0.8(13) として提出する方針にした）
+- `ITSAppUsesNonExemptEncryption = false` を Info.plist に設定済み
+  （HTTPSのみで独自暗号化なし → 免除。提出のたびの質問が出なくなる）
 - ビルド確認:
   `xcodebuild -project PokerLearner/PokerLearner.xcodeproj -scheme PokerLearner -configuration Debug -destination 'platform=iOS Simulator,id=<起動中simのUDID>' build`
 - アーカイブ（CLI で可能）:
@@ -235,14 +238,31 @@ poker-learner/
 
 ## 未解決のタスク / 既知の課題
 
-1. **App Store Connect の「マーケティングURL」に `https://poker-learner.onrender.com`
-   を設定**（次回バージョン提出時）。AdMob の app-ads.txt 警告の解消に必要。
+### v1.0.8 英語版リリース（2026/8/13 時点で進行中）
+Web側は既に本番反映済み。残りは App Store Connect 側の作業。
+
+1. **1.0.8 (13) の提出** — アーカイブ済み
+   （`~/Library/Developer/Xcode/Archives/2026-08-13/PokerLearner_1.0.8_13.xcarchive`）。
+   アップロードは Xcode Organizer から（CLI 不可）
+2. **配信国に米国を追加**（方針: まず米国だけ。反応を見てから拡大）。
+   これをやらないと英語対応しても英語圏ユーザーは来ない
+3. **App Store の English (U.S.) ローカライズ**: アプリ名 "Poker Rush"（他社との
+   重複要確認）/ サブタイトル / 説明文 / キーワード / What's New /
+   **英語UIのスクリーンショット撮り直し**（日本語のままだとリジェクト対象）
+4. **サブスク商品のローカライズ**: `com.shota.pokerlearner.premium.monthly` の
+   表示名・説明に English を追加。忘れると英語圏の購入シートが日本語になる
+5. **年齢制限 17+ と「実際の賭博ではない」旨の明記**（Guideline 5.3 対策）
+6. **プライバシーポリシー / 利用規約の英語版**（現在は Notion の日本語ページ。
+   `static/privacy.html` は未使用の死にファイル）
+
+### 継続課題
+7. **App Store Connect の「マーケティングURL」に `https://poker-learner.onrender.com`
+   を設定**。AdMob の app-ads.txt 警告の解消に必要。
    app-ads.txt 自体はサーバー実装済み・配信確認済み
-2. **AdMob 管理画面で UMP 同意フォームが未設定**（起動ログに毎回エラー。
-   日本のみなら影響軽微、EEA配信するなら必須）
-3. `verify_purchase` の実トークン検証（App Store Server API）
-4. v1.0.7 (12) の提出（アーカイブは Organizer に配置済み）
-5. 広告表示率の改善効果を AdMob レポートで確認（v1.0.7 浸透後）
+8. **AdMob 管理画面で UMP 同意フォームが未設定**（起動ログに毎回エラー。
+   米国のみなら影響軽微だが、**EEA/英国に広げるなら必須**）
+9. `verify_purchase` の実トークン検証（App Store Server API）
+10. 広告表示率の改善効果を AdMob レポートで確認（v1.0.8 浸透後）
 
 ## 作業時の注意（このプロジェクト固有）
 
