@@ -1844,10 +1844,18 @@ body {
         width: 480px;
         max-width: 92vw;
         height: min(900px, 92vh);
+        /* 通常時の min-height:100vh が height/max-height より優先されて
+           画面いっぱいに伸びてしまうため、ここで明示的に打ち消す */
+        min-height: 0;
         max-height: 900px;
         margin: 0;
         border-radius: 28px;
         overflow: hidden;
+        /* glossary-popup 等は transform:translateY(...) で画面外に隠す作りで、
+           元は100dvhの実機画面基準だったため、900pxの箱に縮めただけだと
+           overflow:hidden だけでは端が漏れて見えることがある。
+           contain:paint で描画を確実に箱の内側にクリップする */
+        contain: paint;
         box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
         border: 1px solid rgba(255, 255, 255, 0.08);
     }
