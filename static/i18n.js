@@ -166,6 +166,8 @@ const I18N = {
         "settings.rule.stack": "スタック",
         "settings.rule.blinds": "ブラインド",
         "settings.rule.opponent": "対戦相手",
+        // ソルバーそのものではなく理論を参考にした戦略なので「GTO」とは名乗らない
+        "settings.rule.opponent_value": "CPU（理論ベース）",
         "settings.rule.position": "ポジション",
         "settings.rule.position_value": "ランダム",
 
@@ -392,6 +394,7 @@ const I18N = {
         "settings.rule.stack": "Stacks",
         "settings.rule.blinds": "Blinds",
         "settings.rule.opponent": "Opponent",
+        "settings.rule.opponent_value": "CPU (theory-based)",
         "settings.rule.position": "Position",
         "settings.rule.position_value": "Random",
 
