@@ -157,7 +157,13 @@ poker-learner/
   ハンド終了は5経路（HEROフォールド/CPUフォールド/オールイン/リバー/ストリート閉じ）
   あり、**全てで `_save_hand_record()` を呼んでハンド履歴を保存**している
 - `GET /api/state` リロード時の状態復元
-- `POST /api/ai_coach` OpenAI 呼び出し（モデル: `gpt-5.4-mini`）
+- `POST /api/ai_coach` OpenAI 呼び出し（モデル: **`gpt-5.6-luna`**, 2026/8/27〜）
+  - 設定は app.py 冒頭の `COACH_MODEL` / `COACH_REASONING_EFFORT` / `COACH_MAX_TOKENS`。
+    いずれも同名の環境変数で上書き可（Renderの環境変数だけで再デプロイなしに切戻せる）
+  - **`temperature` を渡してはいけない**。GPT-5.6 はデフォルト(1.0)以外を拒否し
+    400 BadRequest になる（top_p・penalty系も同様）。旧コードは 0.7 を渡していた
+  - GPT-5.6 は推論モデルで**思考トークンも `max_completion_tokens` を消費する**ため
+    上限を 1000→3000 に引き上げ済み。本文が空で返る場合に備えた分岐もある
 - `GET /api/stats/{overview,position,streets,leaks,personal_range,saved_hands,hand_history}`
 - `GET/POST /api/subscription`, `/api/subscription/verify_purchase`, `/api/subscription/cancel`
 

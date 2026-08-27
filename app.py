@@ -50,6 +50,27 @@ app.add_middleware(LanguageMiddleware)
 openai_api_key = os.environ.get("OPENAI_API_KEY", "")
 openai_client = OpenAI(api_key=openai_api_key)
 
+# AIコーチのモデル設定（2026/8/27 に gpt-5.4-mini から gpt-5.6-luna へ更新）
+#
+# GPT-5.6 は Sol / Terra / Luna の3構成で、Luna が低コスト・大量処理向け。
+# 旧 gpt-5.4-mini と同じ枠で、入力 $0.2 / 出力 $1.2 per 1M tokens。
+#
+# ▼ 移行時の注意（ハマりどころ）
+# - **temperature は渡してはいけない**。GPT-5.6 はデフォルト(1.0)以外を
+#   受け付けず、0.7 を渡すと 400 BadRequest でコーチが丸ごと壊れる。
+#   top_p や penalty 系も同様に非対応。
+# - GPT-5.6 は推論モデルなので、**内部の思考トークンも max_completion_tokens を
+#   消費する**。旧来の 1000 のままだと思考で使い切って返答が空/途中切れに
+#   なりうるため、余裕を持たせている（Lunaは安いので実害は小さい）。
+# - reasoning_effort でその思考量を抑えている。コーチは決まった観点で短い
+#   ハンド履歴を講評するだけで深い多段推論は不要なため "low" で十分。
+#   応答が浅いと感じたら "medium"、逆に遅いなら "none" に下げる。
+# 環境変数で上書きできるようにしてあるので、問題があれば Render の
+# 環境変数を変えるだけで再デプロイなしに切り戻せる。
+COACH_MODEL = os.environ.get("COACH_MODEL", "gpt-5.6-luna")
+COACH_REASONING_EFFORT = os.environ.get("COACH_REASONING_EFFORT", "low")
+COACH_MAX_TOKENS = int(os.environ.get("COACH_MAX_TOKENS", "3000"))
+
 # Stats DB の初期化
 stats_logger.setup_db()
 
@@ -587,14 +608,22 @@ def ai_coach(req: AICoachRequest):
         for msg in req.messages:
             api_messages.append({"role": msg.role, "content": msg.content})
 
+        # temperature は渡さないこと（GPT-5.6 は非対応。詳細は COACH_MODEL のコメント）
         response = openai_client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model=COACH_MODEL,
             messages=api_messages,
-            max_completion_tokens=1000,
-            temperature=0.7
+            max_completion_tokens=COACH_MAX_TOKENS,
+            reasoning_effort=COACH_REASONING_EFFORT,
         )
 
         reply_text = response.choices[0].message.content
+
+        # 思考トークンで max_completion_tokens を使い切ると content が空で返る。
+        # その場合エラーメッセージを出さずに黙って空欄になるのを防ぐ。
+        if not reply_text:
+            finish = response.choices[0].finish_reason
+            print(f"[AICoach] 空の応答 finish_reason={finish} usage={response.usage}")
+            return {"reply": t("api.coach.empty")}
 
         # ポストプロセス: Markdown記法を除去して読みやすくする
         import re

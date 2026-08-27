@@ -383,6 +383,11 @@ MESSAGES = {
         "ja": "コーチAPIでエラーが発生しました: {error}",
         "en": "The coach API returned an error: {error}",
     },
+    # 思考トークンで上限を使い切り、本文が空で返ってきた場合
+    "api.coach.empty": {
+        "ja": "コーチの回答を最後まで生成できませんでした。もう一度お試しください。",
+        "en": "The coach could not finish its answer. Please try again.",
+    },
     # AIコーチのコンテキスト見出しと system prompt。
     # 書式ルールは frontend の formatCoachText() が解釈する記法に合わせている
     # （日本語は【】、英語は[]を見出しに使う。両方ともJS側で太字化される）。
