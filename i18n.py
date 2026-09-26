@@ -226,6 +226,11 @@ MESSAGES = {
         "ja": "【どちらでも】レイズとコールの期待値が拮抗しています。状況に応じてアクションを混ぜることで相手に読まれにくくなります。",
         "en": "[Either works] Raising and calling are close in EV. Mixing your actions here keeps you harder to read.",
     },
+    # 中途半端な強さでのレイズ（コールしておけばよかった場面）
+    "raise.medium_should_call": {
+        "ja": "【コール推奨】ショーダウンで勝てる可能性はありますが、レイズするとコールしてくるのは自分より強いハンドが中心になります。弱いハンドを降ろしてしまうため、コールでポットを小さく保つ方が得です。",
+        "en": "[Call instead] Your hand has showdown value, but the hands that call a raise here are mostly better than yours. Raising folds out what you beat, so just calling and keeping the pot small is worth more.",
+    },
     "raise.bad": {
         "ja": "【改善余地あり】この状況ではコールかフォールドの方が期待値が高い可能性があります。レイズはリスクが高めです。",
         "en": "[Room to improve] Calling or folding likely has higher EV in this spot. Raising carries too much risk here.",

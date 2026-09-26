@@ -641,7 +641,7 @@ class Evaluator:
 
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, effective_stack=0.0, street=None):
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, effective_stack=0.0, street=None, cpu_range_dict=None):
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
@@ -675,23 +675,47 @@ class Evaluator:
         ev_raising = Evaluator.ev_bet(realized_equity, total_pot, raise_amount, fold_equity)
         ev_calling = Evaluator.ev_call(realized_equity, pot_size, opponent_bet_size)
 
-        if ev_raising > ev_calling + (raise_margin_pct * total_pot):
-            result_eval = EVAL_OPTIMAL
-            if range_adv > 0.55:
-                result_reason = preflop_prefix + t("raise.optimal.range_adv")
-            elif realized_equity < 0.35:
-                result_reason = preflop_prefix + t("raise.optimal.bluff")
+        # ▼ 2026/9/26 フェーズ2: ベット判定と同じ軸に揃えた。
+        #   旧実装は ev_raise と ev_call の比較のみで、ベット判定と同じく
+        #   固定のフォールドエクイティに依存していたため、弱いハンドほど
+        #   レイズが有利に出る構造的な偏りがあった。
+        #   レイズは「上げてコールされたとき勝っているか」で見るのが本筋。
+        eq_called = Evaluator.equity_vs_calling_range(
+            cards, board, hero_range_dict, cpu_range_dict, raise_amount, total_pot)
+        draw = HandClassifier.detect_draw_strength(cards, board) if (cards and board) else "NONE"
+
+        if eq_called is None:
+            # レンジ情報が無い（プリフロップ等）: 従来どおり EV 比較
+            if ev_raising > ev_calling + (raise_margin_pct * total_pot):
+                result_eval, result_reason = EVAL_OPTIMAL, preflop_prefix + t("raise.optimal.value")
+            elif ev_raising >= ev_calling:
+                result_eval, result_reason = EVAL_GOOD, preflop_prefix + t("raise.good")
+            elif ev_raising >= ev_calling - (raise_margin_pct * total_pot):
+                result_eval, result_reason = EVAL_MARGINAL, preflop_prefix + t("raise.marginal")
             else:
-                result_reason = preflop_prefix + t("raise.optimal.value")
-        elif ev_raising >= ev_calling:
+                result_eval, result_reason = EVAL_BAD, preflop_prefix + t("raise.bad")
+        elif eq_called >= Evaluator.BET_VALUE_THRESHOLD:
+            result_eval = EVAL_OPTIMAL
+            result_reason = preflop_prefix + (
+                t("raise.optimal.range_adv") if range_adv > 0.55 else t("raise.optimal.value"))
+        elif eq_called >= Evaluator.BET_THIN_VALUE_THRESHOLD:
             result_eval = EVAL_GOOD
             result_reason = preflop_prefix + t("raise.good")
-        elif ev_raising >= ev_calling - (raise_margin_pct * total_pot):
+        elif draw in ("STRONG_DRAW", "MEDIUM_DRAW"):
+            result_eval = EVAL_OPTIMAL
+            result_reason = preflop_prefix + t("raise.optimal.bluff")
+        elif realized_equity < Evaluator.BET_BLUFF_MAX_EQUITY:
+            # ショーダウン価値なし。ブラフレイズとして筋は通るが◎にはしない
+            result_eval = EVAL_GOOD
+            result_reason = preflop_prefix + t("raise.optimal.bluff")
+        elif draw == "WEAK_DRAW":
             result_eval = EVAL_MARGINAL
             result_reason = preflop_prefix + t("raise.marginal")
         else:
+            # 中途半端な強さでのレイズ。弱いハンドを降ろして強いハンドにだけ
+            # コールされる、コールしておけばよかった典型例
             result_eval = EVAL_BAD
-            result_reason = preflop_prefix + t("raise.bad")
+            result_reason = preflop_prefix + t("raise.medium_should_call")
 
         return {
             "ev": ev_raising,
@@ -702,7 +726,7 @@ class Evaluator:
         }
 
     @staticmethod
-    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None):
+    def evaluate_check(equity, pot_size, hero_pos="BTN", has_initiative=False, is_hero_ip=False, cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None, hero_range_dict=None, cpu_range_dict=None):
         if not has_initiative and not is_hero_ip:
             # OOP で先にチェック: 標準的なパッシブプレイ（ドンクベットは上級者向け）
             return {"ev": 0.0, "req_eq": 0.0, "realized_eq": equity, "evaluation": EVAL_GOOD, "reason": t("check.oop_default")}
@@ -724,31 +748,53 @@ class Evaluator:
                 "reason": t("check.missed_value")
             }
 
-        # Compare vs half-pot bet using realistic fold equity.
-        # alpha (= bet/(pot+bet) = 1/3 for half-pot) は理論的最低折たたみ率であり、
-        # これを fold_equity に使うと ev_check/ev_bet の比が equity に関わらず
-        # 常に約 0.833 の定数になってしまい、閾値の 0.8/0.5 に全く引っかからない。
-        # 実際の折たたみ率 55% を使うことで equity に応じた正しい差別化が可能になる。
+        # ▼ 2026/9/26 フェーズ2: チェックはベットの裏返しとして評価する。
+        #   チェックとベットは排他的な選択肢なので、評価も相補的であるべき。
+        #   旧実装は ev_check と ev_bet(ハーフポット) の比較だったが、
+        #   ev_bet 側が壊れていた（固定フォールドエクイティで常に勝つ）ため、
+        #   15局面中10局面でチェックが × になり「常にベットしろ」という
+        #   誤った指導になっていた。
+        #   ベット側と同じ「打ってコールされたとき勝っているか」を見て、
+        #   ベットが良い場面ほどチェックを低く評価する。
         half_pot = pot_size / 2.0
-        check_texture = HandClassifier.classify_board_texture(board) if (board and len(board) >= 3) else None
-        fold_equity = Evaluator.estimate_fold_equity(pot_size, half_pot, check_texture)
-        ev_betting_half_pot = Evaluator.ev_bet(realized_equity, pot_size, half_pot, fold_equity)
+        eq_called = Evaluator.equity_vs_calling_range(
+            cards, board, hero_range_dict, cpu_range_dict, half_pot, pot_size)
+        draw = HandClassifier.detect_draw_strength(cards, board) if (cards and board) else "NONE"
 
-        if ev_checking >= ev_betting_half_pot:
-            result_eval = EVAL_OPTIMAL
-            if range_adv < 0.45:
-                result_reason = t("check.optimal.weak_range")
+        if eq_called is None:
+            # レンジ情報が無い場合は従来どおり EV 比較に落とす
+            check_texture = HandClassifier.classify_board_texture(board) if (board and len(board) >= 3) else None
+            fold_equity = Evaluator.estimate_fold_equity(pot_size, half_pot, check_texture)
+            ev_betting_half_pot = Evaluator.ev_bet(realized_equity, pot_size, half_pot, fold_equity)
+            if ev_checking >= ev_betting_half_pot:
+                result_eval = EVAL_OPTIMAL
+                result_reason = t("check.optimal.weak_range") if range_adv < 0.45 else t("check.optimal")
+            elif ev_checking >= ev_betting_half_pot * 0.75:
+                result_eval, result_reason = EVAL_GOOD, t("check.good")
+            elif ev_checking >= ev_betting_half_pot * 0.55:
+                result_eval, result_reason = EVAL_MARGINAL, t("check.marginal")
             else:
-                result_reason = t("check.optimal")
-        elif ev_checking >= ev_betting_half_pot * 0.75:
-            result_eval = EVAL_GOOD
-            result_reason = t("check.good")
-        elif ev_checking >= ev_betting_half_pot * 0.55:
+                result_eval, result_reason = EVAL_BAD, t("check.bad")
+        elif eq_called >= Evaluator.BET_VALUE_THRESHOLD:
+            # 打てば明確なバリューが取れる場面でのチェック = 取り逃し
+            result_eval = EVAL_BAD
+            result_reason = t("check.missed_value")
+        elif draw in ("STRONG_DRAW", "MEDIUM_DRAW"):
+            # セミブラフで打てる場面。チェックも選べるが機会損失寄り
             result_eval = EVAL_MARGINAL
             result_reason = t("check.marginal")
+        elif eq_called >= Evaluator.BET_THIN_VALUE_THRESHOLD:
+            # 薄いバリュー。打つのもチェックも成立する混合スポット
+            result_eval = EVAL_GOOD
+            result_reason = t("check.good")
+        elif realized_equity < Evaluator.BET_BLUFF_MAX_EQUITY:
+            # ブラフ候補。毎回打つことはできないのでチェックも正当
+            result_eval = EVAL_GOOD
+            result_reason = t("check.good")
         else:
-            result_eval = EVAL_BAD
-            result_reason = t("check.bad")
+            # 中途半端な強さ。打つと損なのでチェックが最善
+            result_eval = EVAL_OPTIMAL
+            result_reason = t("check.optimal.weak_range") if range_adv < 0.45 else t("check.optimal")
 
         return {
             "ev": ev_checking,

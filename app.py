@@ -302,7 +302,9 @@ def take_action(req: ActionRequest):
             if action == "RAISE":
                 eval_dict = Evaluator.evaluate_raise(
                     hero_eq, amount, hero_facing, eng.pot_size,
-                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, effective_stack=effective_stack, street=eng.street
+                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, effective_stack=effective_stack, street=eng.street,
+                    # 「レイズしてコールされたとき勝っているか」の算出に使う
+                    cpu_range_dict=eng.cpu_range_dict
                 )
             else:
                 eval_dict = Evaluator.evaluate_bet(
@@ -341,7 +343,10 @@ def take_action(req: ActionRequest):
                 board=eng.board,
                 range_adv=hero_range_adv,
                 effective_stack=effective_stack,
-                street=eng.street
+                street=eng.street,
+                # チェックはベットの裏返しとして評価するため、ベット側と同じレンジを渡す
+                hero_range_dict=eng.hero_range_dict,
+                cpu_range_dict=eng.cpu_range_dict
             )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
