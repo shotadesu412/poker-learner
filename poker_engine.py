@@ -245,8 +245,18 @@ class Evaluator:
     
     @staticmethod
     def calculate_mdf(bet_amount, pot_size):
-        """ MDF (Minimum Defense Frequency) """
-        return pot_size / (pot_size + bet_amount)
+        """ MDF (Minimum Defense Frequency)
+
+        ★ pot_size は「相手がベットする"前"のポット」を渡すこと。
+          MDF = Pot / (Pot + Bet)
+          エンジンの eng.pot_size は相手のベットを含んだ額なので、
+          そのまま渡すと MDF が過大になる（例: ハーフポットで 66.7% が 75% に）。
+          呼び出し側で bet_amount を引いてから渡すこと。
+          必要勝率 calculate_required_equity は逆に「ベット込みポット」を
+          取るので、2つを取り違えないよう注意。
+        """
+        pot_before = max(pot_size, 1e-9)
+        return pot_before / (pot_before + bet_amount)
 
     @staticmethod
     def get_combo_str(cards, range_dict=None):
@@ -444,7 +454,8 @@ class Evaluator:
                 }
             
         e_req = Evaluator.calculate_required_equity(opponent_bet_size, pot_size)
-        mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size)
+        # pot_size は相手のベット込みなので、MDF にはベット前のポットを渡す
+        mdf = Evaluator.calculate_mdf(opponent_bet_size, pot_size - opponent_bet_size)
         fold_spr = (effective_stack / pot_size) if (effective_stack > 0 and pot_size > 0) else 10.0
         eqr = Evaluator.get_eqr_modifier(hero_pos, cards, is_3bet_pot, board, range_adv, spr=fold_spr, street=street)
         realized_equity = Evaluator.realize_equity(equity, eqr)
@@ -1391,7 +1402,8 @@ class PokerEngine:
                 elif effective_equity >= e_req * 0.85:
                     # マージナルゾーン: MDF（最小防衛頻度）ベースで確率的にコール/フォールド
                     # GTOではこのゾーンのハンドを一定頻度でディフェンスする必要がある
-                    mdf = self.evaluator.calculate_mdf(opponent_bet_size, self.pot_size)
+                    # self.pot_size は相手(HERO)のベット込みなので、ベット前のポットを渡す
+                    mdf = self.evaluator.calculate_mdf(opponent_bet_size, self.pot_size - opponent_bet_size)
                     # ベットが大きいほどMDFが低く（相手に多くフォールドを許す）なるため自然な挙動
                     if random.random() < mdf * 0.6:  # MDFの60%をコール閾値として使用
                         self.cpu_last_action_intent = "CALL"
