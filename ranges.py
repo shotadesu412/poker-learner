@@ -521,20 +521,31 @@ def update_range_after_action(range_dict, action_type, bet_size=None, board=None
             continue
             
         new_weight = weight
+        # ▼ 2026/9/26 修正: SMALL_BET と LARGE_BET でブラフ帯の扱いが逆転していた。
+        #   旧: SMALL_BET は下位20%を ×0.1 で潰し、LARGE_BET は下位30%を ×0.8 で残す
+        #   → 「小さいベットほど相手が強い」という理論と逆の結果になり、
+        #     小さいCベット（最頻出）に対してヒーローのエクイティが不当に低く出て、
+        #     理論上正しいコールが厳しく採点されていた。
+        #
+        #   正しい考え方:
+        #     小さいベット = レンジベット。高頻度でレンジ全体を打つのでほぼ絞られない
+        #     大きいベット = ポラライズ。強いハンドとブラフが残り、中間が抜ける
         if action_type == "LARGE_BET":
+            # ポラライズ（この配分は元から概ね正しいので据え置き）
             if percentile < 0.30:
-                new_weight = weight * 1.0 # Top 30% Strong
+                new_weight = weight * 1.0 # 上位30% バリュー
             elif percentile < 0.70:
-                new_weight = weight * 0.2 # Middle 40% (Merge/Pot control)
+                new_weight = weight * 0.2 # 中位40% 降りる/チェックに回る
             else:
-                new_weight = weight * 0.8 # Bottom 30% Bluffs
+                new_weight = weight * 0.8 # 下位30% ブラフ
         elif action_type == "SMALL_BET":
+            # レンジベット: 元のレンジをほぼ保ち、わずかにバリュー寄りにするだけ
             if percentile < 0.50:
-                new_weight = weight * 1.0 # Top 50%
+                new_weight = weight * 1.0 # 上位50%
             elif percentile < 0.80:
-                new_weight = weight * 0.5 # Middle 30%
+                new_weight = weight * 0.9 # 中位30%
             else:
-                new_weight = weight * 0.1 # Bottom 20%
+                new_weight = weight * 0.7 # 下位20% 安いブラフとして打つので残す
         elif action_type == "CALL":
             if percentile < 0.20:
                 new_weight = weight * 0.3 # Top 20% reduced
