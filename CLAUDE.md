@@ -57,8 +57,8 @@
 | 0 | ゴールデンテストベクタ整備 | **完了** |
 | 1 | ハンド評価器をJSへ | **完了**（`static/poker/hand_eval.js`。全5枚組260万通りでtreysと完全一致） |
 | 2 | レンジデータをJSONへ | **完了**（`static/poker/ranges.json` を Python/JS で共有。`ranges.js`） |
-| 3 | エクイティ計算をJSへ | **次はここ** |
-| 4 | Evaluator（評価ロジック）をJSへ | 未着手 |
+| 3 | エクイティ計算をJSへ | **完了**（`equity.js` / `range_utils.js`。MCは統計検定で一致） |
+| 4 | Evaluator（評価ロジック）をJSへ | **次はここ** |
 | 5 | エンジン・CPU AIをJSへ | 未着手 |
 | 6 | 統計をIndexedDBへ移行 | 未着手 |
 | 7 | サーバーをAIコーチ専念構成に縮小 | 未着手 |
@@ -71,6 +71,8 @@
 - **回帰テストを毎回通す**: `python3 tools/golden/generate.py --check`（差分があれば exit 1）
   36,149件のベクタで現在の挙動を固定してある。意図的な改悪4種で検出できることを実証済み
 - **JS側の検証**: `node tools/golden/check_js.js`（同じベクタで JS 実装を検証。フェーズごとに CHECKS を追加）
+  モンテカルロは乱数列が違うので `vectors/equity_reference.json`（Python で2万回×40局面）と統計検定する。
+  参照値の再生成は `python3 tools/golden/equity_reference.py`（約30秒。エクイティ計算を意図的に変えた時だけ）
 - JS 移植コードは `static/poker/` に置く。ビルド工程なしで `<script>` のグローバルとして読め、
   テスト用に Node の `module.exports` でも読める両対応の形にする（`hand_eval.js` が見本）
 - **移植では「今の挙動をそのまま再現する」ことを最優先**。改善は移植後。

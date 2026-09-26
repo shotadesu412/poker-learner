@@ -6,6 +6,7 @@
 //   同点コンボの順位を反復順で決めるので、順序がずれると結果が変わる。
 //
 // 読み込み: ブラウザは await Ranges.load()（fetch）、Node は require した時点で読み込み済み。
+// 依存: hand_eval.js（ポストフロップの強さ順ソートで使う。ブラウザでは先に <script> で読むこと）
 
 (function (root) {
   const RANKS_DESC = 'AKQJT98765432';
@@ -130,6 +131,82 @@
       return combos;
     },
 
+    // ranges.sort_range_by_strength と同じ。強い順のコンボ名配列を返す。
+    // Array.prototype.sort は安定ソートなので、同点は Python と同じく元の反復順のまま残る。
+    sortRangeByStrength(rangeMap, board = []) {
+      const keys = [...rangeMap.keys()];
+      if (!board || board.length === 0) {
+        const RANK = { A: 14, K: 13, Q: 12, J: 11, T: 10, 9: 9, 8: 8, 7: 7, 6: 6, 5: 5, 4: 4, 3: 3, 2: 2 };
+        const strength = (c) => {
+          if (!c) return [0, 0, 0];
+          let r1 = RANK[c[0]] || 0;
+          let r2 = c.length > 1 ? (RANK[c[1]] || 0) : 0;
+          if (r2 > r1) [r1, r2] = [r2, r1];
+          if (c.length >= 2 && c[0] === c[1]) return [3, r1, r2];
+          if (c.length >= 3 && c[2] === 's') return [2, r1, r2];
+          return [1, r1, r2];
+        };
+        const cmp = (a, b) => (b[0] - a[0]) || (b[1] - a[1]) || (b[2] - a[2]);  // 降順
+        const keyed = keys.map((k) => [k, strength(k)]);
+        keyed.sort((x, y) => cmp(x[1], y[1]));
+        return keyed.map((x) => x[0]);
+      }
+      const { Card, HandEvaluator: HE } = root;
+      if (!HE) throw new Error('hand_eval.js が読み込まれていない');
+      const deadStr = board.map((c) => Card.toStr(c));
+      const postflop = (comboStr) => {
+        let best = 9999;
+        for (const pair of this.parseCombo(comboStr)) {
+          if (pair.some((c) => deadStr.includes(c))) continue;
+          const score = HE.evaluate(board, pair.map(Card.fromStr));
+          if (score < best) best = score;
+        }
+        return best;
+      };
+      const keyed = keys.map((k) => [k, postflop(k)]);
+      keyed.sort((x, y) => x[1] - y[1]);  // 昇順（スコアが小さいほど強い）
+      return keyed.map((x) => x[0]);
+    },
+
+    // ranges.update_range_after_action と同じ。新しい Map を返す（引数は変更しない）。
+    // 戻り値の反復順は「強い順」になり、次回の更新の同点処理に効く。
+    updateRangeAfterAction(rangeMap, actionType, betSize = null, board = []) {
+      const updated = new Map();
+      if (!rangeMap || rangeMap.size === 0) return updated;
+      if (actionType === 'FOLD') {
+        for (const k of rangeMap.keys()) updated.set(k, 0.0);
+        return updated;
+      }
+      const sorted = this.sortRangeByStrength(rangeMap, board);
+      const total = sorted.length;
+      for (let i = 0; i < total; i++) {
+        const combo = sorted[i];
+        const percentile = i / total;
+        const weight = rangeMap.get(combo);
+        if (weight <= 0.0) {
+          updated.set(combo, 0.0);
+          continue;
+        }
+        let w = weight;
+        // 小さいベット = レンジベット（ほぼ絞らない）/ 大きいベット = ポラライズ（中間が抜ける）
+        if (actionType === 'LARGE_BET') {
+          if (percentile < 0.30) w = weight * 1.0;
+          else if (percentile < 0.70) w = weight * 0.2;
+          else w = weight * 0.8;
+        } else if (actionType === 'SMALL_BET') {
+          if (percentile < 0.50) w = weight * 1.0;
+          else if (percentile < 0.80) w = weight * 0.9;
+          else w = weight * 0.7;
+        } else if (actionType === 'CALL') {
+          if (percentile < 0.20) w = weight * 0.3;
+          else if (percentile < 0.80) w = weight * 1.0;
+          else w = weight * 0.0;
+        }
+        updated.set(combo, Math.max(0.0, Math.min(1.0, w)));
+      }
+      return updated;
+    },
+
     getPossibleHoleCardsWeighted(rangeCategory, action = 'open', deadCards = []) {
       const out = [];
       for (const [comboStr, weight] of this.getRangeByCategory(rangeCategory, action)) {
@@ -145,6 +222,7 @@
   if (typeof module !== 'undefined') {
     const fs = require('fs');
     const path = require('path');
+    require('./hand_eval.js');
     Ranges._init(fs.readFileSync(path.join(__dirname, 'ranges.json'), 'utf8'));
     module.exports = Ranges;
   }

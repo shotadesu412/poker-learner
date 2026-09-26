@@ -312,6 +312,52 @@ def gen_range_order():
     return {"order": order, "parse_combo": combos, "weighted": weighted}
 
 
+def gen_range_update():
+    """update_range_after_action / build_sampler の決定的な部分。
+
+    update_range_after_action は戻り値の順序が次の更新の同点処理に効くので、
+    [combo, weight] のリストで順序ごと固定する。連続適用（ストリートをまたぐ絞り込み）も含める。
+    """
+    import random
+    from treys import Evaluator as TE
+    import range_utils
+    te = TE()
+    rng = random.Random(20260927)
+    full = [r + s for r in RANKS for s in "shdc"]
+    base_ranges = [("BTN", "open"), ("BB", "vs_open_call"), ("SB", "vs_open_call"),
+                   ("CO", "3bet"), ("LJ", "open"), ("HJ", "vs_3bet_call")]
+    kinds = ["LARGE_BET", "SMALL_BET", "CALL", "FOLD", "CHECK"]
+    updates = []
+    for i in range(120):
+        pos, action = base_ranges[i % len(base_ranges)]
+        board_n = [0, 3, 4, 5][i % 4]
+        board_str = rng.sample(full, board_n)
+        board = [Card.new(c) for c in board_str]
+        rd = dict(ranges.get_range_by_category(pos, action))
+        steps = []
+        for _ in range(1 + i % 3):  # 1〜3回続けて絞る
+            kind = rng.choice(kinds)
+            rd = ranges.update_range_after_action(rd, kind, 5.0, board, te)
+            steps.append({"kind": kind, "result": [[k, v] for k, v in rd.items()]})
+        updates.append({"pos": pos, "action": action, "board": board_str, "steps": steps})
+
+    samplers = []
+    for i, (pos, action) in enumerate(base_ranges):
+        dead = rng.sample(full, 2 + i)
+        sp = range_utils.build_sampler(ranges.get_range_by_category(pos, action), dead_cards_str=dead)
+        combos, cum, total = sp
+        rs = [rng.uniform(0, total) for _ in range(30)] + [0.0, total]
+        import bisect
+        picks = [min(bisect.bisect_left(cum, r), len(combos) - 1) for r in rs]
+        samplers.append({
+            "pos": pos, "action": action, "dead": dead,
+            "combos": [[Card.int_to_str(c) for c in cc] for cc in combos],
+            "cum": cum, "total": total, "rs": rs, "picks": picks,
+        })
+    empty = range_utils.build_sampler({"AA": 1.0}, dead_cards_str=["As", "Ah", "Ad"])
+    return {"updates": updates, "samplers": samplers, "empty_is_none": [empty is None]}
+
+
 def gen_hand_evaluator():
     """treys の7枚評価の参照値。JS実装の完全一致検証に使う。"""
     import random
@@ -339,6 +385,7 @@ SETS = {
     "bet_raise_check": gen_bet_raise_check,
     "ranges": gen_ranges,
     "range_order": gen_range_order,
+    "range_update": gen_range_update,
     "hand_evaluator": gen_hand_evaluator,
 }
 

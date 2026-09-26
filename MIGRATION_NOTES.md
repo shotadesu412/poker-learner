@@ -134,3 +134,27 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 - **未移植（後のフェーズで）**:
   - `sort_range_by_strength` / `update_range_after_action` → フェーズ3（`range_utils.py` と一緒に。エクイティ計算の前段なので）
   - `get_hand_reason` / `get_preflop_feedback` → フェーズ4（サーバー側 i18n の文言キーを JS へ移す必要があるため）
+
+## フェーズ3: エクイティ計算（完了 2026/9/27）
+
+- `static/poker/range_utils.js` … `buildSampler` / `sampleFrom` / `pickIndex`（bisect_left 相当）
+- `static/poker/ranges.js` に `sortRangeByStrength` / `updateRangeAfterAction` を追加
+- `static/poker/equity.js` … `calcEquityMonteCarlo` / `calcRangeAdvantage`。
+  乱数関数 `rng` を引数で差し替え可能（テストでシード付き乱数を使えるように）
+- 未使用のため移していないもの: `calculate_preflop_score` 系、`calculate_preflop_equity_approx`、
+  `sample_range`、`filter_range_by_action`、`normalize_range`（フェーズ7で Python ごと消す）
+
+### 検証
+- **決定的な部分は完全一致**（新ベクタ `range_update`）: レンジ絞り込み240回（連続適用含む、順序込み）、
+  サンプラーの展開と累積重み、二分探索の位置。「同点の並びを逆にする」改変で60件 NG になることを確認済み
+- **モンテカルロは統計検定**（新ベクタ `equity_reference`、別スクリプト `tools/golden/equity_reference.py`）:
+  Python 2万回 × 40局面 × 2種（equity / range_adv）を参照値とし、JS 5万回で |z|<4 と系統的偏り Σz/√n<4 を確認。
+  以下3種の移植ミスをすべて検出できることを確認済み（z = 10〜35）:
+  - 引き分けを勝ちとして数える
+  - 相手の手札を山札から除かずにボードを配る
+  - レンジの重みを無視して均等に引く
+- 速度: JS 1000回で 2〜7ms（Python は約47ms）
+
+### メモ
+- `update_range_after_action` は `CHECK` を渡されると重みはそのままで「強い順に並べ替わる」だけになる。
+  エンジンは CHECK では呼ばないので実害なし。挙動としては JS でも同じにしてある
