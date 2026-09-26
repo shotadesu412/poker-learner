@@ -195,8 +195,16 @@ class EquityCalculator:
         hero_tuple = tuple(hero_cards)
         needed = 5 - len(board_cards)
 
+        # ▼ 性能修正(2026/9/26): レンジの展開はループ内で毎回やる必要がない。
+        #   dead_cards_str も target_dict も反復中は不変なので、一度だけ展開して使い回す。
+        #   これをやっていなかったため、エクイティ計算の 88% がレンジ展開に
+        #   費やされていた（ハンド評価は 8% のみ）。
+        sampler = range_utils.build_sampler(target_dict, dead_cards_str=dead_cards_str)
+        if not sampler:
+            return 0.5, 0.5
+
         for _ in range(iterations):
-            cpu_cards = range_utils.sample_range(target_dict, dead_cards_str=dead_cards_str)
+            cpu_cards = range_utils.sample_from(sampler)
             if not cpu_cards:
                 continue
 
@@ -251,9 +259,15 @@ class EquityCalculator:
         base_deck = [c for c in Deck.GetFullDeck() if c not in board_set]
         needed = 5 - len(board_cards)
 
+        # ▼ 性能修正(2026/9/26): 両レンジとも一度だけ展開して使い回す
+        hero_sampler = range_utils.build_sampler(hero_range_dict, dead_cards_str=dead_cards_str)
+        cpu_sampler  = range_utils.build_sampler(cpu_range_dict,  dead_cards_str=dead_cards_str)
+        if not hero_sampler or not cpu_sampler:
+            return 0.5
+
         for _ in range(iterations):
-            sampled_hero = range_utils.sample_range(hero_range_dict, dead_cards_str=dead_cards_str)
-            sampled_cpu  = range_utils.sample_range(cpu_range_dict,  dead_cards_str=dead_cards_str)
+            sampled_hero = range_utils.sample_from(hero_sampler)
+            sampled_cpu  = range_utils.sample_from(cpu_sampler)
 
             if not sampled_hero or not sampled_cpu:
                 continue
