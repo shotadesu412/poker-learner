@@ -283,22 +283,25 @@ class Evaluator:
         return char1 + char2 + suffix
 
     @staticmethod
-    def evaluate_preflop_action_gto(cards, action_taken, hero_pos, is_3bet_pot, facing_bet, cpu_pos="SB"):
+    def evaluate_preflop_action_gto(cards, action_taken, hero_pos, is_3bet_pot, facing_bet):
         import ranges
         from bet_sizing import EVAL_OPTIMAL, EVAL_GOOD, EVAL_MARGINAL, EVAL_BAD
-        
+
         pos_ranges = ranges.RANGES.get(hero_pos, {})
-        
+
         if facing_bet == 0:
             call_range = pos_ranges.get("open", {})
             raise_range = pos_ranges.get("open", {})
             fold_msg = t("preflop.foldmsg.open")
         elif not is_3bet_pot:
-            if hero_pos == "BB":
-                # BBは相手のポジションによってコールレンジが変わるが、デフォルトとしてvs_open_callを使用
-                call_range = pos_ranges.get(f"vs_{cpu_pos}", pos_ranges.get("vs_open_call", {}))
-            else:
-                call_range = pos_ranges.get("vs_open_call", {})
+            # 本来はBBのコールレンジを相手のオープン位置で変えるべきだが、
+            # RANGES["BB"] に vs_HJ / vs_CO などの位置別データが無いため
+            # 全ポジション共通の vs_open_call を使う。
+            # 位置別に分けたくなったら、まず RANGES["BB"] に vs_XX を足すこと。
+            # （以前は cpu_pos 引数で vs_{cpu_pos} を引く実装があったが、
+            #   呼び出し側が渡していた値がコンボ辞書からの空振りで常に "SB" になり、
+            #   さらに vs_SB キーも存在しないため一度も機能していなかった）
+            call_range = pos_ranges.get("vs_open_call", {})
             raise_range = pos_ranges.get("vs_open_3bet", pos_ranges.get("3bet", {}))
             fold_msg = t("preflop.foldmsg.vs_open")
         else:
@@ -353,7 +356,7 @@ class Evaluator:
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
-            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "CALL", hero_pos, is_3bet_pot, call_amount, cpu_pos=hero_range_dict.get("_cpu_pos", "SB") if hero_range_dict else "SB")
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "CALL", hero_pos, is_3bet_pot, call_amount)
             preflop_prefix = e_reason + "\n"
             
             if decision == "fold":
@@ -427,7 +430,7 @@ class Evaluator:
         # PREFLOP RANGE CHECK
         if not board:
             import ranges
-            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "FOLD", hero_pos, is_3bet_pot, opponent_bet_size, cpu_pos="SB")
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "FOLD", hero_pos, is_3bet_pot, opponent_bet_size)
             if decision == "mix": # FOLDing a good hand is bad
                 return {
                     "ev": 0.0, "req_eq": 0.0, "realized_eq": equity, 
@@ -548,7 +551,7 @@ class Evaluator:
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
-            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "RAISE", hero_pos, is_3bet_pot=False, facing_bet=opponent_bet_size, cpu_pos=hero_range_dict.get("_cpu_pos", "SB") if hero_range_dict else "SB")
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "RAISE", hero_pos, is_3bet_pot=False, facing_bet=opponent_bet_size)
             preflop_prefix = e_reason + "\n"
             
             if decision == "fold" or decision == "mix":

@@ -583,7 +583,10 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
         "cpuRange": compress_range(eng.cpu_range_dict),
         "heroRangeRaw": dict(eng.hero_range_dict),
         "cpuRangeRaw": dict(eng.cpu_range_dict),
-        "bluffRatio": round(eng.calculate_theoretical_bluff_frequency(eng.current_bet, eng.pot_size) * 100, 1),
+        # bluffRatio はフロントで一度も参照されていない上に、
+        # eng.pot_size（相手のベット込み）を渡していて計算も誤っていたため削除した。
+        # 復活させる場合は「ベット前のポット」を渡すこと:
+        #   calculate_theoretical_bluff_frequency(bet, pot_size - bet)
         "finished": finished,
         "history": eng.action_history
     }
