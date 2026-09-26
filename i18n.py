@@ -391,9 +391,26 @@ MESSAGES = {
     # AIコーチのコンテキスト見出しと system prompt。
     # 書式ルールは frontend の formatCoachText() が解釈する記法に合わせている
     # （日本語は【】、英語は[]を見出しに使う。両方ともJS側で太字化される）。
+    # ▼ 2026/9/26: ポジション・ストリート・スタックが欠けており、コーチが
+    #   「ポジションが分からない」と答えてしまう報告があったため追加した。
+    #   ポジションはポーカーの講評に必須なので、消さないこと。
     "coach.context_header": {
-        "ja": "=== 現在のハンド情報 ===\nボード: {board}\nHero(あなた): {hero}\nCPU: {cpu}\nPOT: {pot}bb\n\n=== アクション履歴 ===\n",
-        "en": "=== Current hand ===\nBoard: {board}\nHero (you): {hero}\nCPU: {cpu}\nPOT: {pot}bb\n\n=== Action history ===\n",
+        "ja": ("=== 現在のハンド情報 ===\n"
+               "ストリート: {street}\n"
+               "Hero(あなた): {hero_pos} / ハンド {hero} / スタック {hero_stack}bb\n"
+               "CPU: {cpu_pos} / ハンド {cpu} / スタック {cpu_stack}bb\n"
+               "ボード: {board}\n"
+               "POT: {pot}bb\n"
+               "※ 6-maxのポジション表記。ポストフロップの行動順は SB→BB→UTG→HJ→CO→BTN\n"
+               "\n=== アクション履歴 ===\n"),
+        "en": ("=== Current hand ===\n"
+               "Street: {street}\n"
+               "Hero (you): {hero_pos} / hand {hero} / stack {hero_stack}bb\n"
+               "CPU: {cpu_pos} / hand {cpu} / stack {cpu_stack}bb\n"
+               "Board: {board}\n"
+               "POT: {pot}bb\n"
+               "Note: 6-max positions. Postflop action order is SB -> BB -> UTG -> HJ -> CO -> BTN\n"
+               "\n=== Action history ===\n"),
     },
     "coach.unknown_cards": {"ja": "不明", "en": "unknown"},
     "coach.system_prompt": {

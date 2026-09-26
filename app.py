@@ -617,16 +617,25 @@ def ai_coach(req: AICoachRequest):
         # Context building
         context_str = t(
             "coach.context_header",
+            street=eng.street,
+            hero_pos=eng.hero_position,
+            cpu_pos=eng.cpu_position,
+            hero_stack=round(eng.hero_stack, 1),
+            cpu_stack=round(eng.cpu_stack, 1),
             board=[Card.int_to_str(c) for c in eng.board],
             hero=[Card.int_to_str(c) for c in eng.hero_hand],
             cpu=[Card.int_to_str(c) for c in eng.cpu_hand] if eng.cpu_hand else t("coach.unknown_cards"),
             pot=eng.pot_size,
         )
 
+        # 各アクションにもポジションを添える。"HERO: CALL" だけだと
+        # どの位置からのアクションか分からず、コーチが講評できない
+        pos_of = {"HERO": eng.hero_position, "CPU": eng.cpu_position}
         for act in eng.action_history:
             amt = act.get('amount', 0)
             amt_str = f" {round(amt, 1)}bb" if amt > 0 else ""
-            context_str += f"[{act['street']}] {act['actor']}: {act['action']}{amt_str}\n"
+            actor = act['actor']
+            context_str += f"[{act['street']}] {actor}({pos_of.get(actor, '?')}): {act['action']}{amt_str}\n"
 
         system_prompt = t("coach.system_prompt", context=context_str)
 
