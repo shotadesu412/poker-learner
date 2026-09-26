@@ -493,7 +493,7 @@ def gen_evaluator_full():
             "sizing": pack(both_langs(lambda: evaluate_bet_sizing(
                 sp["pot"], sp["bet"], HandClassifier.classify_board_texture(board),
                 spr=sizing_spr) if board else {"evaluation": "", "reason": ""})),
-            "sizing_spr": sizing_spr,
+            "sizing_spr": sizing_spr, "pot": sp["pot"], "bet": sp["bet"],
         })
     # 数値の丸め境界（Python の {:.1f} は偶数丸め）を踏むケース
     fmt = []

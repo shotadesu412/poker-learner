@@ -76,7 +76,32 @@ def main():
         })
         print(f"  {i:2d} {hero} [{' '.join(board_str):14s}] eq={eq:.4f} adv={adv:.4f}  {spots[-1]['label']}")
 
-    data = {"iterations": N, "spots": spots}
+    # equity_vs_calling_range（ベット評価の軸）: コールレンジへの絞り込み + モンテカルロの組み合わせ
+    from poker_engine import Evaluator
+    called = []
+    for i, sp in enumerate(s for s in spots if s["board"]):
+        hero_cards = [Card.new(c) for c in sp["hero"]]
+        board = [Card.new(c) for c in sp["board"]]
+        bet = [2.0, 4.0, 8.0][i % 3]
+        random.seed(9000 + i)
+        eq = Evaluator.equity_vs_calling_range(hero_cards, board, dict(sp["hero_range"]), dict(sp["cpu_range"]),
+                                              bet, 8.0, iterations=N)
+        called.append({"spot": spots.index(sp), "bet": bet, "eq_called": eq})
+    # None になる条件（レンジ情報が無い・全コンボの重みが0）
+    none_cases = []
+    ak, flop = [Card.new("As"), Card.new("Kd")], [Card.new(c) for c in ("Qh", "7c", "2d")]
+    for label, call_args in [
+        ("no_board", ([Card.new("As"), Card.new("Kd")], [], {"AA": 1.0}, {"KK": 1.0})),
+        ("no_cards", ([], flop, {"AA": 1.0}, {"KK": 1.0})),
+        ("no_hero_range", (ak, flop, {}, {"KK": 1.0})),
+        ("no_cpu_range", (ak, flop, {"AA": 1.0}, {})),
+        ("all_zero", (ak, flop, {"AA": 1.0}, {"KK": 0.0, "QQ": 0.0})),
+    ]:
+        none_cases.append({"label": label, "result": Evaluator.equity_vs_calling_range(*call_args, 4.0, 8.0, iterations=50)})
+    print("  eq_called:", [round(c["eq_called"], 4) for c in called])
+    print("  none_cases:", none_cases)
+
+    data = {"iterations": N, "spots": spots, "eq_called": called, "none_cases": none_cases}
     text = json.dumps(data, ensure_ascii=False, indent=1)
     if args.check:
         old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""

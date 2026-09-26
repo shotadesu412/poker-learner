@@ -6,7 +6,7 @@
 //   同点コンボの順位を反復順で決めるので、順序がずれると結果が変わる。
 //
 // 読み込み: ブラウザは await Ranges.load()（fetch）、Node は require した時点で読み込み済み。
-// 依存: hand_eval.js（ポストフロップの強さ順ソートで使う。ブラウザでは先に <script> で読むこと）
+// 依存: hand_eval.js（ポストフロップの強さ順ソート）, messages.js（ハンド解説）。ブラウザでは先に <script> で読むこと
 
 (function (root) {
   const RANKS_DESC = 'AKQJT98765432';
@@ -108,6 +108,28 @@
       }
       if (empty(result)) return this.ALL_HANDS_DICT;
       return result;
+    },
+
+    getPreflopFeedback(classification) {
+      const t = (k) => root.Messages.t(k);
+      if (classification === 'CORE') return t('hand.range.standard');
+      if (classification === 'MIXED') return t('hand.range.borderline');
+      return t('hand.range.out');
+    },
+
+    // ranges.get_hand_reason と同じ（判定順も同じにしてある）
+    getHandReason(comboStr) {
+      const t = (k) => root.Messages.t(k);
+      const inList = (list) => list.includes(comboStr);
+      if (inList(['A5s', 'A4s', 'A3s', 'A2s', 'K5s', 'K4s'])) return t('hand.suited_ace_king');
+      if (inList(['KJo', 'KTo', 'QJo', 'QTo', 'JTo'])) return t('hand.trap_offsuit');
+      if (inList(['AJo', 'ATo'])) return t('hand.marginal_broadway');
+      if (inList(['K9s', 'QTs', 'Q9s', 'J8s'])) return t('hand.kicker_risk');
+      if (inList(['AA', 'KK', 'QQ'])) return t('hand.premium');
+      if (inList(['AKs', 'AKo'])) return t('hand.ak');
+      if (inList(['76s', '65s', '54s', '87s', '98s'])) return t('hand.suited_connector');
+      if (comboStr.length === 2 && comboStr[0] === comboStr[1]) return t('hand.pocket_pair');
+      return t('hand.standard');
     },
 
     // "AKs" → [["As","Ks"], ...] / "77" → 6通り / "AhKh" → 1通り
@@ -223,6 +245,7 @@
     const fs = require('fs');
     const path = require('path');
     require('./hand_eval.js');
+    require('./messages.js');
     Ranges._init(fs.readFileSync(path.join(__dirname, 'ranges.json'), 'utf8'));
     module.exports = Ranges;
   }

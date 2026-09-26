@@ -158,3 +158,40 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 ### メモ
 - `update_range_after_action` は `CHECK` を渡されると重みはそのままで「強い順に並べ替わる」だけになる。
   エンジンは CHECK では呼ばないので実害なし。挙動としては JS でも同じにしてある
+
+## フェーズ4: 評価ロジック（完了 2026/9/27）
+
+### 追加したファイル（すべて `static/poker/`）
+| ファイル | 元の Python |
+|---|---|
+| `pyfmt.js` | Python の `format(x, ".1f")` / `round(x, n)`（偶数丸め）の再現 |
+| `messages.js` + `messages.json` | `i18n.py` の `t()`（評価系の文言だけ共有 JSON に移した） |
+| `ev_calculator.js` | `ev_calculator.py` |
+| `hand_classifier.js` | `hand_classifier.py` |
+| `bet_sizing.js` | `bet_sizing.py` |
+| `evaluator.js` | `poker_engine.py` の `Evaluator` |
+| `ranges.js` に追加 | `get_hand_reason` / `get_preflop_feedback` |
+
+### 検証
+- **新ベクタ `evaluator_full`**: 評価関数の戻り値を全フィールド（ev・req_eq・realized_eq・mdf・解説文 ja/en）で固定。
+  浮動小数点は丸めずに保存し JS 側は `===` で比較 → **ビット単位で一致**。
+  プリフロップは全組み合わせ（169×7ポジション×3bet有無×4アクション×facing 2種）、
+  ポストフロップはシード固定の乱数で 12,000件、内部部品（EQR・PI・分類・ドロー・テクスチャ・サイジング）3,000件
+- 既存の preflop / postflop / bet_raise_check / pure_functions も全件一致
+- `equity_vs_calling_range` は `equity_reference` に参照値を追加して統計検定（None になる5条件は完全一致）
+- **意図的な移植ミス7種をすべて検出**（toFixed の丸め / 式の代数的整理 / 閾値0.60→0.61 /
+  dict.get の代わりに get_range_by_category / board=[] の扱い / IP 判定に SB / ドロー判定 cnt>=4）。
+  うち4種は既存ベクタでは見逃していて、evaluator_full でしか捕まらなかった
+- JS のモンテカルロ検定はシード付き乱数にして、毎回同じ結果になるようにした（たまに落ちるテストを防ぐ）
+
+### 移植で気づいた Python 側の罠（挙動はそのまま再現している）
+- **`Evaluator` に `calculate_mdf` / `calculate_alpha` が2回定義されている**（103行目と260行目）。
+  Python は後の定義が有効なので、JS もそちら（`max(pot, 1e-9)` 付き）に合わせた。
+  実際の入力（ベット前ポット > 0）では両者の結果は同じなので実害はない。フェーズ7で片方を消す
+- `evaluate_preflop_action_gto` は `get_range_by_category` ではなく `RANGES` を直接 `dict.get` している。
+  そのため SB の `vs_open_call` は空のまま（call ∪ 3bet の合成が効かない）。JS も `getOr` で同じにした
+- `evaluate_call` の `hero_range_dict` 引数は未使用
+
+### 次（フェーズ5）へのメモ
+- `PokerEngine` には `classify_board_texture` / `calculate_theoretical_bluff_frequency` など
+  Evaluator・HandClassifier と同名の独自実装がある。混同しないこと

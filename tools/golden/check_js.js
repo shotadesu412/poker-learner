@@ -139,13 +139,20 @@ function checkEquityMC() {
     const v = Math.max(p * (1 - p), 0.001);
     return (js - py) / Math.sqrt(v / exp.iterations + v / N_JS);
   };
-  for (const s of exp.spots) {
+  // シード付き乱数（mulberry32）で毎回同じ結果にする。たまに落ちるテストは信用されなくなるため
+  const seeded = (seed) => () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+  for (const [i, s] of exp.spots.entries()) {
     const hero = s.hero.map(Card.fromStr);
     const board = s.board.map(Card.fromStr);
     const hr = new Map(s.hero_range);
     const cr = new Map(s.cpu_range);
-    const [eq] = Equity.calcEquityMonteCarlo(hero, board, hr, cr, 'CPU', false, N_JS);
-    const adv = Equity.calcRangeAdvantage(hero, board, hr, cr, false, N_JS);
+    const [eq] = Equity.calcEquityMonteCarlo(hero, board, hr, cr, 'CPU', false, N_JS, seeded(1000 + i));
+    const adv = Equity.calcRangeAdvantage(hero, board, hr, cr, false, N_JS, seeded(5000 + i));
     for (const [name, py, js] of [['equity', s.equity, eq], ['range_adv', s.range_adv, adv]]) {
       const z = zOf(py, js);
       zs.push(z);
@@ -155,13 +162,254 @@ function checkEquityMC() {
       }
     }
   }
+  // equity_vs_calling_range（コールレンジへの絞り込み + モンテカルロ）
+  const Ev = require(path.join(ROOT, 'static', 'poker', 'evaluator.js'));
+  for (const [i, c] of exp.eq_called.entries()) {
+    const s = exp.spots[c.spot];
+    const js = Ev.equityVsCallingRange(s.hero.map(Card.fromStr), s.board.map(Card.fromStr),
+      new Map(s.hero_range), new Map(s.cpu_range), c.bet, 8.0, N_JS, seeded(9000 + i));
+    const z = zOf(c.eq_called, js);
+    zs.push(z);
+    maxZ = Math.max(maxZ, Math.abs(z));
+    if (Math.abs(z) >= 4) fails.push(`eq_called ${s.hero} [${s.board}] bet=${c.bet}: Python ${c.eq_called.toFixed(4)} JS ${js.toFixed(4)} z=${z.toFixed(2)}`);
+  }
+  const ak = ['As', 'Kd'].map(Card.fromStr), flop = ['Qh', '7c', '2d'].map(Card.fromStr);
+  const cases = {
+    no_board: [ak, [], new Map([['AA', 1.0]]), new Map([['KK', 1.0]])],
+    no_cards: [[], flop, new Map([['AA', 1.0]]), new Map([['KK', 1.0]])],
+    no_hero_range: [ak, flop, new Map(), new Map([['KK', 1.0]])],
+    no_cpu_range: [ak, flop, new Map([['AA', 1.0]]), new Map()],
+    all_zero: [ak, flop, new Map([['AA', 1.0]]), new Map([['KK', 0.0], ['QQ', 0.0]])],
+  };
+  for (const nc of exp.none_cases) {
+    const js = Ev.equityVsCallingRange(...cases[nc.label], 4.0, 8.0, 50);
+    if (js !== nc.result) fails.push(`equityVsCallingRange(${nc.label}): 期待 ${nc.result} 実際 ${js}`);
+  }
+
   const bias = zs.reduce((a, b) => a + b, 0) / Math.sqrt(zs.length);
   if (Math.abs(bias) >= 4) fails.push(`系統的な偏り: Σz/√n = ${bias.toFixed(2)}`);
   console.log(`     (最大|z| = ${maxZ.toFixed(2)}, 偏り Σz/√n = ${bias.toFixed(2)})`);
   return { n: zs.length, fails };
 }
 
+// ---- フェーズ4: 評価ロジック ----
+// generate.py と同じ定数（ベクタはボード名・ハンド文字列で保存されている）
+const BOARDS = {
+  'dry_K83r': ['Kd', '8s', '3c'],
+  'dry_A72r': ['Ad', '7c', '2d'],
+  'wet_986tt': ['9h', '8c', '6s'],
+  'monotone_Q72': ['Qh', '7h', '2h'],
+  'paired_K K 4': ['Kd', 'Kc', '4h'],
+  'turn_K83rQ': ['Kd', '8s', '3c', 'Qh'],
+  'river_K83rQ2': ['Kd', '8s', '3c', 'Qh', '2d'],
+};
+const P = (m) => require(path.join(ROOT, 'static', 'poker', m + '.js'));
+const splitHand = (h) => [h.slice(0, 2), h.slice(2, 4)];
+
+// 差し替え（Python の staticmethod 差し替えと同じ）。終わったら必ず戻す
+function withStubs(obj, stubs, fn) {
+  const orig = {};
+  for (const k of Object.keys(stubs)) { orig[k] = obj[k]; obj[k] = stubs[k]; }
+  try { return fn(); } finally { Object.assign(obj, orig); }
+}
+
+function checkPureFunctions() {
+  const { Card } = P('hand_eval');
+  const Py = P('pyfmt'), EV = P('ev_calculator'), HC = P('hand_classifier'), BS = P('bet_sizing');
+  const Ev = P('evaluator');
+  P('messages').setLang('ja');
+  const rows = load('pure_functions');
+  const fails = [];
+  const r6 = (x) => Py.round(x, 6);
+  const cs = (arr) => arr.map(Card.fromStr);
+  for (const r of rows) {
+    let got;
+    switch (r.fn) {
+      case 'realize_equity': got = r6(Ev.realizeEquity(r.equity, r.eqr)); break;
+      case 'required_equity': got = r6(EV.calculateRequiredEquity(r.bet, r.pot)); break;
+      case 'mdf': got = r6(EV.calculateMdf(r.bet, r.pot)); break;
+      case 'alpha': got = r6(EV.calculateAlpha(r.bet, r.pot)); break;
+      case 'bluff_freq': got = r6(Ev.calculateTheoreticalBluffFrequency(r.bet, r.pot)); break;
+      case 'fold_equity': got = r6(Ev.estimateFoldEquity(r.pot, r.bet, r.texture)); break;
+      case 'ev_call': got = r6(EV.evCall(r.equity, r.pot, r.bet)); break;
+      case 'ev_check': got = r6(EV.evCheck(r.equity, r.pot)); break;
+      case 'ev_bet': got = r6(EV.evBet(r.equity, r.pot, r.bet, r.fold_equity)); break;
+      case 'board_texture': got = HC.classifyBoardTexture(cs(BOARDS[r.board])); break;
+      case 'categorize_hand': got = HC.categorizeHand(cs(splitHand(r.hand)), cs(BOARDS[r.board])); break;
+      case 'detect_draw': got = HC.detectDrawStrength(cs(splitHand(r.hand)), cs(BOARDS[r.board])); break;
+      case 'bet_sizing': got = BS.evaluateBetSizing(r.pot, r.bet, r.texture).evaluation; break;
+      default: fails.push('未知の fn: ' + r.fn); continue;
+    }
+    if (got !== r.out) fails.push(`${r.fn} ${JSON.stringify(r)}: 実際 ${got}`);
+  }
+  return { n: rows.length, fails };
+}
+
+function checkPreflop() {
+  const { Card } = P('hand_eval');
+  const Ev = P('evaluator');
+  P('messages').setLang('ja');
+  const rows = load('preflop');
+  const fails = [];
+  const toCards = (combo) => (combo.length === 2 ? [combo[0] + 's', combo[1] + 'h']
+    : combo[2] === 's' ? [combo[0] + 's', combo[1] + 's'] : [combo[0] + 's', combo[1] + 'h']).map(Card.fromStr);
+  for (const r of rows) {
+    const [decision, ev] = Ev.evaluatePreflopActionGto(toCards(r.combo), r.action, r.pos, r.is_3bet_pot, r.facing_bet);
+    if (decision !== r.decision || ev !== r.evaluation) {
+      fails.push(`${r.combo} ${r.pos} ${r.action} facing=${r.facing_bet} 3bet=${r.is_3bet_pot}: 期待 ${r.decision}/${r.evaluation} 実際 ${decision}/${ev}`);
+    }
+  }
+  return { n: rows.length, fails };
+}
+
+function checkPostflop() {
+  const { Card } = P('hand_eval');
+  const Py = P('pyfmt'), Ev = P('evaluator');
+  P('messages').setLang('ja');
+  const rows = load('postflop');
+  const fails = [];
+  const r6 = (x) => Py.round(x, 6);
+  for (const r of rows) {
+    const board = BOARDS[r.board].map(Card.fromStr);
+    const hero = splitHand(r.hand).map(Card.fromStr);
+    const potIncl = r.pot_before + r.bet;
+    let bad = false;
+    if (r.fn === 'call') {
+      const c = Ev.evaluateCall(r.equity, r.bet, potIncl, 'BB', hero, false, board, 95.0, r.range_adv, null, r.street);
+      bad = c.evaluation !== r.evaluation || r6(c.ev) !== r.ev || r6(c.realized_eq) !== r.realized_eq || r6(c.req_eq) !== r.req_eq;
+    } else {
+      const f = Ev.evaluateFold(r.equity, r.bet, potIncl, 'BB', hero, false, board, r.range_adv, 95.0, r.street);
+      bad = f.evaluation !== r.evaluation || r6(f.realized_eq) !== r.realized_eq || r6(f.req_eq) !== r.req_eq ||
+        (f.mdf === undefined ? null : f.mdf) !== (r.mdf === undefined ? null : r.mdf);
+    }
+    if (bad) fails.push(`${r.fn} ${r.board} ${r.hand} eq=${r.equity} pot=${r.pot_before} bet=${r.bet} adv=${r.range_adv}`);
+  }
+  return { n: rows.length, fails };
+}
+
+function checkBetRaiseCheck() {
+  const { Card } = P('hand_eval');
+  const Ev = P('evaluator'), HC = P('hand_classifier');
+  P('messages').setLang('ja');
+  const rows = load('bet_raise_check');
+  const fails = [];
+  const board = BOARDS['dry_K83r'].map(Card.fromStr);
+  const hero = ['7s', '7d'].map(Card.fromStr);
+  const hr = new Map([['AA', 1.0]]), cr = new Map([['KK', 1.0]]);
+  for (const r of rows) {
+    const got = withStubs(Ev, { equityVsCallingRange: () => r.eq_called }, () =>
+      withStubs(HC, { detectDrawStrength: () => r.draw }, () => {
+        if (r.fn === 'bet') return Ev.evaluateBet(r.equity, r.bet, r.pot, 'BTN', hero, board, 0.5, 95.0, r.street, hr, cr, r.is_donk);
+        if (r.fn === 'raise') return Ev.evaluateRaise(r.equity, r.bet, 1.8, r.pot, 'BTN', hero, board, 0.5, hr, 95.0, r.street, cr);
+        return Ev.evaluateCheck(r.equity, r.pot, 'BTN', r.has_initiative, r.is_hero_ip, hero, board, 0.5, 95.0, r.street, hr, cr);
+      }));
+    if (got.evaluation !== r.evaluation) {
+      fails.push(`${r.fn} ${JSON.stringify(r)}: 実際 ${got.evaluation}`);
+    }
+  }
+  return { n: rows.length, fails };
+}
+
+// evaluator_full: 全フィールドを === で比較（浮動小数点もビット一致、解説文は日英とも）
+function checkEvaluatorFull() {
+  const { Card } = P('hand_eval');
+  const Py = P('pyfmt'), Ev = P('evaluator'), HC = P('hand_classifier'), BS = P('bet_sizing');
+  const Msg = P('messages');
+  const Ranges = P('ranges');
+  const exp = load('evaluator_full');
+  const S = exp.strings;
+  const fails = [];
+  let n = 0;
+  const cs = (arr) => arr.map(Card.fromStr);
+  const inLangs = (fn) => {
+    Msg.setLang('ja'); const ja = fn();
+    Msg.setLang('en'); const en = fn();
+    Msg.setLang('ja');
+    return { ja, en };
+  };
+  const diff = (label, want, got) => {
+    for (const k of Object.keys(want)) {
+      if (want[k] !== got[k]) return `${label}: ${k} 期待 ${JSON.stringify(want[k])} 実際 ${JSON.stringify(got[k])}`;
+    }
+    return null;
+  };
+
+  for (const r of exp.preflop) {
+    n++;
+    const { ja, en } = inLangs(() => Ev.evaluatePreflopActionGto(cs(r.combo.length === 2
+      ? [r.combo[0] + 's', r.combo[1] + 'h'] : r.combo[2] === 's' ? [r.combo[0] + 's', r.combo[1] + 's'] : [r.combo[0] + 's', r.combo[1] + 'h']),
+      r.action, r.pos, r.is_3bet_pot, r.facing_bet));
+    const d = diff(`preflop ${r.combo} ${r.pos} ${r.action} facing=${r.facing_bet} 3bet=${r.is_3bet_pot}`,
+      { decision: r.decision, evaluation: r.evaluation, reason_ja: S[r.reason_ja], reason_en: S[r.reason_en] },
+      { decision: ja[0], evaluation: ja[1], reason_ja: ja[2], reason_en: en[2] });
+    if (d) fails.push(d);
+  }
+
+  const hr = new Map([['AA', 1.0]]), cr = new Map([['KK', 1.0]]);
+  for (const r of exp.postflop) {
+    n++;
+    const hero = cs(r.hand), board = cs(r.board);
+    const call = () => withStubs(Ev, { equityVsCallingRange: () => r.eq_called }, () => {
+      switch (r.fn) {
+        case 'call': return Ev.evaluateCall(r.equity, r.bet, r.pot, r.pos, hero, r.is_3bet_pot, board, r.stack, r.range_adv, null, r.street);
+        case 'fold': return Ev.evaluateFold(r.equity, r.bet, r.pot + r.bet, r.pos, hero, r.is_3bet_pot, board, r.range_adv, r.stack, r.street);
+        case 'bet': return Ev.evaluateBet(r.equity, r.bet, r.pot, r.pos, hero, board, r.range_adv, r.stack, r.street, hr, cr, r.is_donk);
+        case 'raise': return Ev.evaluateRaise(r.equity, r.raise_amount, r.bet, r.pot, r.pos, hero, board, r.range_adv, hr, r.stack, r.street, cr);
+        default: return Ev.evaluateCheck(r.equity, r.pot, r.pos, r.has_initiative, r.is_hero_ip, hero, board, r.range_adv, r.stack, r.street, hr, cr);
+      }
+    });
+    const { ja, en } = inLangs(call);
+    const want = { evaluation: r.evaluation, ev: r.ev, req_eq: r.req_eq, realized_eq: r.realized_eq,
+      reason_ja: S[r.reason_ja], reason_en: S[r.reason_en] };
+    const got = { evaluation: ja.evaluation, ev: ja.ev, req_eq: ja.req_eq, realized_eq: ja.realized_eq,
+      reason_ja: ja.reason, reason_en: en.reason };
+    if ('mdf' in r || 'mdf' in ja) { want.mdf = r.mdf; got.mdf = ja.mdf; }
+    const d = diff(`${r.fn} ${r.hand} [${r.board}] ${r.pos} eq=${r.equity} pot=${r.pot} bet=${r.bet} stack=${r.stack}`, want, got);
+    if (d) fails.push(d);
+  }
+
+  for (const r of exp.parts) {
+    n++;
+    const hero = cs(r.hand), board = cs(r.board);
+    const texture = HC.classifyBoardTexture(board);
+    const sz = inLangs(() => (board.length ? BS.evaluateBetSizing(r.pot, r.bet, texture, r.sizing_spr)
+      : { evaluation: '', reason: '' }));
+    const got = {
+      eqr: Ev.getEqrModifier(r.pos, hero, r.is_3bet_pot, board, r.range_adv, r.spr, r.street),
+      pi: Ev.calculatePi(hero, board),
+      category: HC.categorizeHand(hero, board),
+      draw: HC.detectDrawStrength(hero, board),
+      texture,
+      combo: Ev.getComboStr(hero, Ranges.ALL_HANDS_DICT),
+    };
+    const d = diff(`parts ${r.hand} [${r.board}] ${r.pos} spr=${r.spr} street=${r.street}`,
+      { eqr: r.eqr, pi: r.pi, category: r.category, draw: r.draw, texture: r.texture, combo: r.combo }, got);
+    if (d) fails.push(d);
+    const ds = diff(`sizing pot=${r.pot} bet=${r.bet} ${texture} spr=${r.sizing_spr}`,
+      { evaluation: r.sizing.evaluation, reason_ja: S[r.sizing.reason_ja], reason_en: S[r.sizing.reason_en] },
+      { evaluation: sz.ja.evaluation, reason_ja: sz.ja.reason, reason_en: sz.en.reason });
+    if (ds) fails.push(ds);
+  }
+
+  for (const r of exp.format) {
+    n++;
+    if ('spec' in r) {
+      const got = Py.formatFixed(r.x, Number(r.spec.slice(1, -1)));
+      if (got !== r.out) fails.push(`format(${r.x}, "${r.spec}"): 期待 ${r.out} 実際 ${got}`);
+    } else {
+      const got = Py.round(r.x, 3);
+      if (got !== r.round3) fails.push(`round(${r.x}, 3): 期待 ${r.round3} 実際 ${got}`);
+    }
+  }
+  return { n, fails };
+}
+
 const CHECKS = {
+  pure_functions: checkPureFunctions,
+  preflop: checkPreflop,
+  postflop: checkPostflop,
+  bet_raise_check: checkBetRaiseCheck,
+  evaluator_full: checkEvaluatorFull,
   hand_evaluator: checkHandEvaluator,
   ranges: checkRanges,
   range_order: checkRangeOrder,

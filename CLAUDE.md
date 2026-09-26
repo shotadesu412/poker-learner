@@ -58,8 +58,8 @@
 | 1 | ハンド評価器をJSへ | **完了**（`static/poker/hand_eval.js`。全5枚組260万通りでtreysと完全一致） |
 | 2 | レンジデータをJSONへ | **完了**（`static/poker/ranges.json` を Python/JS で共有。`ranges.js`） |
 | 3 | エクイティ計算をJSへ | **完了**（`equity.js` / `range_utils.js`。MCは統計検定で一致） |
-| 4 | Evaluator（評価ロジック）をJSへ | **次はここ** |
-| 5 | エンジン・CPU AIをJSへ | 未着手 |
+| 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
+| 5 | エンジン・CPU AIをJSへ | **次はここ** |
 | 6 | 統計をIndexedDBへ移行 | 未着手 |
 | 7 | サーバーをAIコーチ専念構成に縮小 | 未着手 |
 
@@ -147,7 +147,13 @@ iOSアプリ (SwiftUI + WKWebView)
 既存の日本語ユーザーは今まで通り日本語のまま（自動判定が ja になるため）。
 
 ### サーバー側: `i18n.py`
-- `MESSAGES = {key: {"ja": ..., "en": ...}}` の1ファイル集中管理
+- `MESSAGES = {key: {"ja": ..., "en": ...}}`。**2026/9/27〜 実体は2か所に分かれている**:
+  - 評価コメント・ハンド解説・サイジング・リーク → **`static/poker/messages.json`**
+    （JS 版の評価ロジック `static/poker/messages.js` と共有）
+  - AIコーチのプロンプト・API エラー → `i18n.py` の `_SERVER_MESSAGES`
+    （static に置くと誰でも取得できるため。プロンプトを公開しないこと）
+- 書式は `{name}`（文字列のみ）と `{name:.1f}` / `{name:.0f}` だけを使う。JS 版は Python と同じ
+  偶数丸め（`pyfmt.js`）で再現しており、`{name}` に数値を渡すとエラーにしている（5 と 5.0 を区別できないため）
 - `t("key", **kw)` で解決。`set_lang()` はリクエスト単位で **contextvars** に保持
 - `app.py` の `LanguageMiddleware`（純ASGI）が毎リクエストで `set_lang()` する。
   **BaseHTTPMiddleware ではダメ**（downstream が別タスクになり contextvars が
@@ -175,7 +181,7 @@ iOSアプリ (SwiftUI + WKWebView)
   `Text(String)` 側に解決されて翻訳されない**。その場合は `NSLocalizedString` を使う
 
 ### 文言を足すときのチェックリスト
-1. サーバー文言 → `i18n.py` の `MESSAGES` に ja/en 両方
+1. サーバー文言 → 評価系は `static/poker/messages.json`、コーチ/API は `i18n.py` の `_SERVER_MESSAGES` に ja/en 両方
 2. フロント文言 → `static/i18n.js` の `I18N.ja` と `I18N.en` 両方
 3. 新しい fetch → `withLang()` で包む
 4. キーの過不足チェック（未定義参照・未翻訳・未使用）はこのスクリプトで確認できる:

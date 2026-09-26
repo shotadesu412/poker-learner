@@ -15079,5 +15079,179 @@
    "equity": 0.9332,
    "range_adv": 0.493304751277383
   }
+ ],
+ "eq_called": [
+  {
+   "spot": 1,
+   "bet": 2.0,
+   "eq_called": 0.681175
+  },
+  {
+   "spot": 2,
+   "bet": 4.0,
+   "eq_called": 0.4892
+  },
+  {
+   "spot": 3,
+   "bet": 8.0,
+   "eq_called": 0.1151
+  },
+  {
+   "spot": 5,
+   "bet": 2.0,
+   "eq_called": 0.225
+  },
+  {
+   "spot": 6,
+   "bet": 4.0,
+   "eq_called": 0.92265
+  },
+  {
+   "spot": 7,
+   "bet": 8.0,
+   "eq_called": 0.85825
+  },
+  {
+   "spot": 9,
+   "bet": 2.0,
+   "eq_called": 0.06365
+  },
+  {
+   "spot": 10,
+   "bet": 4.0,
+   "eq_called": 0.891975
+  },
+  {
+   "spot": 11,
+   "bet": 8.0,
+   "eq_called": 0.8854
+  },
+  {
+   "spot": 13,
+   "bet": 2.0,
+   "eq_called": 0.2388
+  },
+  {
+   "spot": 14,
+   "bet": 4.0,
+   "eq_called": 0.76045
+  },
+  {
+   "spot": 15,
+   "bet": 8.0,
+   "eq_called": 0.19655
+  },
+  {
+   "spot": 17,
+   "bet": 2.0,
+   "eq_called": 0.07995
+  },
+  {
+   "spot": 18,
+   "bet": 4.0,
+   "eq_called": 0.603325
+  },
+  {
+   "spot": 19,
+   "bet": 8.0,
+   "eq_called": 0.0
+  },
+  {
+   "spot": 21,
+   "bet": 2.0,
+   "eq_called": 0.4019
+  },
+  {
+   "spot": 22,
+   "bet": 4.0,
+   "eq_called": 0.9732
+  },
+  {
+   "spot": 23,
+   "bet": 8.0,
+   "eq_called": 0.298775
+  },
+  {
+   "spot": 25,
+   "bet": 2.0,
+   "eq_called": 0.34775
+  },
+  {
+   "spot": 26,
+   "bet": 4.0,
+   "eq_called": 0.0966
+  },
+  {
+   "spot": 27,
+   "bet": 8.0,
+   "eq_called": 0.2196
+  },
+  {
+   "spot": 29,
+   "bet": 2.0,
+   "eq_called": 0.0835
+  },
+  {
+   "spot": 30,
+   "bet": 4.0,
+   "eq_called": 0.3659
+  },
+  {
+   "spot": 31,
+   "bet": 8.0,
+   "eq_called": 0.9409
+  },
+  {
+   "spot": 33,
+   "bet": 2.0,
+   "eq_called": 0.408275
+  },
+  {
+   "spot": 34,
+   "bet": 4.0,
+   "eq_called": 0.3888
+  },
+  {
+   "spot": 35,
+   "bet": 8.0,
+   "eq_called": 0.0
+  },
+  {
+   "spot": 37,
+   "bet": 2.0,
+   "eq_called": 0.9047
+  },
+  {
+   "spot": 38,
+   "bet": 4.0,
+   "eq_called": 0.32465
+  },
+  {
+   "spot": 39,
+   "bet": 8.0,
+   "eq_called": 0.98075
+  }
+ ],
+ "none_cases": [
+  {
+   "label": "no_board",
+   "result": null
+  },
+  {
+   "label": "no_cards",
+   "result": null
+  },
+  {
+   "label": "no_hero_range",
+   "result": null
+  },
+  {
+   "label": "no_cpu_range",
+   "result": null
+  },
+  {
+   "label": "all_zero",
+   "result": null
+  }
  ]
 }
