@@ -188,6 +188,16 @@ MESSAGES = {
         "ja": "【改善余地あり】この状況ではチェックして様子を見る方が期待値が高い可能性があります。",
         "en": "[Room to improve] Checking and seeing what develops likely has higher EV in this spot.",
     },
+    # ドンクベット（OOPの非アグレッサーが先に打つ）
+    "bet.donk": {
+        "ja": "【悪くはないが非標準】ハンドは十分に強いのですが、ポジション不利で先に打つ（ドンクベット）のは標準的ではありません。相手に打たせてチェックレイズを狙う方が、レンジを読まれにくく価値も取りやすい場面です。",
+        "en": "[Playable but non-standard] Your hand is strong enough, but leading out from out of position (a donk bet) is not the standard line. Checking to the aggressor and going for a check-raise usually disguises your range better and wins more.",
+    },
+    # ショーダウン価値はあるが、コールされると負けている中途半端な強さ
+    "bet.medium_should_check": {
+        "ja": "【チェック推奨】ショーダウンで勝てる可能性はありますが、コールされると負けている方が多い強さです。ベットすると弱いハンドを降ろして強いハンドにだけコールされるため、チェックしてポットを小さく保つ方が得です。",
+        "en": "[Check instead] Your hand has showdown value, but it is behind most of the range that would call. Betting folds out the hands you beat and gets called by the ones that beat you — checking to keep the pot small is worth more.",
+    },
     "bet.sizing_prefix": {
         "ja": "\n\n📐 サイジング: {reason}",
         "en": "\n\n📐 Sizing: {reason}",

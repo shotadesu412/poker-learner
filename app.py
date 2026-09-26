@@ -307,7 +307,11 @@ def take_action(req: ActionRequest):
             else:
                 eval_dict = Evaluator.evaluate_bet(
                     hero_eq, amount, eng.pot_size,
-                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack, street=eng.street
+                    hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack, street=eng.street,
+                    # 「ベットしてコールされたとき勝っているか」の算出に使う
+                    hero_range_dict=eng.hero_range_dict, cpu_range_dict=eng.cpu_range_dict,
+                    # ドンクベット = OOP かつ非アグレッサーが先に打つ
+                    is_donk=(eng.street != "PREFLOP" and eng.aggressor != "HERO" and not eng.is_hero_ip)
                 )
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]

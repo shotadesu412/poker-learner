@@ -21,6 +21,19 @@ class Evaluator:
     BET_OPTIMAL_MARGIN_PCT = 0.05
     FOLD_OPTIMAL_THRESHOLD = 1.2
 
+    # --- ベット評価の閾値（「コールされたときのエクイティ」に対する基準）---
+    # 0.60 以上: コールされても明確に勝っている = バリューベット
+    # 0.52 以上: ほぼ五分。薄いバリュー/プロテクションとして成立（◯止まり）
+    # それ未満 : コールされると負けている。ドローかショーダウン価値ゼロなら
+    #            ブラフとして成立するが、中途半端な強さならチェックすべき
+    # ※ update_range_after_action("CALL") が相手のコールレンジの上位を
+    #    ×0.3 に落とすため、コール時エクイティはやや高めに出る。
+    #    閾値を 0.5 ではなく 0.60/0.52 に置いているのはその補正も兼ねている。
+    BET_VALUE_THRESHOLD = 0.60
+    BET_THIN_VALUE_THRESHOLD = 0.52
+    # ショーダウン価値がこれ未満なら「捨て札＝ブラフ候補」とみなす
+    BET_BLUFF_MAX_EQUITY = 0.33
+
     @staticmethod
     def realize_equity(equity, eqr):
         """
@@ -490,8 +503,38 @@ class Evaluator:
             "reason": result_reason
         }
 
+    # ベット評価でコールレンジ相手のエクイティを出すための共有インスタンス。
+    # TreysEvaluator はルックアップテーブルを持つだけで状態を変えないため使い回して良い。
+    _shared_treys = TreysEvaluator()
+
     @staticmethod
-    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None):
+    def equity_vs_calling_range(cards, board, hero_range_dict, cpu_range_dict,
+                                bet_amount, pot_size, iterations=1000):
+        """ベットして相手がコールしてきた場合の、その継続レンジ相手のエクイティ。
+
+        「ベットしてコールされたとき勝っているか」＝バリューベットの定義そのもの。
+        全体レンジ相手のエクイティだけでは、降りてくれる弱いハンドの分だけ
+        数字が水増しされ、バリューベットとミドルハンドを区別できない。
+
+        レンジ情報が無い場合は None を返し、呼び出し側は従来の判定に落とす。
+        """
+        if not cards or not board or not hero_range_dict or not cpu_range_dict:
+            return None
+        try:
+            calling_range = ranges.update_range_after_action(
+                dict(cpu_range_dict), "CALL", bet_amount, board, Evaluator._shared_treys)
+            if not calling_range or sum(calling_range.values()) <= 0:
+                return None
+            eq, _ = EquityCalculator.calc_equity_monte_carlo(
+                cards, board, hero_range_dict, calling_range,
+                is_preflop=False, iterations=iterations)
+            return eq
+        except Exception:
+            # エクイティ計算の失敗で評価全体を落とさない
+            return None
+
+    @staticmethod
+    def evaluate_bet(equity, bet_amount, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, effective_stack=0.0, street=None, hero_range_dict=None, cpu_range_dict=None, is_donk=False):
         from bet_sizing import evaluate_bet_sizing, get_spr_size_adjustment
         from hand_classifier import HandClassifier
 
@@ -529,24 +572,64 @@ class Evaluator:
             if sizing_result["evaluation"] in ("△", "×"):
                 sizing_feedback = t("bet.sizing_prefix", reason=sizing_result["reason"])
         
-        result_eval = EVAL_BAD
-        if ev_betting > ev_checking + (margin_pct * pot_size):
-            result_eval = EVAL_OPTIMAL
-            if range_adv > 0.55:
-                result_reason = t("bet.optimal.range_adv")
-            elif realized_equity < 0.35:
-                result_reason = t("bet.optimal.bluff")
+        # ▼ 2026/9/26 修正: 旧実装は ev_bet と ev_check の比較だけで判定しており、
+        #   どのハンドでも必ず ◎ になっていた（15局面中15局面が ◎ だった）。
+        #   構造的に ev_bet には FE*pot という下限がある一方、
+        #   ev_check = equity*pot は equity→0 で 0 まで落ちるため、
+        #   「弱いハンドほどベットが有利」という逆転が起きていたのが原因。
+        #   その結果ドンクベットまで ◎ になり、アプリが非推奨のプレイを推奨していた。
+        #
+        #   新実装は「ベットしてコールされたとき勝っているか」を軸にする。
+        #   これはバリューベットの定義そのもので、降りてくれる弱いハンドで
+        #   水増しされない。コールレンジが取れない場合のみ従来の比較に落とす。
+        eq_called = Evaluator.equity_vs_calling_range(
+            cards, board, hero_range_dict, cpu_range_dict, bet_amount, pot_size)
+        draw = HandClassifier.detect_draw_strength(cards, board) if (cards and board) else "NONE"
+
+        if eq_called is None:
+            # レンジ情報が無い（プリフロップ等）: 従来どおり EV 比較
+            if ev_betting > ev_checking + (margin_pct * pot_size):
+                result_eval, result_reason = EVAL_OPTIMAL, t("bet.optimal.value")
+            elif ev_betting >= ev_checking:
+                result_eval, result_reason = EVAL_GOOD, t("bet.good")
+            elif ev_betting >= ev_checking - (margin_pct * pot_size):
+                result_eval, result_reason = EVAL_MARGINAL, t("bet.marginal")
             else:
-                result_reason = t("bet.optimal.value")
-        elif ev_betting >= ev_checking:
+                result_eval, result_reason = EVAL_BAD, t("bet.bad")
+        elif eq_called >= Evaluator.BET_VALUE_THRESHOLD:
+            # コールされても勝っている = 明確なバリューベット
+            result_eval = EVAL_OPTIMAL
+            result_reason = t("bet.optimal.range_adv") if range_adv > 0.55 else t("bet.optimal.value")
+        elif eq_called >= Evaluator.BET_THIN_VALUE_THRESHOLD:
+            # ほぼ五分。薄いバリュー/プロテクションとして成立する
             result_eval = EVAL_GOOD
             result_reason = t("bet.good")
-        elif ev_betting >= ev_checking - (margin_pct * pot_size):
+        elif draw in ("STRONG_DRAW", "MEDIUM_DRAW"):
+            # コールされると負けているが、ドローのエクイティで打てる（セミブラフ）
+            result_eval = EVAL_OPTIMAL
+            result_reason = t("bet.optimal.bluff")
+        elif realized_equity < Evaluator.BET_BLUFF_MAX_EQUITY:
+            # ショーダウン価値が無い。ブラフとして筋は通るが、
+            # 全部のハンドでブラフはできないので ◎ ではなく ◯ に留める
+            result_eval = EVAL_GOOD
+            result_reason = t("bet.optimal.bluff")
+        elif draw == "WEAK_DRAW":
+            # バックドアだけ。打つのも引くのもありえる混合スポットなので
+            # 明確なミスとまでは言えない
             result_eval = EVAL_MARGINAL
             result_reason = t("bet.marginal")
         else:
+            # ショーダウン価値はあるが、コールされると負けている中途半端な強さ。
+            # 打つと弱いハンドを降ろして強いハンドにだけコールされる典型的な損。
             result_eval = EVAL_BAD
-            result_reason = t("bet.bad")
+            result_reason = t("bet.medium_should_check")
+
+        # ドンクベット（OOPかつ非アグレッサーが先に打つ）は、強いハンドでも
+        # チェックレイズを狙うのが標準で、レンジも読まれやすいため非推奨。
+        # 禁止はしないが ◎ は付けず、チェック(◯)を上回らないようにする。
+        if is_donk and result_eval == EVAL_OPTIMAL:
+            result_eval = EVAL_GOOD
+            result_reason = t("bet.donk")
 
         return {
             "ev": ev_betting,

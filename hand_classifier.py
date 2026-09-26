@@ -47,6 +47,12 @@ class HandClassifier:
         if not board:
             return "NONE"
 
+        # リバー（ボード5枚）ではもう引くカードが無いのでドローは存在しない。
+        # ここを見ていなかったため、リバーのエアが「セミブラフ」と判定され
+        # ベットが ◎ になっていた。
+        if len(board) >= 5:
+            return "NONE"
+
         hole_suits = [Card.get_suit_int(c) for c in cards]
         all_suits = [Card.get_suit_int(c) for c in cards + board]
         suit_total = {s: all_suits.count(s) for s in set(all_suits)}
