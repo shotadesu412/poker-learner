@@ -1,0 +1,3307 @@
+[
+ {
+  "eqr": 0.6,
+  "equity": 0.0,
+  "fn": "realize_equity",
+  "out": 0.02
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.0,
+  "fn": "realize_equity",
+  "out": 0.02
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.0,
+  "fn": "realize_equity",
+  "out": 0.02
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.0,
+  "fn": "realize_equity",
+  "out": 0.02
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.0,
+  "fn": "realize_equity",
+  "out": 0.02
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.05,
+  "fn": "realize_equity",
+  "out": 0.031
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.05,
+  "fn": "realize_equity",
+  "out": 0.0405
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.05,
+  "fn": "realize_equity",
+  "out": 0.05
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.05,
+  "fn": "realize_equity",
+  "out": 0.0595
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.05,
+  "fn": "realize_equity",
+  "out": 0.069
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.2,
+  "fn": "realize_equity",
+  "out": 0.136
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.2,
+  "fn": "realize_equity",
+  "out": 0.168
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.2,
+  "fn": "realize_equity",
+  "out": 0.2
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.2,
+  "fn": "realize_equity",
+  "out": 0.232
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.2,
+  "fn": "realize_equity",
+  "out": 0.264
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.35,
+  "fn": "realize_equity",
+  "out": 0.259
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.35,
+  "fn": "realize_equity",
+  "out": 0.3045
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.35,
+  "fn": "realize_equity",
+  "out": 0.35
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.35,
+  "fn": "realize_equity",
+  "out": 0.3955
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.35,
+  "fn": "realize_equity",
+  "out": 0.441
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.5,
+  "fn": "realize_equity",
+  "out": 0.4
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.5,
+  "fn": "realize_equity",
+  "out": 0.45
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.5,
+  "fn": "realize_equity",
+  "out": 0.5
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.5,
+  "fn": "realize_equity",
+  "out": 0.55
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.5,
+  "fn": "realize_equity",
+  "out": 0.6
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.65,
+  "fn": "realize_equity",
+  "out": 0.559
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.65,
+  "fn": "realize_equity",
+  "out": 0.6045
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.65,
+  "fn": "realize_equity",
+  "out": 0.65
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.65,
+  "fn": "realize_equity",
+  "out": 0.6955
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.65,
+  "fn": "realize_equity",
+  "out": 0.741
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.8,
+  "fn": "realize_equity",
+  "out": 0.736
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.8,
+  "fn": "realize_equity",
+  "out": 0.768
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.8,
+  "fn": "realize_equity",
+  "out": 0.8
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.8,
+  "fn": "realize_equity",
+  "out": 0.832
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.8,
+  "fn": "realize_equity",
+  "out": 0.864
+ },
+ {
+  "eqr": 0.6,
+  "equity": 0.95,
+  "fn": "realize_equity",
+  "out": 0.931
+ },
+ {
+  "eqr": 0.8,
+  "equity": 0.95,
+  "fn": "realize_equity",
+  "out": 0.9405
+ },
+ {
+  "eqr": 1.0,
+  "equity": 0.95,
+  "fn": "realize_equity",
+  "out": 0.95
+ },
+ {
+  "eqr": 1.2,
+  "equity": 0.95,
+  "fn": "realize_equity",
+  "out": 0.9595
+ },
+ {
+  "eqr": 1.4,
+  "equity": 0.95,
+  "fn": "realize_equity",
+  "out": 0.969
+ },
+ {
+  "eqr": 0.6,
+  "equity": 1.0,
+  "fn": "realize_equity",
+  "out": 0.99
+ },
+ {
+  "eqr": 0.8,
+  "equity": 1.0,
+  "fn": "realize_equity",
+  "out": 0.99
+ },
+ {
+  "eqr": 1.0,
+  "equity": 1.0,
+  "fn": "realize_equity",
+  "out": 0.99
+ },
+ {
+  "eqr": 1.2,
+  "equity": 1.0,
+  "fn": "realize_equity",
+  "out": 0.99
+ },
+ {
+  "eqr": 1.4,
+  "equity": 1.0,
+  "fn": "realize_equity",
+  "out": 0.99
+ },
+ {
+  "bet": 1.0,
+  "fn": "required_equity",
+  "out": 0.153846,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.0,
+  "fn": "mdf",
+  "out": 0.846154,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.0,
+  "fn": "alpha",
+  "out": 0.153846,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.0,
+  "fn": "bluff_freq",
+  "out": 0.133333,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.454545,
+  "pot": 5.5,
+  "texture": null
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.504545,
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.404545,
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.504545,
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.404545,
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.454545,
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "required_equity",
+  "out": 0.246575,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "fn": "mdf",
+  "out": 0.753425,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "fn": "alpha",
+  "out": 0.246575,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "fn": "bluff_freq",
+  "out": 0.197802,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.498182,
+  "pot": 5.5,
+  "texture": null
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.548182,
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.448182,
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.548182,
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.448182,
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.498182,
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "required_equity",
+  "out": 0.47619,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.0,
+  "fn": "mdf",
+  "out": 0.52381,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.0,
+  "fn": "alpha",
+  "out": 0.47619,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.0,
+  "fn": "bluff_freq",
+  "out": 0.322581,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": null
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "required_equity",
+  "out": 0.645161,
+  "pot": 5.5
+ },
+ {
+  "bet": 10.0,
+  "fn": "mdf",
+  "out": 0.354839,
+  "pot": 5.5
+ },
+ {
+  "bet": 10.0,
+  "fn": "alpha",
+  "out": 0.645161,
+  "pot": 5.5
+ },
+ {
+  "bet": 10.0,
+  "fn": "bluff_freq",
+  "out": 0.392157,
+  "pot": 5.5
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": null
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "required_equity",
+  "out": 0.784314,
+  "pot": 5.5
+ },
+ {
+  "bet": 20.0,
+  "fn": "mdf",
+  "out": 0.215686,
+  "pot": 5.5
+ },
+ {
+  "bet": 20.0,
+  "fn": "alpha",
+  "out": 0.784314,
+  "pot": 5.5
+ },
+ {
+  "bet": 20.0,
+  "fn": "bluff_freq",
+  "out": 0.43956,
+  "pot": 5.5
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": null
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "required_equity",
+  "out": 0.090909,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "mdf",
+  "out": 0.909091,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "alpha",
+  "out": 0.090909,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "bluff_freq",
+  "out": 0.083333,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.43,
+  "pot": 10.0,
+  "texture": null
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.48,
+  "pot": 10.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.38,
+  "pot": 10.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.48,
+  "pot": 10.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.38,
+  "pot": 10.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.43,
+  "pot": 10.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "required_equity",
+  "out": 0.152542,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "mdf",
+  "out": 0.847458,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "alpha",
+  "out": 0.152542,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "bluff_freq",
+  "out": 0.132353,
+  "pot": 10.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.454,
+  "pot": 10.0,
+  "texture": null
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.504,
+  "pot": 10.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.404,
+  "pot": 10.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.504,
+  "pot": 10.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.404,
+  "pot": 10.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.454,
+  "pot": 10.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "required_equity",
+  "out": 0.333333,
+  "pot": 10.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "mdf",
+  "out": 0.666667,
+  "pot": 10.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "alpha",
+  "out": 0.333333,
+  "pot": 10.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "bluff_freq",
+  "out": 0.25,
+  "pot": 10.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.55,
+  "pot": 10.0,
+  "texture": null
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.5,
+  "pot": 10.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.5,
+  "pot": 10.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.55,
+  "pot": 10.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "required_equity",
+  "out": 0.5,
+  "pot": 10.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "mdf",
+  "out": 0.5,
+  "pot": 10.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "alpha",
+  "out": 0.5,
+  "pot": 10.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "bluff_freq",
+  "out": 0.333333,
+  "pot": 10.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 10.0,
+  "texture": null
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 10.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 10.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 10.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "required_equity",
+  "out": 0.666667,
+  "pot": 10.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "mdf",
+  "out": 0.333333,
+  "pot": 10.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "alpha",
+  "out": 0.666667,
+  "pot": 10.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "bluff_freq",
+  "out": 0.4,
+  "pot": 10.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 10.0,
+  "texture": null
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 10.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 10.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 10.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 10.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "required_equity",
+  "out": 0.047619,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "mdf",
+  "out": 0.952381,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "alpha",
+  "out": 0.047619,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "bluff_freq",
+  "out": 0.045455,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.415,
+  "pot": 20.0,
+  "texture": null
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.465,
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.365,
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.465,
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.365,
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.415,
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "required_equity",
+  "out": 0.082569,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "mdf",
+  "out": 0.917431,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "alpha",
+  "out": 0.082569,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "bluff_freq",
+  "out": 0.076271,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.427,
+  "pot": 20.0,
+  "texture": null
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.477,
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.377,
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.477,
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.377,
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.427,
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "required_equity",
+  "out": 0.2,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "mdf",
+  "out": 0.8,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "alpha",
+  "out": 0.2,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "bluff_freq",
+  "out": 0.166667,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.475,
+  "pot": 20.0,
+  "texture": null
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.525,
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.425,
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.525,
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.425,
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.475,
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "required_equity",
+  "out": 0.333333,
+  "pot": 20.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "mdf",
+  "out": 0.666667,
+  "pot": 20.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "alpha",
+  "out": 0.333333,
+  "pot": 20.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "bluff_freq",
+  "out": 0.25,
+  "pot": 20.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.55,
+  "pot": 20.0,
+  "texture": null
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.5,
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.5,
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.55,
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "required_equity",
+  "out": 0.5,
+  "pot": 20.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "mdf",
+  "out": 0.5,
+  "pot": 20.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "alpha",
+  "out": 0.5,
+  "pot": 20.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "bluff_freq",
+  "out": 0.333333,
+  "pot": 20.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 20.0,
+  "texture": null
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.7,
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.6,
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.65,
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "required_equity",
+  "out": 0.009901,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "mdf",
+  "out": 0.990099,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "alpha",
+  "out": 0.009901,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "bluff_freq",
+  "out": 0.009804,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.403,
+  "pot": 100.0,
+  "texture": null
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.453,
+  "pot": 100.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.353,
+  "pot": 100.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.453,
+  "pot": 100.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.353,
+  "pot": 100.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "fold_equity",
+  "out": 0.403,
+  "pot": 100.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "required_equity",
+  "out": 0.017682,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "mdf",
+  "out": 0.982318,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "alpha",
+  "out": 0.017682,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "bluff_freq",
+  "out": 0.017375,
+  "pot": 100.0
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.4054,
+  "pot": 100.0,
+  "texture": null
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.4554,
+  "pot": 100.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.3554,
+  "pot": 100.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.4554,
+  "pot": 100.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.3554,
+  "pot": 100.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.8,
+  "fn": "fold_equity",
+  "out": 0.4054,
+  "pot": 100.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "required_equity",
+  "out": 0.047619,
+  "pot": 100.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "mdf",
+  "out": 0.952381,
+  "pot": 100.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "alpha",
+  "out": 0.047619,
+  "pot": 100.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "bluff_freq",
+  "out": 0.045455,
+  "pot": 100.0
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.415,
+  "pot": 100.0,
+  "texture": null
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.465,
+  "pot": 100.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.365,
+  "pot": 100.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.465,
+  "pot": 100.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.365,
+  "pot": 100.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.0,
+  "fn": "fold_equity",
+  "out": 0.415,
+  "pot": 100.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "required_equity",
+  "out": 0.090909,
+  "pot": 100.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "mdf",
+  "out": 0.909091,
+  "pot": 100.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "alpha",
+  "out": 0.090909,
+  "pot": 100.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "bluff_freq",
+  "out": 0.083333,
+  "pot": 100.0
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.43,
+  "pot": 100.0,
+  "texture": null
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.48,
+  "pot": 100.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.38,
+  "pot": 100.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.48,
+  "pot": 100.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.38,
+  "pot": 100.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 10.0,
+  "fn": "fold_equity",
+  "out": 0.43,
+  "pot": 100.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "required_equity",
+  "out": 0.166667,
+  "pot": 100.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "mdf",
+  "out": 0.833333,
+  "pot": 100.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "alpha",
+  "out": 0.166667,
+  "pot": 100.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "bluff_freq",
+  "out": 0.142857,
+  "pot": 100.0
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.46,
+  "pot": 100.0,
+  "texture": null
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.51,
+  "pot": 100.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.41,
+  "pot": 100.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.51,
+  "pot": 100.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.41,
+  "pot": 100.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 20.0,
+  "fn": "fold_equity",
+  "out": 0.46,
+  "pot": 100.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_call",
+  "out": -1.07,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.1,
+  "fn": "ev_check",
+  "out": 0.55,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 0.9633,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 2.58355,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 3.5557,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_call",
+  "out": -4.4,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.1,
+  "fn": "ev_check",
+  "out": 0.55,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": -1.1605,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 1.21825,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 2.6455,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_call",
+  "out": 0.38,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.1,
+  "fn": "ev_check",
+  "out": 2.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 6.2268,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 11.1458,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 14.0972,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_call",
+  "out": -2.95,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.1,
+  "fn": "ev_check",
+  "out": 2.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 4.103,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 9.7805,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.1,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 13.187,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_call",
+  "out": 0.39,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.3,
+  "fn": "ev_check",
+  "out": 1.65,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 2.1099,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 3.32065,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 4.0471,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_call",
+  "out": -2.2,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.3,
+  "fn": "ev_check",
+  "out": 1.65,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 0.9185,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 2.55475,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 3.5365,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_call",
+  "out": 4.74,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.3,
+  "fn": "ev_check",
+  "out": 6.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 9.2004,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 13.0574,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 15.3716,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_call",
+  "out": 2.15,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.3,
+  "fn": "ev_check",
+  "out": 6.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 8.009,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 12.2915,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.3,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 14.861,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_call",
+  "out": 1.85,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.5,
+  "fn": "ev_check",
+  "out": 2.75,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 3.2565,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 4.05775,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 4.5385,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_call",
+  "out": 0.0,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.5,
+  "fn": "ev_check",
+  "out": 2.75,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 2.9975,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 3.89125,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 4.4275,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_call",
+  "out": 9.1,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.5,
+  "fn": "ev_check",
+  "out": 10.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 12.174,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 14.969,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 16.646,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_call",
+  "out": 7.25,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.5,
+  "fn": "ev_check",
+  "out": 10.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 11.915,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 14.8025,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.5,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 16.535,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_call",
+  "out": 3.31,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.7,
+  "fn": "ev_check",
+  "out": 3.85,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 4.4031,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 4.79485,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 5.0299,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_call",
+  "out": 2.2,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.7,
+  "fn": "ev_check",
+  "out": 3.85,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 5.0765,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 5.22775,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 5.3185,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_call",
+  "out": 13.46,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.7,
+  "fn": "ev_check",
+  "out": 14.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 15.1476,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 16.8806,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 17.9204,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_call",
+  "out": 12.35,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.7,
+  "fn": "ev_check",
+  "out": 14.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 15.821,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 17.3135,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.7,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 18.209,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_call",
+  "out": 4.77,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.9,
+  "fn": "ev_check",
+  "out": 4.95,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 5.5497,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 5.53195,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 5.5213,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_call",
+  "out": 4.4,
+  "pot": 5.5
+ },
+ {
+  "equity": 0.9,
+  "fn": "ev_check",
+  "out": 4.95,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 7.1555,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 6.56425,
+  "pot": 5.5
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 6.2095,
+  "pot": 5.5
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_call",
+  "out": 17.82,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.9,
+  "fn": "ev_check",
+  "out": 18.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 18.1212,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 18.7922,
+  "pot": 20.0
+ },
+ {
+  "bet": 1.8,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 19.1948,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_call",
+  "out": 17.45,
+  "pot": 20.0
+ },
+ {
+  "equity": 0.9,
+  "fn": "ev_check",
+  "out": 18.0,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.3,
+  "out": 19.727,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.55,
+  "out": 19.8245,
+  "pot": 20.0
+ },
+ {
+  "bet": 5.5,
+  "equity": 0.9,
+  "fn": "ev_bet",
+  "fold_equity": 0.7,
+  "out": 19.883,
+  "pot": 20.0
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "board_texture",
+  "out": "dry"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "board_texture",
+  "out": "semi_wet"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "board_texture",
+  "out": "semi_wet"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "board_texture",
+  "out": "monotone"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "board_texture",
+  "out": "paired"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "board_texture",
+  "out": "dry"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "board_texture",
+  "out": "semi_wet"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "AIR"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "AIR"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "dry_K83r",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "AIR"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "AIR"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "NONE"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "dry_A72r",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "WEAK_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "AIR"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "NONE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "wet_986tt",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "NONE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "STRONG_DRAW"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "AIR"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "NONE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "NONE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "monotone_Q72",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "STRONG_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "NONE"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "NUT_HAND"
+ },
+ {
+  "board": "paired_K K 4",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "MEDIUM_DRAW"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "NONE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "turn_K83rQ",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "AsAd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "AsAd",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "7s7d",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "7s7d",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "5h5d",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "5h5d",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "AhKs",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "AhKs",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "Jh9c",
+  "out": "AIR"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "Jh9c",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "Ts9s",
+  "out": "AIR"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "Ts9s",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "QcJd",
+  "out": "MEDIUM_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "QcJd",
+  "out": "NONE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "categorize_hand",
+  "hand": "4d4s",
+  "out": "WEAK_MADE"
+ },
+ {
+  "board": "river_K83rQ2",
+  "fn": "detect_draw",
+  "hand": "4d4s",
+  "out": "NONE"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "dry"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "×",
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "×",
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "×",
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "×",
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "paired"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "monotone"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 5.5,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 1.0,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 2.75,
+  "fn": "bet_sizing",
+  "out": "△",
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 5.5,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "semi_wet"
+ },
+ {
+  "bet": 11.0,
+  "fn": "bet_sizing",
+  "out": "◯",
+  "pot": 20.0,
+  "texture": "semi_wet"
+ }
+]
