@@ -40,6 +40,7 @@ def main():
         "MAX_HIGH_CARD": LookupTable.MAX_HIGH_CARD,
     }
     rank_class = {str(k): int(v) for k, v in LookupTable.MAX_TO_RANK_CLASS.items()}
+    class_names = {str(k): v for k, v in LookupTable.RANK_CLASS_TO_STRING.items()}
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     body = (
@@ -51,8 +52,10 @@ def main():
         f"  flush: {json.dumps(flush, separators=(',', ':'))},\n"
         f"  unsuited: {json.dumps(unsuited, separators=(',', ':'))},\n"
         f"  boundaries: {json.dumps(boundaries, separators=(',', ':'))},\n"
-        f"  rankClass: {json.dumps(rank_class, separators=(',', ':'))}\n"
+        f"  rankClass: {json.dumps(rank_class, separators=(',', ':'))},\n"
+        f"  classNames: {json.dumps(class_names, separators=(',', ':'))}\n"
         "};\n"
+        "if (typeof module !== 'undefined') module.exports = HAND_TABLE;\n"
     )
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(body)

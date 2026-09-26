@@ -96,3 +96,16 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
   - ドンクベット上限処理の削除 → bet_raise_check
   - リバーのドローガード削除 → pure_functions, postflop
   - レンジから1コンボ削除 → preflop, ranges
+
+---
+
+## フェーズ1: ハンド評価器（完了 2026/9/27）
+
+- `static/poker/hand_table.js` … treys のルックアップテーブル（自動生成・102KB）。
+  再生成: `python3 tools/golden/export_tables.py`
+- `static/poker/hand_eval.js` … `Card`（treys と同じ32bit整数表現）と `HandEvaluator`
+  （`evaluate` / `getRankClass` / `classToString`）
+- 検証: ゴールデン3,000件一致 + 全5枚組 2,598,960通りを Python と総当たり比較して不一致0件
+- 速度: Node で約145万回/秒（7枚評価）。Python treys の約22倍。
+  7枚評価は21通りの5枚組総当たりのまま（treys と同じ）。フェーズ3で遅ければ最適化を検討
+- まだどの HTML からも読み込んでいない（フェーズ5で読み込む）。キャッシュバスティング不要
