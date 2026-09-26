@@ -60,16 +60,25 @@ openai_client = OpenAI(api_key=openai_api_key)
 #   受け付けず、0.7 を渡すと 400 BadRequest でコーチが丸ごと壊れる。
 #   top_p や penalty 系も同様に非対応。
 # - GPT-5.6 は推論モデルなので、**内部の思考トークンも max_completion_tokens を
-#   消費する**。旧来の 1000 のままだと思考で使い切って返答が空/途中切れに
-#   なりうるため、余裕を持たせている（Lunaは安いので実害は小さい）。
-# - reasoning_effort でその思考量を抑えている。コーチは決まった観点で短い
-#   ハンド履歴を講評するだけで深い多段推論は不要なため "low" で十分。
-#   応答が浅いと感じたら "medium"、逆に遅いなら "none" に下げる。
+#   消費する**。本文が出る前に上限へ到達すると、回答が途中で切れたり
+#   空で返ったりする。
+#
+# ▼ 2026/9/26: 「たまに回答の最後が切れる」報告を受けての対応
+#   reasoning_effort="low" + 上限3000 だと、長いハンド履歴や詳細を求める質問で
+#   思考だけで3000を使い切り、本文が1文字も出ないことを本番で再現した。
+#   思考トークンの消費量は入力次第で大きく振れるため、上限を上げるだけでは
+#   「たまに切れる」が残る。
+#   → reasoning_effort="none" にして思考トークンをほぼ0にし、上限の全量を
+#     本文に使えるようにした。これで不具合のクラス自体が消える。
+#     コーチは system prompt で観点が固定された講評タスクで、深い多段推論は
+#     不要なため品質への影響は小さい（本番で出力品質を確認済み）。
+#   分析が浅いと感じたら "low" に戻せるが、その場合は上限も 12000 程度まで
+#   上げないと同じ症状が再発する。
 # 環境変数で上書きできるようにしてあるので、問題があれば Render の
 # 環境変数を変えるだけで再デプロイなしに切り戻せる。
 COACH_MODEL = os.environ.get("COACH_MODEL", "gpt-5.6-luna")
-COACH_REASONING_EFFORT = os.environ.get("COACH_REASONING_EFFORT", "low")
-COACH_MAX_TOKENS = int(os.environ.get("COACH_MAX_TOKENS", "3000"))
+COACH_REASONING_EFFORT = os.environ.get("COACH_REASONING_EFFORT", "none")
+COACH_MAX_TOKENS = int(os.environ.get("COACH_MAX_TOKENS", "4000"))
 
 # Stats DB の初期化
 stats_logger.setup_db()
@@ -579,6 +588,20 @@ def get_game_state(eng: PokerEngine, finished=False, show_cpu_hand=True):
         "history": eng.action_history
     }
 
+def _trim_to_last_sentence(text: str) -> str:
+    """出力が上限で打ち切られたとき、最後の完結した文までに切り詰める。
+
+    文の途中でぶつ切りになった書きかけを見せないためのもの。
+    句点が1つも無い（＝1文目すら終わっていない）場合は、切り詰めると
+    何も残らないので元のテキストをそのまま返す。
+    """
+    enders = ("。", "！", "？", ".", "!", "?")
+    last = max((text.rfind(e) for e in enders), default=-1)
+    if last == -1:
+        return text
+    return text[: last + 1]
+
+
 @app.post("/api/ai_coach")
 def ai_coach(req: AICoachRequest):
     if not openai_client.api_key:
@@ -617,13 +640,19 @@ def ai_coach(req: AICoachRequest):
         )
 
         reply_text = response.choices[0].message.content
+        finish_reason = response.choices[0].finish_reason
 
         # 思考トークンで max_completion_tokens を使い切ると content が空で返る。
         # その場合エラーメッセージを出さずに黙って空欄になるのを防ぐ。
         if not reply_text:
-            finish = response.choices[0].finish_reason
-            print(f"[AICoach] 空の応答 finish_reason={finish} usage={response.usage}")
+            print(f"[AICoach] 空の応答 finish_reason={finish_reason} usage={response.usage}")
             return {"reply": t("api.coach.empty")}
+
+        # 上限に達して途中で止まった場合、文の途中でぶつ切りになる。
+        # 最後の完結した文までを残して、中途半端な書きかけを見せない。
+        if finish_reason == "length":
+            print(f"[AICoach] 上限で打ち切り usage={response.usage}")
+            reply_text = _trim_to_last_sentence(reply_text)
 
         # ポストプロセス: Markdown記法を除去して読みやすくする
         import re
