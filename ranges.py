@@ -4,6 +4,9 @@ Defines basic preflop hand ranges for Hero and CPU.
 These are updated simplified default ranges based on 6-max 100bb beginner strategy.
 """
 
+import json
+import os
+
 from i18n import t
 
 def generate_all_hands_dict():
@@ -21,213 +24,35 @@ def generate_all_hands_dict():
 
 ALL_HANDS_DICT = generate_all_hands_dict()
 
-# --- NEW EDUCATIONAL RANGES & FEEDBACK ---
+# --- レンジデータ ---
+# データ本体は static/poker/ranges.json（JS 版 static/poker/ranges.js と共有）。
+# レンジを変えるときは JSON を編集し、% を重み換算コンボ数/1326 で検算すること。
+# 経緯や注意点は JSON 内の "_notes" に残してある。
 
-position_ranges = {
-    # ▼ 2026/9/26 修正: 各ポジションのRFIが下のコメントの%より大幅に狭く、
-    #   実測で LJ 6.8% / HJ 8.1% / CO 13.5% / BTN 25.9% / SB 28.1% しかなかった。
-    #   small pair・スーテッドコネクター・弱めのブロードウェイが丸ごと欠落しており、
-    #   CPUのレンジが「強いハンドだけ」になるため、ポストフロップのエクイティ計算が
-    #   実態より大幅に低く出て、正しいコールが × と判定される不具合が起きていた。
-    #   （例: A-T-4 で 77 が必要勝率19.8%に対し実測8.5% → × / 正しくは約36%で ◎）
-    #   コメントの% は標準的な6-max GTOのRFI頻度と一致しているため、
-    #   データ側をコメントに合わせる形で全ポジションを書き直した。
-    #   重み 0.5 は「その頻度で混ぜる」意味。%は重み換算コンボ数/1326 で検算済み。
+_RANGES_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "poker", "ranges.json")
 
-    # LJ (UTG in 6-Max): RFI 17.6% — タイトなリニアレンジ
-    "LJ": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1,
-        "A5s": 1, "A4s": 1, "A3s": 1,
-        "A8s": 0.5, "A7s": 0.5, "A6s": 0.5, "A2s": 0.5,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 0.5,
-        "QJs": 1, "QTs": 1, "Q9s": 0.5,
-        "JTs": 1, "J9s": 1,
-        "T9s": 1, "T8s": 1, "98s": 1, "87s": 1, "76s": 0.5,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 0.5,
-        "KQo": 1, "KJo": 0.5, "QJo": 0.5,
-    },
-    # HJ (MP in 6-Max): RFI 21.4%
-    "HJ": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1,
-        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 0.5,
-        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 0.5,
-        "JTs": 1, "J9s": 1, "J8s": 0.5,
-        "T9s": 1, "T8s": 1,
-        "98s": 1, "87s": 1, "76s": 1, "65s": 0.5,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 0.5,
-        "KQo": 1, "KJo": 1, "KTo": 0.5, "QJo": 1,
-    },
-    # CO: RFI 27.8% — ポジション優位を活かして拡大
-    "CO": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1,
-        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 1,
-        "K6s": 0.5, "K5s": 0.5,
-        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 1, "Q7s": 0.5,
-        "JTs": 1, "J9s": 1, "J8s": 1, "J7s": 0.5,
-        "T9s": 1, "T8s": 1, "T7s": 0.5,
-        "98s": 1, "87s": 1, "76s": 1, "65s": 1, "54s": 1,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 0.5,
-        "KQo": 1, "KJo": 1, "KTo": 1, "K9o": 0.5,
-        "QJo": 1, "QTo": 1, "Q9o": 0.5,
-        "JTo": 1, "J9o": 0.5,
-    },
-    # BTN: RFI 43.5% — ポジション最有利、レンジ最大
-    "BTN": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1,
-        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 1, "K6s": 1,
-        "K5s": 1, "K4s": 1, "K3s": 1, "K2s": 1,
-        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 1, "Q7s": 1, "Q6s": 1, "Q5s": 1,
-        "Q4s": 1, "Q3s": 0.5, "Q2s": 0.5,
-        "JTs": 1, "J9s": 1, "J8s": 1, "J7s": 1, "J6s": 1, "J5s": 1,
-        "T9s": 1, "T8s": 1, "T7s": 1, "T6s": 1,
-        "98s": 1, "97s": 1, "96s": 1,
-        "87s": 1, "86s": 1, "85s": 1,
-        "76s": 1, "75s": 1, "65s": 1, "64s": 1, "54s": 1,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 1, "A7o": 1,
-        "A6o": 1, "A5o": 1, "A4o": 1, "A3o": 1, "A2o": 1,
-        "KQo": 1, "KJo": 1, "KTo": 1, "K9o": 1, "K8o": 0.5,
-        "QJo": 1, "QTo": 1, "Q9o": 1,
-        "JTo": 1, "J9o": 1, "T9o": 1, "98o": 1, "87o": 0.5,
-    },
-    # BB: defend range vs BTN open (wide — ~56%)
-    "BB": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1,
-        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 0.5, "K6s": 0.5,
-        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 0.5,
-        "JTs": 1, "J9s": 1, "J8s": 0.5,
-        "T9s": 1, "T8s": 1, "98s": 1, "87s": 1, "76s": 1, "65s": 0.5, "54s": 0.5,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 1, "A7o": 0.5,
-        "KQo": 1, "KJo": 1, "KTo": 1, "K9o": 0.5,
-        "QJo": 1, "QTo": 1, "Q9o": 0.5,
-        "JTo": 1, "J9o": 0.5,
-        "T9o": 0.5, "98o": 0.5,
-    },
-    # SB: RFI 62.3% (BvB構造 — スクイーズ回避のため3bet-or-fold傾向)
-    "SB": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 1, "88": 1, "77": 1,
-        "66": 1, "55": 1, "44": 1, "33": 1, "22": 1,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 1, "A9s": 1, "A8s": 1, "A7s": 1,
-        "A6s": 1, "A5s": 1, "A4s": 1, "A3s": 1, "A2s": 1,
-        "KQs": 1, "KJs": 1, "KTs": 1, "K9s": 1, "K8s": 1, "K7s": 1, "K6s": 1,
-        "K5s": 1, "K4s": 1, "K3s": 1, "K2s": 1,
-        "QJs": 1, "QTs": 1, "Q9s": 1, "Q8s": 1, "Q7s": 1, "Q6s": 1, "Q5s": 1,
-        "Q4s": 1, "Q3s": 1, "Q2s": 1,
-        "JTs": 1, "J9s": 1, "J8s": 1, "J7s": 1, "J6s": 1, "J5s": 1, "J4s": 1,
-        "J3s": 1, "J2s": 1,
-        "T9s": 1, "T8s": 1, "T7s": 1, "T6s": 1, "T5s": 1, "T4s": 1,
-        "98s": 1, "97s": 1, "96s": 1, "95s": 1,
-        "87s": 1, "86s": 1, "85s": 1, "84s": 1,
-        "76s": 1, "75s": 1, "74s": 1,
-        "65s": 1, "64s": 1, "54s": 1, "53s": 1, "43s": 1,
-        "AKo": 1, "AQo": 1, "AJo": 1, "ATo": 1, "A9o": 1, "A8o": 1, "A7o": 1,
-        "A6o": 1, "A5o": 1, "A4o": 1, "A3o": 1, "A2o": 1,
-        "KQo": 1, "KJo": 1, "KTo": 1, "K9o": 1, "K8o": 1, "K7o": 1, "K6o": 1,
-        "K5o": 1, "K4o": 1, "K3o": 1, "K2o": 1,
-        "QJo": 1, "QTo": 1, "Q9o": 1, "Q8o": 1, "Q7o": 1,
-        "JTo": 1, "J9o": 1, "J8o": 1, "J7o": 1,
-        "T9o": 1, "T8o": 1, "T7o": 1,
-        "98o": 1, "97o": 1, "96o": 0.5,
-        "87o": 1, "86o": 1, "76o": 1, "65o": 0.5,
-    }
-}
 
-# ============================================================
-# GTO_3BET_MATRIX: ポジション対ポジションの適正3-Bet頻度
-# cpu_pos → opener_pos → 頻度(0.0〜1.0)
+def _load_ranges_json(path=_RANGES_JSON):
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    # "position_ranges.LJ" のような文字列は参照。同じ dict オブジェクトに解決する
+    for acts in data["ranges"].values():
+        for act, v in acts.items():
+            if isinstance(v, str):
+                table, key = v.split(".", 1)
+                acts[act] = data[table][key]
+    return data
+
+
+_DATA = _load_ranges_json()
+
+position_ranges = _DATA["position_ranges"]
+
+# GTO_3BET_MATRIX: ポジション対ポジションの適正3-Bet頻度 (cpu_pos → opener_pos → 頻度)
 # 出典: 100bb 6-Max GTOソルバーベースライン
-# ============================================================
-GTO_3BET_MATRIX = {
-    # HJ vs LJ open
-    "HJ": {"LJ": 0.079, "UTG": 0.079},
-    # CO vs open
-    "CO": {"LJ": 0.083, "UTG": 0.083, "HJ": 0.095},
-    # BTN vs open
-    "BTN": {"LJ": 0.083, "UTG": 0.083, "HJ": 0.095, "CO": 0.128},
-    # SB vs open (3-bet or fold が基本戦略)
-    "SB": {"LJ": 0.074, "UTG": 0.074, "HJ": 0.092, "CO": 0.115, "BTN": 0.151},
-    # BB vs open (コーリングレンジが広いのでポラライズ3-bet)
-    "BB": {"LJ": 0.056, "UTG": 0.056, "HJ": 0.072, "CO": 0.091, "BTN": 0.139, "SB": 0.174},
-}
+GTO_3BET_MATRIX = _DATA["gto_3bet_matrix"]
 
-threebet_ranges = {
-    # --- BTNからのオープンに対する各ポジションの3-Betレンジ ---
-    # SB vs BTN open: リニアレンジ (3-bet or fold)
-    "SB_vs_BTN": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 1, "99": 0.5,
-        "AKs": 1, "AQs": 1, "AJs": 1, "ATs": 0.5,
-        "KQs": 1, "KJs": 0.5,
-        "AKo": 1, "AQo": 1, "AJo": 0.5,
-        # ブラフ用ブロッカーハンド (低頻度)
-        "A5s": 0.5, "A4s": 0.5, "A3s": 0.3,
-        "K9s": 0.3, "QTs": 0.3,
-    },
-    # SB vs CO open
-    "SB_vs_CO": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 1, "TT": 0.5,
-        "AKs": 1, "AQs": 1, "AJs": 0.5,
-        "KQs": 1,
-        "AKo": 1, "AQo": 0.5,
-        "A5s": 0.5, "A4s": 0.3,
-    },
-    # BB vs BTN open: ポラライズレンジ (コーリングレンジが広い)
-    "BB_vs_BTN": {
-        # バリュー
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 0.5,
-        "AKs": 1, "AQs": 0.5, "AKo": 1,
-        # ブロッカーブラフ (低頻度)
-        "A5s": 0.4, "A4s": 0.4, "A3s": 0.3, "A2s": 0.2,
-        "K9s": 0.3, "Q9s": 0.2,
-        "T8s": 0.2, "76s": 0.2, "65s": 0.2,
-    },
-    # BB vs CO open
-    "BB_vs_CO": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 0.5,
-        "AKs": 1, "AQs": 0.3, "AKo": 1,
-        "A5s": 0.3, "A4s": 0.3,
-        "K9s": 0.2, "T8s": 0.2,
-    },
-    # BB vs HJ open
-    "BB_vs_HJ": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 0.3,
-        "AKs": 1, "AKo": 1,
-        "A5s": 0.3, "A4s": 0.2,
-    },
-    # BB vs LJ open (最もタイト)
-    "BB_vs_LJ": {
-        "AA": 1, "KK": 1, "QQ": 1,
-        "AKs": 1, "AKo": 1,
-        "A5s": 0.2,
-    },
-    # CO vs BTN open
-    "CO_vs_BTN": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 0.5, "TT": 0.3,
-        "AKs": 1, "AQs": 0.5, "AKo": 1,
-        "A5s": 0.4, "A4s": 0.3,
-        "KQs": 0.3, "T9s": 0.3,
-    },
-    # BTN vs CO open (一般的なIO IP 3-bet)
-    "BTN_vs_CO": {
-        "AA": 1, "KK": 1, "QQ": 1, "JJ": 0.5, "TT": 0.3,
-        "AKs": 1, "AQs": 0.5, "AKo": 1, "AQo": 0.3,
-        "A5s": 0.5, "A4s": 0.4, "A3s": 0.3,
-        "KQs": 0.3, "KJs": 0.2,
-        "T9s": 0.3, "98s": 0.3,
-    },
-}
+threebet_ranges = _DATA["threebet_ranges"]
 
 
 hand_categories = {
@@ -276,85 +101,8 @@ def get_hand_reason(combo_str):
         return t("hand.pocket_pair")
     return t("hand.standard")
 
-# Backward compatibility map for the engine's current structure
-RANGES = {
-    "UTG": {
-        # ▼ 修正: RFIデータのキーは"LJ"(6-maxのUTG)のため、"UTG"では空になっていた
-        "open": position_ranges.get("UTG", position_ranges.get("LJ", {})),
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
-        "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AQs": 0.5},
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0, "KQs": 0.5}
-    },
-    "LJ": {
-        "open": position_ranges.get("LJ", position_ranges.get("UTG", {})),
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
-        "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0},
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0}
-    },
-    "HJ": {
-        "open": position_ranges.get("HJ", {}),
-        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "KQs": 1.0, "QJs": 1.0, "JTs": 1.0, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
-        "vs_open_3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5},
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
-        "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5},
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0, "A3s": 0.5}
-    },
-    "CO": {
-        "open": position_ranges.get("CO", {}),
-        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "KQs": 1.0, "QJs": 1.0, "JTs": 1.0, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
-        "vs_open_3bet": threebet_ranges.get("BTN_vs_CO", {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5}),
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
-        "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5},
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0, "K9s": 0.5, "Q9s": 0.5}
-    },
-    "BTN": {
-        "open": position_ranges.get("BTN", {}),
-        "vs_open_call": {"JJ": 0.5, "TT": 1.0, "99": 1.0, "88": 1.0, "77": 1.0, "AQs": 0.5, "AJs": 1.0, "ATs": 1.0, "KQs": 1.0, "QJs": 1.0, "JTs": 1.0, "AQo": 0.5, "AJo": 1.0, "KQo": 1.0},
-        "vs_open_3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5},
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5, "A5s": 0.5},
-        "3bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "JJ": 0.5, "AKs": 1.0, "AQs": 0.5, "A5s": 0.5, "A4s": 0.5, "AKo": 1.0, "AQo": 0.5},
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0, "A3s": 1.0, "A2s": 1.0}
-    },
-    "SB": {
-        "open": position_ranges.get("SB", {}),
-        "vs_open_call": {},  # SBはスクイーズリスクのため基本は3bet-or-fold
-        "vs_open_3bet": threebet_ranges.get("SB_vs_BTN"),
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0},
-        "3bet": threebet_ranges.get("SB_vs_BTN"),
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0}
-    },
-    "BB": {
-        "open": {},
-        # BBのコーリングレンジ: 広いポラライズコールレンジ (ポジション上先手なので広くコールできる)
-        "vs_open_call": {
-            "22": 1.0, "33": 1.0, "44": 1.0, "55": 1.0, "66": 1.0, "77": 1.0, "88": 1.0, "99": 1.0,
-            "TT": 1.0, "JJ": 1.0, "QQ": 1.0,
-            "AJs": 1.0, "ATs": 1.0, "A9s": 1.0, "A8s": 1.0, "A7s": 0.5, "A6s": 0.5,
-            "A5s": 0.5, "A4s": 0.5, "A3s": 0.5,
-            "KQs": 1.0, "KJs": 1.0, "KTs": 1.0, "K9s": 1.0, "K8s": 0.5,
-            "QJs": 1.0, "QTs": 1.0, "Q9s": 1.0,
-            "JTs": 1.0, "J9s": 1.0, "J8s": 0.5,
-            "T9s": 1.0, "T8s": 1.0, "98s": 1.0, "87s": 1.0, "76s": 1.0, "65s": 1.0, "54s": 0.5,
-            "AQo": 1.0, "AJo": 1.0, "ATo": 1.0, "A9o": 0.5,
-            "KQo": 1.0, "KJo": 1.0, "KTo": 0.5,
-            "QJo": 1.0, "QTo": 0.5,
-            "JTo": 1.0, "J9o": 0.5,
-            "T9o": 0.5, "98o": 0.5,
-        },
-        # BBの3-betレンジ: ポラライズ（コーリングレンジに入らない強いバリューとブロッカーブラフのみ）
-        "vs_open_3bet": threebet_ranges.get("BB_vs_BTN"),
-        "vs_3bet_call": {"JJ": 1.0, "TT": 1.0, "99": 1.0, "88": 1.0, "AQs": 1.0, "AJs": 1.0, "KQs": 1.0, "AKo": 0.5},
-        "vs_3bet_4bet": {"AA": 1.0, "KK": 1.0, "QQ": 1.0, "AKs": 1.0, "AKo": 0.5},
-        "3bet": threebet_ranges.get("BB_vs_BTN"),
-        "4bet_bluff": {"A5s": 1.0, "A4s": 1.0}
-    }
-}
+# RANGES: ポジション × 状況 → レンジ（参照は _load_ranges_json で解決済み）
+RANGES = _DATA["ranges"]
 
 class HandRange:
     """

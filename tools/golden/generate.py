@@ -284,6 +284,34 @@ def gen_ranges():
     return out
 
 
+def gen_range_order():
+    """レンジの反復順と parse_combo の展開結果。
+
+    JS の Object は "22" のような整数っぽいキーを先頭に並べ替えるため、順序の一致を別途固定する。
+    update_range_after_action は同点コンボの順位を反復順で決めるので、順序も挙動の一部。
+    """
+    order = {}
+    for pos in POSITIONS + ["UTG"]:
+        order[pos] = {}
+        for action in ["open", "vs_open_call", "vs_open_3bet", "vs_3bet_call",
+                       "vs_3bet_4bet", "3bet", "4bet_bluff"]:
+            order[pos][action] = list(ranges.get_range_by_category(pos, action).keys())
+    order["position_ranges"] = {k: list(v.keys()) for k, v in ranges.position_ranges.items()}
+    combos = {c: ranges.parse_combo(c) for c in list(ranges.ALL_HANDS_DICT) + ["AhKh", "Td9c"]}
+    weighted = [
+        {"pos": pos, "action": action, "dead": dead,
+         "result": ranges.get_possible_hole_cards_weighted(pos, action, dead)}
+        for pos, action, dead in [
+            ("BTN", "open", ["As", "Kd"]),
+            ("SB", "vs_open_call", ["7h", "7c", "2d"]),
+            ("BB", "vs_open_call", []),
+            ("UTG", "open", ["Qs"]),
+            ("BB", "open", ["Ah", "Ad", "Kc"]),
+        ]
+    ]
+    return {"order": order, "parse_combo": combos, "weighted": weighted}
+
+
 def gen_hand_evaluator():
     """treys の7枚評価の参照値。JS実装の完全一致検証に使う。"""
     import random
@@ -310,6 +338,7 @@ SETS = {
     "postflop": gen_postflop,
     "bet_raise_check": gen_bet_raise_check,
     "ranges": gen_ranges,
+    "range_order": gen_range_order,
     "hand_evaluator": gen_hand_evaluator,
 }
 

@@ -48,6 +48,14 @@ Python のファイル自体はフェーズ7まで削除しない。並行稼働
 - 影響範囲: **大**（同上）
 - 対応案: FE の見直しと同時に。
 
+### 使われていないファイル・データ
+
+- 気づいた場所: `ranges.py` の `hand_categories`、ルートの `patch_ranges.py`（Windows パス直書きの
+  使い捨てスクリプト）、`test_ranges.py`（print するだけ）
+- 内容: どこからも参照されていない。
+- 影響範囲: 小
+- 対応案: JS へは移さない。フェーズ7で Python と一緒に消す。
+
 ### 旧 sample_range が残っている
 
 - 気づいた場所: `range_utils.py`
@@ -109,3 +117,20 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 - 速度: Node で約145万回/秒（7枚評価）。Python treys の約22倍。
   7枚評価は21通りの5枚組総当たりのまま（treys と同じ）。フェーズ3で遅ければ最適化を検討
 - まだどの HTML からも読み込んでいない（フェーズ5で読み込む）。キャッシュバスティング不要
+
+## フェーズ2: レンジデータ（完了 2026/9/27）
+
+- データ本体を `static/poker/ranges.json` に移し、`ranges.py` はそれを読むだけにした。
+  `RANGES` 内の `"position_ranges.LJ"` のような文字列は参照で、ローダーが同じオブジェクトに解決する
+  （旧コードの `position_ranges.get("LJ")` による共有と同じ構造）
+- `static/poker/ranges.js` … `Ranges.getRangeByCategory` / `parseCombo` / `classifyRange` /
+  `getPossibleHoleCardsWeighted`。ブラウザは `await Ranges.load()`、Node は require 時に読み込み済み
+- **⚠️ JS ではレンジを Object ではなく Map で持つ**。Object は "22"〜"99" のような整数っぽいキーを
+  先頭に並べ替えてしまい Python と反復順がずれる。`update_range_after_action` は同点コンボの順位を
+  反復順で決めるので、順序も挙動の一部。素の JSON.parse にすると `range_order` が 28件 NG になることを確認済み
+- 検証: 旧 ranges.py と値・int/float の型・キー順・オブジェクト共有構造まで一致 / Python 回帰テスト全件一致 /
+  新ベクタ `range_order`（反復順・parse_combo・重み付きコンボ展開）を追加し JS で一致 /
+  TestClient で12ハンド回して正常動作
+- **未移植（後のフェーズで）**:
+  - `sort_range_by_strength` / `update_range_after_action` → フェーズ3（`range_utils.py` と一緒に。エクイティ計算の前段なので）
+  - `get_hand_reason` / `get_preflop_feedback` → フェーズ4（サーバー側 i18n の文言キーを JS へ移す必要があるため）

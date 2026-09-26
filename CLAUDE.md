@@ -56,8 +56,8 @@
 |---|---|---|
 | 0 | ゴールデンテストベクタ整備 | **完了** |
 | 1 | ハンド評価器をJSへ | **完了**（`static/poker/hand_eval.js`。全5枚組260万通りでtreysと完全一致） |
-| 2 | レンジデータをJSONへ | **次はここ** |
-| 3 | エクイティ計算をJSへ | 未着手 |
+| 2 | レンジデータをJSONへ | **完了**（`static/poker/ranges.json` を Python/JS で共有。`ranges.js`） |
+| 3 | エクイティ計算をJSへ | **次はここ** |
 | 4 | Evaluator（評価ロジック）をJSへ | 未着手 |
 | 5 | エンジン・CPU AIをJSへ | 未着手 |
 | 6 | 統計をIndexedDBへ移行 | 未着手 |
@@ -188,7 +188,7 @@ poker-learner/
 ├── i18n.py             # ★サーバー側の多言語カタログ (ja/en) + t()/set_lang()
 ├── poker_engine.py     # ゲームエンジン (~1600行)。Evaluator(評価), PokerEngine
 ├── equity.py           # モンテカルロ・エクイティ計算
-├── ranges.py           # ポジション別GTOレンジ定義
+├── ranges.py           # レンジのアクセサ。**データ本体は static/poker/ranges.json**
 ├── hand_classifier.py, range_utils.py, bet_sizing.py, ev_calculator.py
 ├── stats_logger.py     # SQLite 永続化 (~620行)。統計・サブスク・ハンド履歴
 ├── render.yaml         # Render 設定 (uvicorn, /data ディスク, OPENAI_API_KEY)
@@ -263,7 +263,8 @@ poker-learner/
   結果CPUのレンジが「強いハンドだけ」になり、ポストフロップのエクイティが
   実態より低く出て、**正しいコールが × と判定されていた**
   （例: A-T-4 で 77、必要勝率19.8%に対し実測8.5% → × / 正しくは約22%で ◯）。
-  **レンジを触ったら必ず重み換算コンボ数/1326 で%を検算すること**:
+  **レンジを触ったら必ず重み換算コンボ数/1326 で%を検算すること**
+  （2026/9/27〜 データは `static/poker/ranges.json`。Python と JS の両方がこれを読む）:
   `sum(6 if len(c)==2 else (4 if c.endswith('s') else 12) for ...)`
 
 ## 課金（StoreKit 2）
