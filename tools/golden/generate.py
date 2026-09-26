@@ -358,6 +358,166 @@ def gen_range_update():
     return {"updates": updates, "samplers": samplers, "empty_is_none": [empty is None]}
 
 
+def gen_evaluator_full():
+    """評価関数の戻り値を丸ごと固定する（フェーズ4 の JS 移植用）。
+
+    既存の preflop / postflop / bet_raise_check は評価記号しか持たないため、
+    ここでは全フィールド（ev・req_eq・realized_eq・mdf・reason）を ja / en 両方で残す。
+    浮動小数点は丸めずに保存し、JS 側では === で比較する（計算順序が同じならビット一致する）。
+
+    パラメータ空間はシード固定の乱数で広くサンプリングする。
+    ベット/レイズ/チェック内部のモンテカルロ（equity_vs_calling_range）は固定値に差し替える。
+    """
+    import random
+    rng = random.Random(4)
+    full = [r + s for r in RANKS for s in "shdc"]
+    positions = POSITIONS + ["UTG"]
+
+    def both_langs(fn):
+        out = {}
+        for lang in ("ja", "en"):
+            i18n.set_lang(lang)
+            out[lang] = fn()
+        i18n.set_lang("ja")
+        return out
+
+    def pack(res):
+        """ja/en の結果を1つにまとめる。reason 以外は言語で変わらないことも確認する。"""
+        ja, en = res["ja"], res["en"]
+        if isinstance(ja, tuple):
+            assert ja[:2] == en[:2]
+            return {"decision": ja[0], "evaluation": ja[1], "reason_ja": ja[2], "reason_en": en[2]}
+        assert {k: v for k, v in ja.items() if k != "reason"} == {k: v for k, v in en.items() if k != "reason"}
+        row = {k: v for k, v in ja.items() if k != "reason"}
+        row["reason_ja"], row["reason_en"] = ja["reason"], en["reason"]
+        return row
+
+    # --- プリフロップ: 169 × 7ポジション × 3bet有無 × 3アクション × facing(0/2.5) を全部 ---
+    preflop = []
+    for combo in combos_169():
+        cs = cards(combo_to_cards(combo))
+        for pos in positions:
+            for is_3bet in (False, True):
+                for action in ("RAISE", "CALL", "FOLD", "CHECK"):
+                    for facing in (0.0, 2.5):
+                        r = pack(both_langs(lambda: Evaluator.evaluate_preflop_action_gto(
+                            cs, action, pos, is_3bet, facing)))
+                        preflop.append({"combo": combo, "pos": pos, "is_3bet_pot": is_3bet,
+                                        "action": action, "facing_bet": facing, **r})
+
+    # --- ポストフロップ（とプリフロップの call/fold/raise/bet 経路）: 乱数で広く ---
+    EQS = [0.0, 0.02, 0.05, 0.2, 0.3, 0.33, 0.35, 0.5, 0.52, 0.6, 0.65, 0.8, 0.95, 0.99, 1.0]
+    POTS = [1.5, 3.0, 5.5, 8.0, 12.0, 20.0, 40.0, 100.0]
+    BETS = [0.0, 0.5, 1.0, 1.8, 2.75, 5.5, 8.0, 15.0, 30.0, 95.0]
+    ADVS = [0.3, 0.45, 0.5, 0.55, 0.56, 0.7]
+    STACKS = [0.0, 2.0, 8.0, 30.0, 95.0, 200.0]
+    EQ_CALLED = [None, 0.1, 0.3, 0.45, 0.52, 0.55, 0.6, 0.65, 0.9]
+
+    def rand_spot():
+        n_board = rng.choice([0, 3, 3, 3, 4, 4, 5, 5])
+        picks = rng.sample(full, 2 + n_board)
+        eq = rng.choice(EQS) if rng.random() < 0.5 else rng.random()
+        return {
+            "hand": picks[:2], "board": picks[2:], "equity": eq,
+            "pot": rng.choice(POTS), "bet": rng.choice(BETS),
+            "pos": rng.choice(positions), "range_adv": rng.choice(ADVS),
+            "stack": rng.choice(STACKS), "is_3bet_pot": rng.random() < 0.25,
+            "eq_called": rng.choice(EQ_CALLED),
+        }
+
+    def street_of(board):
+        return {0: "PREFLOP", 3: "FLOP", 4: "TURN", 5: "RIVER"}[len(board)]
+
+    postflop = []
+    orig_eq = Evaluator.equity_vs_calling_range
+    try:
+        for i in range(12000):
+            sp = rand_spot()
+            fn = ["call", "fold", "bet", "raise", "check"][i % 5]
+            hero, board = cards(sp["hand"]), cards(sp["board"])
+            street = street_of(sp["board"])
+            Evaluator.equity_vs_calling_range = staticmethod(lambda *a, _v=sp["eq_called"], **k: _v)
+            extra = {}
+            if fn == "call":
+                call = lambda: Evaluator.evaluate_call(
+                    sp["equity"], sp["bet"], sp["pot"], hero_pos=sp["pos"], cards=hero,
+                    is_3bet_pot=sp["is_3bet_pot"], board=board, effective_stack=sp["stack"],
+                    range_adv=sp["range_adv"], street=street)
+            elif fn == "fold":
+                call = lambda: Evaluator.evaluate_fold(
+                    sp["equity"], sp["bet"], sp["pot"] + sp["bet"], hero_pos=sp["pos"], cards=hero,
+                    is_3bet_pot=sp["is_3bet_pot"], board=board, range_adv=sp["range_adv"],
+                    effective_stack=sp["stack"], street=street)
+            elif fn == "bet":
+                extra["is_donk"] = rng.random() < 0.3
+                call = lambda: Evaluator.evaluate_bet(
+                    sp["equity"], sp["bet"], sp["pot"], hero_pos=sp["pos"], cards=hero, board=board,
+                    range_adv=sp["range_adv"], effective_stack=sp["stack"], street=street,
+                    hero_range_dict={"AA": 1.0}, cpu_range_dict={"KK": 1.0}, is_donk=extra["is_donk"])
+            elif fn == "raise":
+                extra["raise_amount"] = rng.choice([2.5, 6.0, 9.0, 20.0, 60.0])
+                call = lambda: Evaluator.evaluate_raise(
+                    sp["equity"], extra["raise_amount"], sp["bet"], sp["pot"], hero_pos=sp["pos"],
+                    cards=hero, board=board, range_adv=sp["range_adv"], hero_range_dict={"AA": 1.0},
+                    effective_stack=sp["stack"], street=street, cpu_range_dict={"KK": 1.0})
+            else:
+                extra["has_initiative"] = rng.random() < 0.5
+                extra["is_hero_ip"] = rng.random() < 0.5
+                call = lambda: Evaluator.evaluate_check(
+                    sp["equity"], sp["pot"], hero_pos=sp["pos"], has_initiative=extra["has_initiative"],
+                    is_hero_ip=extra["is_hero_ip"], cards=hero, board=board, range_adv=sp["range_adv"],
+                    effective_stack=sp["stack"], street=street,
+                    hero_range_dict={"AA": 1.0}, cpu_range_dict={"KK": 1.0})
+            postflop.append({"fn": fn, "street": street, **sp, **extra, **pack(both_langs(call))})
+    finally:
+        Evaluator.equity_vs_calling_range = orig_eq
+
+    # --- 内部の部品（EQR など）も単体で固定しておくと、ずれた時に原因を絞り込める ---
+    parts = []
+    for i in range(3000):
+        sp = rand_spot()
+        hero, board = cards(sp["hand"]), cards(sp["board"])
+        spr = rng.choice([0.5, 1.0, 2.0, 3.0, 5.0, 6.0, 6.5, 10.0])
+        street = rng.choice([street_of(sp["board"]), None])
+        sizing_spr = rng.choice([None, 1.0, 5.0, 9.0])
+        parts.append({
+            "hand": sp["hand"], "board": sp["board"], "pos": sp["pos"], "is_3bet_pot": sp["is_3bet_pot"],
+            "range_adv": sp["range_adv"], "spr": spr, "street": street,
+            "eqr": Evaluator.get_eqr_modifier(sp["pos"], hero, sp["is_3bet_pot"], board,
+                                              sp["range_adv"], spr=spr, street=street),
+            "pi": Evaluator.calculate_pi(hero, board),
+            "category": HandClassifier.categorize_hand(hero, board),
+            "draw": HandClassifier.detect_draw_strength(hero, board),
+            "texture": HandClassifier.classify_board_texture(board),
+            "combo": Evaluator.get_combo_str(hero, ranges.ALL_HANDS_DICT),
+            "sizing": pack(both_langs(lambda: evaluate_bet_sizing(
+                sp["pot"], sp["bet"], HandClassifier.classify_board_texture(board),
+                spr=sizing_spr) if board else {"evaluation": "", "reason": ""})),
+            "sizing_spr": sizing_spr,
+        })
+    # 数値の丸め境界（Python の {:.1f} は偶数丸め）を踏むケース
+    fmt = []
+    for x in [0.25, 0.35, 0.45, 12.25, 52.25, 52.35, 0.125, 2.5, 3.5, 99.95, 33.333333, 66.65, 0.05, 1e-9]:
+        for spec in (".1f", ".0f"):
+            fmt.append({"x": x, "spec": spec, "out": format(x, spec)})
+    for x in [0.1234, 0.1235, 0.4445, 1.0005, 2.675, 0.3333333]:
+        fmt.append({"x": x, "round3": round(x, 3)})
+    # 同じコメント文が何千回も出るので文字列表に括り出す（16MB → 数MB）。
+    # reason_ja / reason_en は strings への添字になる。
+    strings, index = [], {}
+
+    def intern(text):
+        if text not in index:
+            index[text] = len(strings)
+            strings.append(text)
+        return index[text]
+
+    for row in preflop + postflop + [p["sizing"] for p in parts]:
+        row["reason_ja"] = intern(row["reason_ja"])
+        row["reason_en"] = intern(row["reason_en"])
+    return {"preflop": preflop, "postflop": postflop, "parts": parts, "format": fmt, "strings": strings}
+
+
 def gen_hand_evaluator():
     """treys の7枚評価の参照値。JS実装の完全一致検証に使う。"""
     import random
@@ -378,6 +538,21 @@ def gen_hand_evaluator():
     return rows
 
 
+# 大きいセットは「1行1件」で書く（indent=1 だとフィールド毎に改行されて数倍に膨らむ）
+COMPACT_SETS = {"evaluator_full"}
+
+
+def dump_vectors(name, data):
+    if name not in COMPACT_SETS:
+        return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1)
+    row = lambda v: json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    parts = []
+    for key in sorted(data):
+        body = ",\n".join(row(v) for v in data[key])
+        parts.append(f'"{key}":[\n{body}\n]')
+    return "{\n" + ",\n".join(parts) + "\n}"
+
+
 SETS = {
     "pure_functions": gen_pure_functions,
     "preflop": gen_preflop,
@@ -386,6 +561,7 @@ SETS = {
     "ranges": gen_ranges,
     "range_order": gen_range_order,
     "range_update": gen_range_update,
+    "evaluator_full": gen_evaluator_full,
     "hand_evaluator": gen_hand_evaluator,
 }
 
@@ -403,7 +579,7 @@ def main():
     for name, fn in SETS.items():
         data = fn()
         path = os.path.join(OUT_DIR, f"{name}.json")
-        text = json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1)
+        text = dump_vectors(name, data)
         n = len(data) if isinstance(data, list) else sum(len(v) for v in data.values())
         if args.check:
             if not os.path.exists(path):
