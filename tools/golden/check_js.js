@@ -466,8 +466,48 @@ function checkGameTape() {
   return { n, fails };
 }
 
+// フェーズ6: 分析ページの集計。stats_vectors.py が本物の stats_logger で出した戻り値と比較する
+function checkStatsCalc() {
+  const S = P('stats_calc');
+  const M = P('messages');
+  const vec = load('stats_calc');
+  const fails = [];
+  let n = 0;
+  // 時刻の書式（Python の isoformat）と往復
+  for (const iso of ['2026-09-27T04:30:00.123456+00:00', '2026-09-27T04:30:00+00:00', '2026-01-01T00:00:00.000001+00:00']) {
+    n++;
+    const { ms, micro } = S.parseIso(iso);
+    if (S.formatIso(ms, micro) !== iso) fails.push(`時刻の往復: ${iso} -> ${S.formatIso(ms, micro)}`);
+  }
+  for (const snap of vec.snapshots) {
+    for (const lang of ['ja', 'en']) {
+      M.setLang(lang);
+      const want = snap.results[lang];
+      const got = {};
+      for (const p of ['all', '30d', '7d', 'last']) {
+        got[`overview:${p}`] = S.getOverview(vec.data, p, snap.now);
+        got[`personal_range:${p}`] = S.getPersonalRangeStats(vec.data, p, snap.now);
+      }
+      got.position = S.getPositionStats(vec.data);
+      got.streets = S.getStreetEvalDist(vec.data);
+      got.leaks = S.getLeaks(vec.data);
+      got.saved_hands = S.getSavedHands(vec.data);
+      got['hand_history:30'] = S.getHandHistory(vec.data, 30);
+      got['hand_history:1000'] = S.getHandHistory(vec.data, 1000);
+      for (const k of Object.keys(want)) {
+        n++;
+        const d = firstDiff(want[k], JSON.parse(JSON.stringify(got[k])));
+        if (d) fails.push(`now=${snap.now} ${lang} ${k}: ${d}`);
+      }
+    }
+  }
+  M.setLang('ja');
+  return { n, fails };
+}
+
 const CHECKS = {
   game_tape: checkGameTape,
+  stats_calc: checkStatsCalc,
   pure_functions: checkPureFunctions,
   preflop: checkPreflop,
   postflop: checkPostflop,

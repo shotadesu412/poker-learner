@@ -631,3 +631,29 @@ def get_personal_range_stats(period: str = "all", user_id: str = "") -> dict:
             else:
                 stats[combo]["OPEN"] += 1
     return stats
+
+
+# ==============================
+# 端末への取り込み用エクスポート（JS 移植 フェーズ6）
+# ==============================
+
+def export_user_data(user_id: str) -> dict:
+    """ユーザーの actions / sessions / saved_hands を生の行のまま返す。
+
+    端末側（static/poker/stats_calc.js）は同じ行から同じ集計を出す。
+    ゴールデンテスト（tools/golden/stats_vectors.py）もこの形式を使う。
+    """
+    uid = _safe_uid(user_id)
+    if not uid:
+        return {"actions": [], "sessions": [], "saved_hands": []}
+    conn = _get_conn()
+    try:
+        actions = [dict(r) for r in conn.execute(
+            "SELECT * FROM actions WHERE user_id = ? ORDER BY id ASC", (uid,))]
+        sessions = [dict(r) for r in conn.execute(
+            "SELECT * FROM sessions WHERE user_id = ? ORDER BY rowid ASC", (uid,))]
+        saved = [dict(r) for r in conn.execute(
+            "SELECT * FROM saved_hands WHERE user_id = ? ORDER BY id ASC", (uid,))]
+    finally:
+        conn.close()
+    return {"actions": actions, "sessions": sessions, "saved_hands": saved}
