@@ -69,6 +69,8 @@
   画面を JS エンジンに切り替えるのはフラグで行い、既定はサーバー計算のまま。サーバーの API
   （/api/start_hand・/api/action・/api/state・統計系）を消したり壊したりしないこと。
   Python 側を変更したら、push 前に「新しく clone した状態」で TestClient を回して動作確認する
+  → 2026/9/27 時点: 1.0.7 が公開済みで、審査待ちのアップデートは無い（移行に Swift の変更は不要）。
+  既定を端末計算に切り替える時期は shota に確認すること
 
 - **バックアップは git タグ `python-engine-v1`**（移植前のPython実装を固定）
   `git show python-engine-v1:poker_engine.py` / `git worktree add /tmp/engine-v1 python-engine-v1`
@@ -311,11 +313,9 @@ poker-learner/
 
 ### iOS アプリ
 - バージョンは pbxproj の `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`（2箇所ずつ）。
-  **現在: 1.0.7 (13)**（App Store で公開中の最新は 1.0.6(11)。
-  1.0.7(12) はアーカイブしたが一度も提出していないため、**バージョン番号 1.0.7 は
-  未使用のまま**。よって広告表示率改善＋英語対応をまとめて 1.0.7(13) として出す。
-  ビルド番号だけ 13 に上げているのは、万一 build 12 が過去にアップロード済みだった
-  場合の番号衝突を避けるため）
+  **現在: 1.0.7 (13) — App Store で公開中**（広告表示率改善＋英語対応。2026/9/27 shota 確認）。
+  **次に出すときは 1.0.8 以上 / ビルド 14 以上**にすること
+  （Organizer に残っている `1.0.8 (13)`(8/14) は誤って作った未提出のもの。使わない）
 - `ITSAppUsesNonExemptEncryption = false` を Info.plist に設定済み
   （HTTPSのみで独自暗号化なし → 免除。提出のたびの質問が出なくなる）
 - ビルド確認:
@@ -338,24 +338,10 @@ poker-learner/
 
 ## 未解決のタスク / 既知の課題
 
-### v1.0.7 英語版リリース（2026/8/15 時点で進行中）
-Web側は既に本番反映済み。残りは App Store Connect 側の作業。
-
-1. **1.0.7 (13) の提出** — アーカイブ済み
-   （`~/Library/Developer/Xcode/Archives/2026-08-15/PokerLearner_1.0.7_13.xcarchive`）。
-   アップロードは Xcode Organizer から（CLI 不可）。
-   ⚠️ Organizer には旧 `1.0.7 (12)`(7/21) と誤って作った `1.0.8 (13)`(8/14) も
-   残っているので、**ビルド番号 13 かつ 1.0.7 のもの**を選ぶこと
-2. **配信国に米国を追加**（方針: まず米国だけ。反応を見てから拡大）。
-   これをやらないと英語対応しても英語圏ユーザーは来ない
-3. **App Store の English (U.S.) ローカライズ**: アプリ名 "Poker Rush"（他社との
-   重複要確認）/ サブタイトル / 説明文 / キーワード / What's New /
-   **英語UIのスクリーンショット撮り直し**（日本語のままだとリジェクト対象）
-4. **サブスク商品のローカライズ**: `com.shota.pokerlearner.premium.monthly` の
-   表示名・説明に English を追加。忘れると英語圏の購入シートが日本語になる
-5. **年齢制限 17+ と「実際の賭博ではない」旨の明記**（Guideline 5.3 対策）
-6. **プライバシーポリシー / 利用規約の英語版**（現在は Notion の日本語ページ。
-   `static/privacy.html` は未使用の死にファイル）
+### v1.0.7 英語版リリース — 公開済み（2026/9/27 shota 確認）
+アプリ 1.0.7 (13) は App Store で公開中。当時の App Store Connect 側の作業（米国配信・英語ローカライズ・
+サブスク商品の英語表示・年齢制限・英語版規約）は、個別の完了状況までは確認していない。
+気になったら App Store Connect で確認すること。
 
 ### 継続課題
 7. **App Store Connect の「マーケティングURL」に `https://poker-learner.onrender.com`
@@ -364,7 +350,7 @@ Web側は既に本番反映済み。残りは App Store Connect 側の作業。
 8. **AdMob 管理画面で UMP 同意フォームが未設定**（起動ログに毎回エラー。
    米国のみなら影響軽微だが、**EEA/英国に広げるなら必須**）
 9. `verify_purchase` の実トークン検証（App Store Server API）
-10. 広告表示率の改善効果を AdMob レポートで確認（v1.0.8 浸透後）
+10. 広告表示率の改善効果を AdMob レポートで確認（v1.0.7 浸透後）
 
 ## 作業時の注意（このプロジェクト固有）
 
