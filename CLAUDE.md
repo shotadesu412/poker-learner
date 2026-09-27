@@ -71,6 +71,8 @@
   Python 側を変更したら、push 前に「新しく clone した状態」で TestClient を回して動作確認する
   → 2026/9/27 時点: 1.0.7 が公開済みで、審査待ちのアップデートは無い（移行に Swift の変更は不要）。
   既定を端末計算に切り替える時期は shota に確認すること
+  **実機（アプリ内）で端末計算を試す: ホーム → 設定 → シート最下部の「ポーカーラッシュ」を7回タップ**
+  （もう一度7回で戻る。ON のときは緑字で「端末計算モード ON」と出る）
 
 - **バックアップは git タグ `python-engine-v1`**（移植前のPython実装を固定）
   `git show python-engine-v1:poker_engine.py` / `git worktree add /tmp/engine-v1 python-engine-v1`
@@ -305,8 +307,8 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=4` / `home.css?v=6` /
-   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=2` / `game_api.js?v=1`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=5` / `home.css?v=8` /
+   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=3` / `game_api.js?v=1`（index.html, home.html, stats.html 内）
    `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 1）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
@@ -351,6 +353,10 @@ poker-learner/
    米国のみなら影響軽微だが、**EEA/英国に広げるなら必須**）
 9. `verify_purchase` の実トークン検証（App Store Server API）
 10. 広告表示率の改善効果を AdMob レポートで確認（v1.0.7 浸透後）
+11. **WKWebView の `alert()` / `confirm()` がアプリ内で表示されない**（2026/9/27 発見）。
+    ContentView.swift の Coordinator に `runJavaScriptAlertPanelWithMessage` /
+    `runJavaScriptConfirmPanelWithMessage` が未実装のため。script.js の通信エラー alert や
+    広告読み込み失敗の alert（`ad.load_failed`）が出ていない。次のアプリ更新時に Swift 側で実装する
 
 ## 作業時の注意（このプロジェクト固有）
 

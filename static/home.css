@@ -211,6 +211,17 @@ body {
     font-size: 0.75rem;
     color: #8e8e93;
 }
+.home-settings-footer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #636366;
+    padding: 24px 20px 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.home-settings-footer.engine-local {
+    color: #30d158;
+}
 .home-settings-separator {
     height: 1px;
     background: rgba(255,255,255,0.08);

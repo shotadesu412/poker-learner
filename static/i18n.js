@@ -46,6 +46,7 @@ const I18N = {
         "home.speed_normal": "通常",
         "home.speed_fast": "速い",
         "home.premium_plan": "プレミアムプラン",
+        "home.engine_local_on": "端末計算モード ON",
         "home.premium_active": "加入中",
         "home.premium_upgrade": "アップグレード",
 
@@ -274,6 +275,7 @@ const I18N = {
         "home.speed_normal": "Normal",
         "home.speed_fast": "Fast",
         "home.premium_plan": "Premium",
+        "home.engine_local_on": "On-device engine ON",
         "home.premium_active": "Active",
         "home.premium_upgrade": "Upgrade",
 
