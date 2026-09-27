@@ -65,6 +65,11 @@
 
 ### 移植中の鉄則
 
+- **⚠️ アプリのアップデートが審査を通るまでは、サーバーでの計算を維持する**（2026/9/27 shota 指定）。
+  画面を JS エンジンに切り替えるのはフラグで行い、既定はサーバー計算のまま。サーバーの API
+  （/api/start_hand・/api/action・/api/state・統計系）を消したり壊したりしないこと。
+  Python 側を変更したら、push 前に「新しく clone した状態」で TestClient を回して動作確認する
+
 - **バックアップは git タグ `python-engine-v1`**（移植前のPython実装を固定）
   `git show python-engine-v1:poker_engine.py` / `git worktree add /tmp/engine-v1 python-engine-v1`
 - **Pythonのファイルはフェーズ7まで消さない**。並行稼働で結果を比較するため
