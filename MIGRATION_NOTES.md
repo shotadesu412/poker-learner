@@ -230,3 +230,58 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
   ハンド・アクション履歴）を送る形に変える必要がある（フェーズ7）
 - `heroRangeRaw` / `cpuRangeRaw` は JS では Object に変換して返している。JS の Object は "22" 等の
   キーを先頭に並べ替えるが、画面は表示にしか使っていないので順序は影響しない（接続時に確認すること）
+
+## フェーズ6: 統計を IndexedDB へ + 画面を JS エンジンに接続（完了 2026/9/27、既定はサーバー計算のまま）
+
+### 切り替え方
+- **既定はサーバー計算**（審査通過までは変えない。CLAUDE.md の鉄則）
+- URL に `?engine=local` を付けると `localStorage.poker_engine` に保存され、以後その端末は端末計算。
+  `?engine=server` で戻る。切り替え口は `static/game_api.js`（`GameApi` / `StatsApi`）1か所だけ
+- 端末計算の準備（モジュール読み込み等）に失敗したら自動でサーバー計算に戻る
+- 端末モードのモジュールは端末モードのときだけ動的に読み込む（サーバーモードの通信量は増えない）。
+  `static/poker/` を変えたら `game_api.js` の `POKER_JS_VERSION` を上げること
+
+### 追加したもの
+| ファイル | 内容 |
+|---|---|
+| `static/poker/stats_calc.js` | `stats_logger.py` の集計（get_*）。IndexedDB に依存しない純関数 |
+| `static/poker/stats_store.js` | IndexedDB（DB名 `poker_learner`）。actions / sessions / saved_hands / meta。行の形は SQLite と同じ |
+| `static/game_api.js` | サーバー/端末の切り替え口。戻り値はどちらもサーバーの JSON と同じ形 |
+| `stats_logger.export_user_data` + `GET /api/stats/export` | 端末モード初回にサーバーの統計を取り込む（読み取りのみ） |
+| `/api/ai_coach` の任意項目 `state` | 端末モードではハンド状態を送る。無ければ従来どおり（旧JS互換）。プロンプトはサーバーで組み立てる |
+| `tools/golden/stats_vectors.py` | 集計のベクタ（`stats_calc.json`） |
+| `tools/e2e/local_engine.js` | WebKit（Playwright）での通し確認 |
+
+### 検証
+- **集計**: テープの実データを偽の時計で60日に散らして本物の stats_logger で保存し、全集計（ja/en × 期間4種 ×
+  now 4種: 通常・小数部なし・30日/7日の境界ちょうど）を記録 → JS で 115件ビット一致。
+  意図的な移植ミス5種を検出（境界 >=、3ベット判定、時刻書式、リークの評価の選び方、action_log 無視）。
+  AVG を単純加算にする改変は小数3桁に丸めるため出力が変わらず検出されない（実害なし）
+- **IndexedDB**: fake-indexeddb で取り込み→集計がベクタと一致 / 2回目の取り込みはスキップ / 実プレイの保存が件数・順序とも正しい
+- **AIコーチ**: サーバーモードのプロンプト292件が改修前と完全一致 / state 経由のプロンプトもサーバーエンジン経由と89件一致 /
+  上限超え（history 81件・board 6枚）は 422
+- **画面（WebKit）**: サーバーモードで遊ぶ → 端末モードへ（取り込み）→ 25アクション中 start_hand/action/state を一度も呼ばない →
+  AIコーチに state が送られサーバーが受理 → 分析ページが IndexedDB から集計（統計 API を呼ばない）→ サーバーモードに戻せる。例外 0件
+
+### SQLite の再現で気づいたこと
+- GROUP BY の非集計列（リークの evaluation）は SQLite 3.51 では**グループ内の最初の行**（id 順）。JS もそれに合わせた
+- SQLite 3.43+ の AVG は補償付き加算（Kahan-Babuska-Neumaier）。JS も同じ式にしてある
+- 時刻は Python の isoformat と同じ文字列（小数部が 0 なら省略）で持ち、期間は文字列比較
+
+### ついでに直した既存バグ（サーバー、本番で発生中だった）
+- 分析ページ「直近1セッション」で personal_range が `ambiguous column name` の 500 → Promise.all でポジション別・リーク・
+  履歴もまとめて表示されなかった
+- 同じく「直近1セッション」の抽出がユーザーで絞られておらず、全ユーザー中の最新ハンドを見ていた
+
+### 既知の制限（端末モード）
+- **ハンドの途中でページを離れると、そのハンドは消える**（エンジンはメモリにしか無い。再表示で新しいハンドから）。
+  WKWebView はバックグラウンドでプロセスが落ちると再読み込みされるので、既定を端末モードにする前に
+  エンジン状態を sessionStorage 等に保存する対応を検討すること（フェーズ7前に判断）
+- IndexedDB は端末ローカル。アプリ削除で統計も消える（サーバー時代は user_id が同じなら残っていたが、
+  user_id 自体が localStorage なので実質同じ）
+- `/api/preflop_ranges` と課金系 API はまだサーバーを呼んでいる（フェーズ7で整理）
+
+### 次（フェーズ7）へのメモ
+- 既定を端末モードにするのは**アプリの審査通過後**。まず自分の端末で `?engine=local` を付けて数日使う
+- サーバー縮小時に消すもの: /api/start_hand・/api/action・/api/state・/api/stats/*（export は取り込み期間中は残す）、
+  Python の計算系ファイル、Render の永続ディスク（export を残す期間との兼ね合いに注意）

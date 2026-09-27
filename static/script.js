@@ -239,9 +239,8 @@ async function startHand() {
     if (el('coach-input')) el('coach-input').value = "";
 
     try {
-        const spotParam = isSpotMode ? `&spot=true&position=${encodeURIComponent(spotPosition)}` : "";
-        const res = await fetch(withLang(`/api/start_hand?user_id=${encodeURIComponent(currentUserId)}${spotParam}`));
-        currentState = await res.json();
+        // サーバー/端末エンジンの切り替えは game_api.js の GameApi が行う
+        currentState = await GameApi.startHand(isSpotMode, spotPosition);
         updateUI();
 
         // 30ハンドごとに自動でインタースティシャル広告
@@ -279,12 +278,7 @@ async function takeAction(actionType, amount = 0) {
     if (handle) handle.classList.add('hidden');
 
     try {
-        const res = await fetch(withLang('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: actionType, amount: amount, user_id: currentUserId })
-        });
-        const data = await res.json();
+        const data = await GameApi.action(actionType, amount);
 
         // Show evaluation animation
         // ゲーム状態から正確なアクション表示名を決定（BET/RAISE の誤表記修正）
@@ -748,13 +742,18 @@ async function fetchCoachWithRetry(messages, retries = 2) {
             const response = await fetch(withLang('/api/ai_coach'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages, user_id: currentUserId }),
+                // 端末エンジン時はハンド状態も送る（サーバーには状態が無いため）。サーバーモードでは null
+                body: JSON.stringify({ messages, user_id: currentUserId, state: GameApi.coachState() }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            if (data.reply) return data.reply;
+            if (data.reply) {
+                // 最初の相談だけ履歴に残す（サーバーの save_ai_feedback と同じ条件）
+                if (messages.length === 1) GameApi.saveCoachFeedback(data.hand_context, data.reply);
+                return data.reply;
+            }
             throw new Error('empty reply');
         } catch (e) {
             if (attempt === retries) throw e;
@@ -838,8 +837,8 @@ async function watchAdForCoach() {
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
-    // サブスク状態を先に取得
-    await loadSubscriptionStatus();
+    // サブスク状態を先に取得。端末エンジン（?engine=local）の準備も並行して行う
+    await Promise.all([loadSubscriptionStatus(), GameApi.init(currentUserId)]);
 
     // #premium ハッシュでページを開いた場合は購入モーダルを自動表示
     if (window.location.hash === '#premium') {
@@ -854,8 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ページ再読み込み時、まず既存のゲーム状態を復元を試みる
     try {
-        const res = await fetch(withLang(`/api/state?user_id=${encodeURIComponent(currentUserId)}`));
-        const data = await res.json();
+        const data = await GameApi.state();
 
         if (data.has_hand_in_progress) {
             // サーバー側でゲームが進行中 → 状態を復元してそのまま続行

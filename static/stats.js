@@ -39,20 +39,12 @@ async function loadAll(period) {
     showLoading(true);
     const userId = localStorage.getItem("poker_user_id") || "";
     try {
-        const [overview, streets] = await Promise.all([
-            fetch(withLang(`/api/stats/overview?period=${period}&user_id=${userId}`)).then(r => r.json()),
-            fetch(withLang(`/api/stats/streets?user_id=${userId}`)).then(r => r.json()),
-        ]);
+        // サーバー/端末（IndexedDB）の切り替えは game_api.js の StatsApi が行う
+        const { overview, streets } = await StatsApi.loadPrimary(userId, period);
         renderOverview(overview);
         renderStreets(streets);
 
-        const [position, leaks, aiHistory, handHistory, personalRange] = await Promise.all([
-            fetch(withLang(`/api/stats/position?user_id=${userId}`)).then(r => r.json()),
-            fetch(withLang(`/api/stats/leaks?user_id=${userId}`)).then(r => r.json()),
-            fetch(withLang(`/api/stats/saved_hands?user_id=${userId}`)).then(r => r.json()),
-            fetch(withLang(`/api/stats/hand_history?user_id=${userId}`)).then(r => r.json()),
-            fetch(withLang(`/api/stats/personal_range?period=${period}&user_id=${userId}`)).then(r => r.json()),
-        ]);
+        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(userId, period);
         renderPosition(position);
         renderLeaks(leaks);
         renderAiHistory(aiHistory);

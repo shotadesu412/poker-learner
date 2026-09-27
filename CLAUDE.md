@@ -60,8 +60,8 @@
 | 3 | エクイティ計算をJSへ | **完了**（`equity.js` / `range_utils.js`。MCは統計検定で一致） |
 | 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
 | 5 | エンジン・CPU AIをJSへ | **完了**（`engine.js` / `game.js`。乱数テープでハンド全体がビット一致。**画面にはまだ未接続**） |
-| 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **次はここ** |
-| 7 | サーバーをAIコーチ専念構成に縮小 | 未着手 |
+| 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **完了**（`?engine=local` で切替。**既定はサーバー計算のまま**。`static/game_api.js`） |
+| 7 | サーバーをAIコーチ専念構成に縮小 | **次はここ**（アプリ審査通過後。先に端末モードでのリロード時のハンド復元を検討） |
 
 ### 移植中の鉄則
 
@@ -213,6 +213,8 @@ poker-learner/
 │   ├── home.html/.js/.css   # ホーム画面 ("/")
 │   ├── index.html           # ゲーム画面 ("/play")
 │   ├── script.js            # ゲームJS本体 (~1450行): UI・課金・広告ゲート
+│   ├── game_api.js          # ★ゲーム進行・統計の呼び出し口（サーバー/端末エンジンの切替）
+│   ├── poker/               # ★端末エンジン一式（JS移植。MIGRATION_NOTES.md 参照）
 │   ├── style.css
 │   ├── stats.html/.js/.css  # 分析ページ ("/stats")
 │   └── privacy.html(未使用), manifest.json
@@ -236,11 +238,14 @@ poker-learner/
 - `POST /api/ai_coach` OpenAI 呼び出し（モデル: **`gpt-5.6-luna`**, 2026/8/27〜）
   - 設定は app.py 冒頭の `COACH_MODEL` / `COACH_REASONING_EFFORT` / `COACH_MAX_TOKENS`。
     いずれも同名の環境変数で上書き可（Renderの環境変数だけで再デプロイなしに切戻せる）
+  - 任意項目 `state`（端末エンジン時のハンド状態）。無ければサーバーのエンジンを見る。
+    state 経由のときは相談履歴をサーバーに保存せず、`hand_context` を返して端末に保存させる
   - **`temperature` を渡してはいけない**。GPT-5.6 はデフォルト(1.0)以外を拒否し
     400 BadRequest になる（top_p・penalty系も同様）。旧コードは 0.7 を渡していた
   - GPT-5.6 は推論モデルで**思考トークンも `max_completion_tokens` を消費する**ため
     上限を 1000→3000 に引き上げ済み。本文が空で返る場合に備えた分岐もある
 - `GET /api/stats/{overview,position,streets,leaks,personal_range,saved_hands,hand_history}`
+- `GET /api/stats/export?user_id=` 端末モード初回の統計取り込み用（生の行を返す・読み取りのみ）
 - `GET/POST /api/subscription`, `/api/subscription/verify_purchase`, `/api/subscription/cancel`
 
 ### サーバー内部状態の注意
@@ -298,8 +303,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=11` / `script.js?v=27` / `home.js?v=4` / `home.css?v=6` /
-   `stats.css?v=4` / `stats.js?v=3` / `i18n.js?v=1`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=4` / `home.css?v=6` /
+   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=2` / `game_api.js?v=1`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 1）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
