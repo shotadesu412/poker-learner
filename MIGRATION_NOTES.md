@@ -190,6 +190,8 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
   実際の入力（ベット前ポット > 0）では両者の結果は同じなので実害はない。フェーズ7で片方を消す
 - `evaluate_preflop_action_gto` は `get_range_by_category` ではなく `RANGES` を直接 `dict.get` している。
   そのため SB の `vs_open_call` は空のまま（call ∪ 3bet の合成が効かない）。JS も `getOr` で同じにした
+  → 2026/9/27 確認: SB は「3ベットかフォールド」の戦略で意図的に空。評価としてはこれで正しい（SB のコールは
+  レンジ外扱い）。合成版はエンジンが CPU の継続レンジ（MC 用）に使うためのもので、評価側とは別物。問題なし
 - `evaluate_call` の `hero_range_dict` 引数は未使用
 
 ### 次（フェーズ5）へのメモ
@@ -284,3 +286,8 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 - 既定を端末モードにするのは**アプリの審査通過後**。まず自分の端末で `?engine=local` を付けて数日使う
 - サーバー縮小時に消すもの: /api/start_hand・/api/action・/api/state・/api/stats/*（export は取り込み期間中は残す）、
   Python の計算系ファイル、Render の永続ディスク（export を残す期間との兼ね合いに注意）
+
+## 様子見期間（2026/9/27〜）
+- 本番に push 済み。shota の実機で端末計算 ON（設定シート最下部を7回タップ）。「計算クソ早くなった」
+- WebKit での本番確認: 既定モードはサーバー API、端末モードは start_hand/action/state を呼ばない、例外 0件
+- 次はフェーズ7（CLAUDE.md「現在の状態と次の一手」参照）
