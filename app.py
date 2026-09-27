@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, PlainTextResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 from poker_engine import PokerEngine, Evaluator
 from equity import EquityCalculator
 from treys import Card
@@ -149,9 +150,31 @@ class ChatMessage(BaseModel):
     role: str
     content: str
 
+class CoachAction(BaseModel):
+    street: str = Field("", max_length=16)
+    actor: str = Field("", max_length=8)
+    action: str = Field("", max_length=16)
+    amount: float = 0.0
+
+class CoachHandState(BaseModel):
+    """端末のエンジン（static/poker/game.js）で遊んでいるときに、相談するハンドの状態を送ってもらう。
+    サーバーにはエンジンの状態が無いため。プロンプトの組み立て自体はサーバーで行う（非公開のため）"""
+    street: str = Field("", max_length=16)
+    hero_pos: str = Field("", max_length=8)
+    cpu_pos: str = Field("", max_length=8)
+    hero_stack: float = 0.0
+    cpu_stack: float = 0.0
+    pot: float = 0.0
+    board: list[str] = Field(default_factory=list, max_length=5)
+    hero: list[str] = Field(default_factory=list, max_length=2)
+    cpu: list[str] = Field(default_factory=list, max_length=2)
+    history: list[CoachAction] = Field(default_factory=list, max_length=80)
+
 class AICoachRequest(BaseModel):
     messages: list[ChatMessage]
     user_id: str = "guest"
+    # 端末エンジン時のみ。無ければ従来どおりサーバーのエンジンを見る（旧バージョンの JS 互換）
+    state: Optional[CoachHandState] = None
 
 @app.get("/api/start_hand")
 def start_hand(user_id: str = Query(""), spot: bool = Query(False), position: str = Query("")):
@@ -614,37 +637,52 @@ def _trim_to_last_sentence(text: str) -> str:
     return text[: last + 1]
 
 
+def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
+                   board, hero, cpu, pot, history) -> str:
+    """AIコーチに渡すハンド状況の文章。board/hero/cpu はカード文字列のリスト"""
+    context_str = t(
+        "coach.context_header",
+        street=street,
+        hero_pos=hero_pos,
+        cpu_pos=cpu_pos,
+        hero_stack=round(hero_stack, 1),
+        cpu_stack=round(cpu_stack, 1),
+        board=board,
+        hero=hero,
+        cpu=cpu if cpu else t("coach.unknown_cards"),
+        pot=pot,
+    )
+    # 各アクションにもポジションを添える。"HERO: CALL" だけだと
+    # どの位置からのアクションか分からず、コーチが講評できない
+    pos_of = {"HERO": hero_pos, "CPU": cpu_pos}
+    for act in history:
+        amt = act.get('amount', 0)
+        amt_str = f" {round(amt, 1)}bb" if amt > 0 else ""
+        actor = act['actor']
+        context_str += f"[{act['street']}] {actor}({pos_of.get(actor, '?')}): {act['action']}{amt_str}\n"
+    return context_str
+
+
 @app.post("/api/ai_coach")
 def ai_coach(req: AICoachRequest):
     if not openai_client.api_key:
         return {"reply": t("api.coach.no_key")}
 
     try:
-        eng = _get_engine(req.user_id)
-        current_session_id = _get_session_id(req.user_id)
-
-        # Context building
-        context_str = t(
-            "coach.context_header",
-            street=eng.street,
-            hero_pos=eng.hero_position,
-            cpu_pos=eng.cpu_position,
-            hero_stack=round(eng.hero_stack, 1),
-            cpu_stack=round(eng.cpu_stack, 1),
-            board=[Card.int_to_str(c) for c in eng.board],
-            hero=[Card.int_to_str(c) for c in eng.hero_hand],
-            cpu=[Card.int_to_str(c) for c in eng.cpu_hand] if eng.cpu_hand else t("coach.unknown_cards"),
-            pot=eng.pot_size,
-        )
-
-        # 各アクションにもポジションを添える。"HERO: CALL" だけだと
-        # どの位置からのアクションか分からず、コーチが講評できない
-        pos_of = {"HERO": eng.hero_position, "CPU": eng.cpu_position}
-        for act in eng.action_history:
-            amt = act.get('amount', 0)
-            amt_str = f" {round(amt, 1)}bb" if amt > 0 else ""
-            actor = act['actor']
-            context_str += f"[{act['street']}] {actor}({pos_of.get(actor, '?')}): {act['action']}{amt_str}\n"
+        if req.state is not None:
+            st = req.state
+            context_str = _coach_context(
+                st.street, st.hero_pos, st.cpu_pos, st.hero_stack, st.cpu_stack,
+                st.board, st.hero, st.cpu, st.pot, [a.model_dump() for a in st.history])
+        else:
+            eng = _get_engine(req.user_id)
+            current_session_id = _get_session_id(req.user_id)
+            context_str = _coach_context(
+                eng.street, eng.hero_position, eng.cpu_position, eng.hero_stack, eng.cpu_stack,
+                [Card.int_to_str(c) for c in eng.board],
+                [Card.int_to_str(c) for c in eng.hero_hand],
+                [Card.int_to_str(c) for c in eng.cpu_hand],
+                eng.pot_size, eng.action_history)
 
         system_prompt = t("coach.system_prompt", context=context_str)
 
@@ -688,7 +726,8 @@ def ai_coach(req: AICoachRequest):
         # 連続する空行を1行に圧縮
         reply_text = re.sub(r'\n{3,}', '\n\n', reply_text).strip()
 
-        if len(req.messages) == 1:
+        # 端末エンジン時は相談履歴も端末（IndexedDB）に保存するので、サーバーには残さない
+        if len(req.messages) == 1 and req.state is None:
             stats_logger.save_ai_feedback(
                 user_id=req.user_id,
                 session_id=current_session_id,
@@ -696,7 +735,8 @@ def ai_coach(req: AICoachRequest):
                 ai_feedback=reply_text
             )
 
-        return {"reply": reply_text}
+        # hand_context は端末側で相談履歴を保存するときに使う
+        return {"reply": reply_text, "hand_context": context_str}
 
     except Exception as e:
         import traceback
@@ -839,6 +879,15 @@ def cancel_subscription(user_id: str = Query("")):
 def hand_history(user_id: str = Query(""), limit: int = Query(30)):
     try:
         return stats_logger.get_hand_history(user_id, limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/export")
+def stats_export(user_id: str = Query("")):
+    """端末エンジンへ切り替えた初回に、サーバーの統計を端末（IndexedDB）へ取り込むためのもの（読み取りのみ）"""
+    try:
+        return stats_logger.export_user_data(user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
