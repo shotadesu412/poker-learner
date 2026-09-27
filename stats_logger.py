@@ -180,18 +180,25 @@ def end_session(session_id: str, result: str):
     conn.close()
 
 
-def _period_filter(period: str) -> str:
-    """期間フィルタ用のSQLサブクエリを返す"""
+def _period_filter(period: str, user_id: str = "", alias: str = "") -> str:
+    """期間フィルタ用のSQLサブクエリを返す
+
+    alias: JOIN しているクエリで actions 側の別名（例 "a."）。付けないと
+    sessions にも session_id があるため ambiguous column でエラーになる。
+    """
     now = datetime.now(timezone.utc)
     if period == "7d":
         cutoff = (now - timedelta(days=7)).isoformat()
-        return f"AND timestamp >= '{cutoff}'"
+        return f"AND {alias}timestamp >= '{cutoff}'"
     elif period == "30d":
         cutoff = (now - timedelta(days=30)).isoformat()
-        return f"AND timestamp >= '{cutoff}'"
+        return f"AND {alias}timestamp >= '{cutoff}'"
     elif period == "last":
-        # 直近1セッション
-        return "AND session_id = (SELECT session_id FROM actions WHERE actor='HERO' ORDER BY timestamp DESC LIMIT 1)"
+        # 直近1セッション（＝そのユーザーの最新ハンド）。
+        # 以前はユーザーで絞っておらず、全ユーザー中の最新ハンドを見ていた
+        uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
+        return (f"AND {alias}session_id = (SELECT session_id FROM actions "
+                f"WHERE actor='HERO' {uf} ORDER BY timestamp DESC LIMIT 1)")
     return ""  # all
 
 
@@ -203,7 +210,7 @@ def get_overview(period: str = "all", user_id: str = "") -> dict:
     """
     GTO一致率、VPIP、PFR、3-Bet率を集計して返す。
     """
-    pf = _period_filter(period)
+    pf = _period_filter(period, user_id)
     uf = f"AND user_id = '{_safe_uid(user_id)}'" if user_id else ""
     conn = _get_conn()
 
@@ -578,7 +585,7 @@ def _parse_hand_to_combo(hand_str: str) -> str:
     else: return combo + "o"
 
 def get_personal_range_stats(period: str = "all", user_id: str = "") -> dict:
-    pf = _period_filter(period)
+    pf = _period_filter(period, user_id, alias="a.")
     uf = f"AND a.user_id = '{_safe_uid(user_id)}'" if user_id else ""
     conn = _get_conn()
     rows = conn.execute(f"""
