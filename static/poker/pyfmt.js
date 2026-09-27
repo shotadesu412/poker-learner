@@ -32,7 +32,17 @@
     return parseFloat(formatFixed(x, n));
   }
 
-  const Py = { formatFixed, round };
+  // Python の str(float)（repr）。整数値でも "3.0" になる（JS の String(3) は "3"）。
+  // 指数表記になる範囲（1e16 以上 / 1e-4 未満）は Python と JS で書式が違うので使わせない
+  function floatStr(x) {
+    const a = Math.abs(x);
+    if (!Number.isFinite(x) || (a !== 0 && (a >= 1e16 || a < 1e-4))) {
+      throw new Error('floatStr: 対応していない範囲: ' + x);
+    }
+    return Number.isInteger(x) ? x.toFixed(1) : String(x);
+  }
+
+  const Py = { formatFixed, round, floatStr };
   root.Py = Py;
   if (typeof module !== 'undefined') module.exports = Py;
 })(typeof window !== 'undefined' ? window : globalThis);

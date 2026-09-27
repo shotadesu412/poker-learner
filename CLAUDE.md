@@ -59,8 +59,8 @@
 | 2 | レンジデータをJSONへ | **完了**（`static/poker/ranges.json` を Python/JS で共有。`ranges.js`） |
 | 3 | エクイティ計算をJSへ | **完了**（`equity.js` / `range_utils.js`。MCは統計検定で一致） |
 | 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
-| 5 | エンジン・CPU AIをJSへ | **次はここ** |
-| 6 | 統計をIndexedDBへ移行 | 未着手 |
+| 5 | エンジン・CPU AIをJSへ | **完了**（`engine.js` / `game.js`。乱数テープでハンド全体がビット一致。**画面にはまだ未接続**） |
+| 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **次はここ** |
 | 7 | サーバーをAIコーチ専念構成に縮小 | 未着手 |
 
 ### 移植中の鉄則
@@ -73,6 +73,9 @@
 - **JS側の検証**: `node tools/golden/check_js.js`（同じベクタで JS 実装を検証。フェーズごとに CHECKS を追加）
   モンテカルロは乱数列が違うので `vectors/equity_reference.json`（Python で2万回×40局面）と統計検定する。
   参照値の再生成は `python3 tools/golden/equity_reference.py`（約30秒。エクイティ計算を意図的に変えた時だけ）
+- **エンジン・ゲーム進行は乱数テープで比較**: Python の random と Deck を `tools/golden/fake_random.py` に
+  差し替えて実際の API を回し（`tools/golden/game_tape.py`、約1分）、JS は同じシードの `Rng.seeded` で再生する。
+  JS のエンジン・評価ロジックは乱数を必ず `rng` 経由で使い、**読む順番・短絡評価で読まない条件も Python と同じ**にすること
 - JS 移植コードは `static/poker/` に置く。ビルド工程なしで `<script>` のグローバルとして読め、
   テスト用に Node の `module.exports` でも読める両対応の形にする（`hand_eval.js` が見本）
 - **移植では「今の挙動をそのまま再現する」ことを最優先**。改善は移植後。

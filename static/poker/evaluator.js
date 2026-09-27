@@ -286,8 +286,12 @@
     },
 
     // ベットしてコールされた場合の、その継続レンジ相手のエクイティ。レンジ情報が無ければ null
-    // rng はテスト用（シード付き乱数を渡せるように）。Python 版には無い引数
-    equityVsCallingRange(cards, board, heroRange, cpuRange, betAmount, potSize, iterations = 1000, rng = Math.random) {
+    // 内部のモンテカルロが使う乱数。ゲーム（game.js）がエンジンと同じ乱数に差し替える。
+    // Python は全ての乱数が random モジュールを通るので、JS もエンジンと同じ列を読まないと順番がずれる
+    rng: Math.random,
+
+    // rng 引数は Python 版には無い（省略時は Evaluator.rng）
+    equityVsCallingRange(cards, board, heroRange, cpuRange, betAmount, potSize, iterations = 1000, rng = Evaluator.rng) {
       if (!hasCards(cards) || !hasCards(board) || !hasRange(heroRange) || !hasRange(cpuRange)) return null;
       try {
         const calling = root.Ranges.updateRangeAfterAction(new Map(cpuRange), 'CALL', betAmount, board);

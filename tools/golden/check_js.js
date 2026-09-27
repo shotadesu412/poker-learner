@@ -404,7 +404,70 @@ function checkEvaluatorFull() {
   return { n, fails };
 }
 
+// ---- フェーズ5: エンジン・CPU AI・ゲーム進行（乱数テープで Python と1件ずつ比較）----
+// 最初に食い違ったパスを返す（数値は === 。JSON を通した形で比べる）
+function firstDiff(want, got, p = '') {
+  if (want === got) return null;
+  if (typeof want !== typeof got || want === null || got === null || typeof want !== 'object') {
+    return `${p || '(root)'}: 期待 ${JSON.stringify(want)} 実際 ${JSON.stringify(got)}`;
+  }
+  if (Array.isArray(want) !== Array.isArray(got)) return `${p}: 配列かどうかが違う`;
+  const keys = new Set([...Object.keys(want), ...Object.keys(got)]);
+  for (const k of keys) {
+    if (!(k in want)) return `${p}.${k}: Python に無いキー（実際 ${JSON.stringify(got[k]).slice(0, 80)}）`;
+    if (!(k in got)) return `${p}.${k}: JS に無いキー（期待 ${JSON.stringify(want[k]).slice(0, 80)}）`;
+    const d = firstDiff(want[k], got[k], `${p}.${k}`);
+    if (d) return d;
+  }
+  return null;
+}
+
+function checkGameTape() {
+  const Rng = P('rng');
+  const Game = P('game');
+  P('messages').setLang('ja');
+  const games = load('game_tape');
+  const fails = [];
+  let n = 0;
+  for (const gm of games) {
+    const rng = Rng.seeded(gm.seed);
+    const calls = [];
+    const game = new Game({
+      rng,
+      hooks: {
+        newSessionId: () => 'sid',
+        startSession: (sid, pos, hand) => calls.push({ fn: 'start_session', hero_pos: pos, hero_hand: hand }),
+        logAction: ({ session_id, ...kw }) => calls.push({ fn: 'log_action', ...kw }),
+        finishHand: ({ session_id, ...kw }) => calls.push({ fn: 'finish_hand', ...kw }),
+      },
+    });
+    for (const [i, st] of gm.steps.entries()) {
+      n++;
+      let res;
+      try {
+        if (st.kind === 'start_hand') res = game.startHand(st.req);
+        else if (st.kind === 'action') res = game.action(st.req);
+        else res = game.currentState();
+      } catch (e) {
+        fails.push(`seed=${gm.seed} step${i} ${st.kind}: 例外 ${e.stack.split('\n').slice(0, 3).join(' / ')}`);
+        break;
+      }
+      const d = firstDiff(st.res, JSON.parse(JSON.stringify(res)));
+      const rngDiff = rng.count() !== st.rng ? `（乱数の消費数 Python ${st.rng} / JS ${rng.count()}）` : '';
+      if (d || rngDiff) {
+        fails.push(`seed=${gm.seed} step${i} ${st.kind} ${JSON.stringify(st.req)}: ${d || ''}${rngDiff}`);
+        break;   // 1つずれると以降は全部ずれるので、ゲームごとに最初の1件だけ出す
+      }
+    }
+    n++;
+    const d = firstDiff(gm.stats, JSON.parse(JSON.stringify(calls)));
+    if (d && !fails.some((f) => f.startsWith(`seed=${gm.seed} `))) fails.push(`seed=${gm.seed} 統計の保存呼び出し: ${d}`);
+  }
+  return { n, fails };
+}
+
 const CHECKS = {
+  game_tape: checkGameTape,
   pure_functions: checkPureFunctions,
   preflop: checkPreflop,
   postflop: checkPostflop,

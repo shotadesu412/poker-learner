@@ -195,3 +195,38 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 ### 次（フェーズ5）へのメモ
 - `PokerEngine` には `classify_board_texture` / `calculate_theoretical_bluff_frequency` など
   Evaluator・HandClassifier と同名の独自実装がある。混同しないこと
+
+## フェーズ5: エンジン・CPU AI・ゲーム進行（完了 2026/9/27、画面は未接続）
+
+### 追加したファイル（`static/poker/`）
+| ファイル | 元の Python |
+|---|---|
+| `rng.js` | 乱数。`Rng.real()`（本番, Box-Muller）/ `Rng.seeded(seed)`（テスト, fake_random.py と同一） |
+| `engine.js` | `poker_engine.py` の `PokerEngine`（配布・ポジション・ベット処理・CPU AI・ショーダウン手の生成） |
+| `game.js` | `app.py` の `/api/start_hand`・`/api/action`・`/api/state`・`get_game_state`。戻り値はサーバーの JSON と同じ形 |
+
+### 検証: 乱数テープ方式
+- Python の `random` モジュールと treys の `Deck.shuffle` を `tools/golden/fake_random.py` に差し替え、
+  実際の API を TestClient で叩いて 40ゲーム×5ハンドを最後までプレイ（`tools/golden/game_tape.py`）
+- JS は同じシードで同じ操作を再生し、**レスポンスの JSON 全体・統計の保存呼び出し・乱数の消費数まで全件一致**
+  （エクイティの値もビット一致）。ヒーローの行動はアプリのプリセット額（script.js）に合わせ、
+  境界値（プリフロップ合計 5.0bb）とオールインも混ぜている
+- テープ比較が実際に捕まえたバグ: 評価ロジック内のモンテカルロ（equity_vs_calling_range）が
+  エンジンと別の乱数を使っていた → `Evaluator.rng` をゲームがエンジンの乱数に差し替える形に修正
+- 意図的な移植ミス7種をすべて検出（短絡評価をやめて乱数を先に読む / 山札の先頭から引く /
+  レンジ更新の境界 / 標準オープン判定の境界 / レンジ圧縮の境界 / "3.0bb" を "3bb" と表示 / 乱数の系統を分ける）
+- 本番用の乱数でも 400ハンド回して例外 0件、CPU の行動頻度は全21項目で Python と誤差内（最大|z|=1.85）
+- 速度: 1ハンド約17ms（Node、数アクション込み）
+
+### 次（フェーズ6）でやること・注意
+- 画面（script.js）はまだサーバー API を呼んでいる。`PokerGame` に切り替えるときは:
+  - 統計の保存フック（startSession / logAction / finishHand）を IndexedDB に繋ぐ
+  - **フラグで切り替えられるようにし、段階的に移行する**（例: localStorage か ?engine=local）
+  - 読み込み順: rng → hand_table → hand_eval → pyfmt → messages → ranges → range_utils → equity →
+    ev_calculator → hand_classifier → bet_sizing → evaluator → engine → game（`Ranges.load()` と
+    `Messages.load()` を await してから開始）
+- **AIコーチ（/api/ai_coach）はサーバーのエンジン状態から相談内容を作っている**。
+  端末でエンジンを動かすと、サーバーには状態が無くなる → 端末から状態（ポジション・スタック・ボード・
+  ハンド・アクション履歴）を送る形に変える必要がある（フェーズ7）
+- `heroRangeRaw` / `cpuRangeRaw` は JS では Object に変換して返している。JS の Object は "22" 等の
+  キーを先頭に並べ替えるが、画面は表示にしか使っていないので順序は影響しない（接続時に確認すること）
