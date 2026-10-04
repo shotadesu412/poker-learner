@@ -23,15 +23,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 設定シート下のフッター。7回続けてタップすると端末計算モードを切り替える（実機テスト用の隠し操作）。
+    // 設定シート下のフッター。7回続けてタップするとサーバー計算モードに切り替える（切り分け用の隠し操作）。
+    // 既定は端末計算。もう一度7回で戻る。
     // アプリの WKWebView は alert/confirm を表示しないので、状態はフッターの文字で見せる
     function renderSettingsFooter() {
         const footer = document.getElementById("home-settings-footer");
         if (!footer) return;
-        let local = false;
-        try { local = localStorage.getItem("poker_engine") === "local"; } catch (e) { /* 読めなければ OFF 扱い */ }
-        footer.textContent = t("app.name") + (local ? " · " + t("home.engine_local_on") : "");
-        footer.classList.toggle("engine-local", local);
+        let server = false;
+        try { server = localStorage.getItem("poker_engine") === "server"; } catch (e) { /* 読めなければ OFF 扱い */ }
+        footer.textContent = t("app.name") + (server ? " · " + t("home.engine_server_on") : "");
+        footer.classList.toggle("engine-server", server);
     }
     let footerTaps = 0;
     let footerTapTimer = null;
@@ -42,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (footerTaps < 7) return;
         footerTaps = 0;
         try {
-            const next = localStorage.getItem("poker_engine") === "local" ? "server" : "local";
+            const next = localStorage.getItem("poker_engine") === "server" ? "local" : "server";
             localStorage.setItem("poker_engine", next);
         } catch (e) { /* 保存できない環境では何もしない */ }
         renderSettingsFooter();

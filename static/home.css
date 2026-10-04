@@ -219,7 +219,7 @@ body {
     -webkit-user-select: none;
     user-select: none;
 }
-.home-settings-footer.engine-local {
+.home-settings-footer.engine-server {
     color: #30d158;
 }
 .home-settings-separator {

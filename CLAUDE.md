@@ -60,19 +60,22 @@
 | 3 | エクイティ計算をJSへ | **完了**（`equity.js` / `range_utils.js`。MCは統計検定で一致） |
 | 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
 | 5 | エンジン・CPU AIをJSへ | **完了**（`engine.js` / `game.js`。乱数テープでハンド全体がビット一致。**画面にはまだ未接続**） |
-| 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **完了**（`?engine=local` で切替。**既定はサーバー計算のまま**。`static/game_api.js`） |
-| 7 | サーバーをAIコーチ専念構成に縮小 | **次はここ**（リロードでハンドが消えるのは許容と決定済み） |
+| 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **完了**（`static/game_api.js`。`?engine=server` / `?engine=local` で端末ごとに切替） |
+| 7 | サーバーをAIコーチ専念構成に縮小 | **進行中**。7-1 既定を端末計算に切替 = **完了（2026/10/4）** / 7-2 計算系 API と永続ディスクの削除 = **2026/11/4 以降** |
 
-### 現在の状態と次の一手（2026/9/27 セッション終了時点）
+### 現在の状態と次の一手（2026/10/4 時点）
 
-- **本番には全フェーズ push 済み**。既定はサーバー計算、shota の実機だけ隠しスイッチで端末計算 ON
-- shota の感想: 「計算クソ早くなった。ロジックも問題なさそう」
-- **いまは様子見期間（2〜3日）**。確認してほしいと伝えたこと: アプリを閉じて日をまたいでも統計が残るか /
-  分析ページの数字が積み上がるか / 端末モードでの AIコーチ相談が履歴に残るか
-- 様子見で問題なければ → **フェーズ7の最初の一歩 = `static/game_api.js` の `ENGINE_MODE` の既定を local にする**
-  （JS だけ・即 push で戻せる。**切り替える前に shota に確認**）。その後の順番:
-  既定切替 → しばらく置いて計算系 API を削除 → 最後に永続ディスクを外す（戻ってくる既存ユーザーが
-  `/api/stats/export` で取り込めるよう、待つ期間は切替時に shota と決める）
+- **2026/10/4: 全ユーザーの既定を端末計算に切り替えた**（`static/game_api.js` の `ENGINE_MODE`）。
+  9/27〜10/4 の様子見（shota の実機で統計の持ち越し・分析ページ・AIコーチ履歴を確認）で問題なし
+- 既存ユーザーは切替後の初回起動で `/api/stats/export` からサーバーの統計を IndexedDB に取り込む（1回だけ）
+- **全員をサーバー計算に戻す方法**: `ENGINE_MODE` の既定を server に戻して `game_api.js?v=` を上げて push。
+  ただし端末計算の間に積んだ統計は端末（IndexedDB）にしか無いので、戻すとその期間分は分析ページに出ない
+- **サーバー側はまだ何も消していない**（端末エンジンの準備に失敗した端末はサーバー計算に自動で戻るため必要）
+- **次の一手（2026/11/4 以降・着手前に shota に確認）**: 計算系 API（/api/start_hand・/api/action・/api/state・
+  統計系・/api/stats/export）と Python のエンジン一式を削除し、Render の永続ディスクを外す。
+  待つ期間は「両方1か月」と shota が決定（2026/10/4）。**1か月以上空けて戻ってきたユーザーの過去統計は失われる**
+  のを許容済み。消す前に、端末エンジン失敗時のサーバーへのフォールバック（`GameApi.init`）と
+  `/api/preflop_ranges`・課金系 API の扱いを整理すること
 - 移植完了後の改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
 - **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可）。
@@ -80,14 +83,13 @@
 
 ### 移植中の鉄則
 
-- **⚠️ アプリのアップデートが審査を通るまでは、サーバーでの計算を維持する**（2026/9/27 shota 指定）。
-  画面を JS エンジンに切り替えるのはフラグで行い、既定はサーバー計算のまま。サーバーの API
-  （/api/start_hand・/api/action・/api/state・統計系）を消したり壊したりしないこと。
+- **⚠️ 2026/11/4 まではサーバーの計算系 API を消したり壊したりしない**（/api/start_hand・/api/action・
+  /api/state・統計系・/api/stats/export）。端末エンジンの準備に失敗した端末のフォールバック先であり、
+  戻ってくる既存ユーザーの統計取り込み元でもある。
   Python 側を変更したら、push 前に「新しく clone した状態」で TestClient を回して動作確認する
-  → 2026/9/27 時点: 1.0.7 が公開済みで、審査待ちのアップデートは無い（移行に Swift の変更は不要）。
-  既定を端末計算に切り替える時期は shota に確認すること
-  **実機（アプリ内）で端末計算を試す: ホーム → 設定 → シート最下部の「ポーカーラッシュ」を7回タップ**
-  （もう一度7回で戻る。ON のときは緑字で「端末計算モード ON」と出る）
+  **実機（アプリ内）でサーバー計算に切り替える: ホーム → 設定 → シート最下部の「ポーカーラッシュ」を7回タップ**
+  （もう一度7回で端末計算に戻る。サーバー計算のときは緑字で「サーバー計算モード ON」と出る。不具合の切り分け用）
+- **画面を通した確認**: `tools/e2e/local_engine.js`（Playwright の WebKit。手順はファイル冒頭）
 
 - **バックアップは git タグ `python-engine-v1`**（移植前のPython実装を固定）
   `git show python-engine-v1:poker_engine.py` / `git worktree add /tmp/engine-v1 python-engine-v1`
@@ -132,6 +134,9 @@ iOSアプリ (SwiftUI + WKWebView)
         └── FastAPI (app.py) + 素のJS/HTML (static/) ← Render にデプロイ
               └── SQLite (poker_stats.db, Render永続ディスク /data)
 ```
+
+**2026/10/4〜 ゲーム進行・評価・統計は既定で端末側（`static/poker/` + IndexedDB）が計算する。**
+以下のサーバー側の記述（API・DB）はフォールバックと統計取り込み用に残っているもの。
 
 - **Web が本体**: ゲームロジック・課金ゲート・広告カウントは全部 Web 側。
   JS 修正は Render デプロイだけで全ユーザーに即反映（アプリ審査不要）
@@ -322,8 +327,8 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=5` / `home.css?v=8` /
-   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=3` / `game_api.js?v=1`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=6` / `home.css?v=9` /
+   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=4` / `game_api.js?v=2`（index.html, home.html, stats.html 内）
    `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 1）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`

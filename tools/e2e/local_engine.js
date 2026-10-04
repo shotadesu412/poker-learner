@@ -1,4 +1,4 @@
-// 端末エンジン（?engine=local）の通し確認。WKWebView と同じ WebKit で実際の画面を動かす。
+// 端末エンジン（既定。?engine=server でサーバー計算）の通し確認。WKWebView と同じ WebKit で実際の画面を動かす。
 //
 // 準備（リポジトリには入れない。scratchpad 等の作業用フォルダで）:
 //   npm install playwright@1 && npx playwright install webkit
@@ -6,7 +6,7 @@
 //   OPENAI_API_KEY=dummy POKER_DB_PATH=/tmp/x.db python3 -m uvicorn app:app --port 8765 &
 //   NODE_PATH=<作業用フォルダ>/node_modules node tools/e2e/local_engine.js
 //
-// 確認内容: サーバーモードで遊ぶ → 端末モードへ切替（初回の統計取り込み）→ ゲーム進行がサーバーを
+// 確認内容: フラグ無しの新規端末は端末モード・隠しスイッチでサーバーモードへ → サーバーモードで遊ぶ → 端末モードへ切替（初回の統計取り込み）→ ゲーム進行がサーバーを
 // 呼ばない → AIコーチに state が送られる → 分析ページが IndexedDB から集計 → サーバーモードに戻せる
 const { webkit } = require('playwright');
 const BASE = 'http://localhost:8765';
@@ -43,6 +43,27 @@ async function playActions(page, n) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => logs.push(m.type() + ': ' + m.text()));
   page.on('request', (r) => reqs.push(new URL(r.url()).pathname));
+
+  console.log('0. フラグ無しの端末は端末モード（既定）/ 隠しスイッチでサーバーモードへ');
+  await page.goto(BASE + '/play');
+  await page.waitForFunction(() => GameApi.game && currentState, null, { timeout: 15000 });
+  ok(await page.evaluate(() => GameApi.mode === 'local' && localStorage.getItem('poker_engine') === null), 'フラグ無しで端末エンジン');
+  ok(!reqs.some((p) => ['/api/start_hand', '/api/action', '/api/state'].includes(p)), 'ゲーム進行でサーバーを呼んでいない');
+  await page.goto(BASE + '/');
+  await sleep(800);
+  const footerText = () => page.evaluate(() => document.getElementById('home-settings-footer').textContent);
+  ok(!(await footerText()).includes('ON'), '既定ではフッターにモード表示なし: ' + await footerText());
+  await page.evaluate(() => { for (let i = 0; i < 7; i++) onSettingsFooterTap(); });
+  ok((await footerText()).includes('サーバー計算モード ON') && await page.evaluate(() => localStorage.getItem('poker_engine') === 'server'), '7回タップでサーバー計算モード: ' + await footerText());
+  await page.evaluate(() => { for (let i = 0; i < 7; i++) onSettingsFooterTap(); });
+  ok(!(await footerText()).includes('ON') && await page.evaluate(() => localStorage.getItem('poker_engine') === 'local'), 'もう7回で端末計算に戻る');
+  // 以降の「初回の統計取り込み」を確かめるため、端末側のデータを空に戻す
+  await page.evaluate(async () => {
+    localStorage.removeItem('poker_engine');
+    const dbs = await indexedDB.databases();
+    await Promise.all(dbs.map((d) => new Promise((res) => { const r = indexedDB.deleteDatabase(d.name); r.onsuccess = r.onerror = r.onblocked = res; })));
+  });
+  reqs.length = 0; logs.length = 0;
 
   console.log('1. サーバーモードでプレイ（既存ユーザーのデータを作る）');
   await page.goto(BASE + '/play?engine=server');

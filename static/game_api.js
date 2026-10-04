@@ -3,8 +3,8 @@
 // サーバー計算（/api/start_hand 等）と端末計算（static/poker/ の JS エンジン + IndexedDB）を
 // フラグで切り替える。どちらでも戻り値はサーバーの JSON と同じ形なので、画面側は区別しなくてよい。
 //
-// ⚠️ 既定はサーバー計算。アプリのアップデートが審査を通るまでは既定を変えないこと（CLAUDE.md）。
-//   端末計算を試す: URL に ?engine=local（localStorage に保存される）/ 戻す: ?engine=server
+// 既定は端末計算（2026/10/4〜）。サーバー計算に戻す: URL に ?engine=server（localStorage に保存される）
+//   / 端末計算に戻す: ?engine=local。全員を戻すときは下の ENGINE_MODE の既定を server にして push する
 //
 // 端末計算のモジュールは端末モードのときだけ読み込む（サーバーモードの通信量を増やさないため）。
 // 依存: i18n.js（withLang）
@@ -15,7 +15,7 @@ const ENGINE_MODE = (() => {
     try {
         const q = new URLSearchParams(location.search).get("engine");
         if (q === "local" || q === "server") localStorage.setItem("poker_engine", q);
-        return localStorage.getItem("poker_engine") === "local" ? "local" : "server";
+        return localStorage.getItem("poker_engine") === "server" ? "server" : "local";
     } catch (e) {
         return "server";
     }

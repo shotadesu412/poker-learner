@@ -236,9 +236,10 @@ python3 tools/golden/generate.py --check  # 回帰テスト（差分があれば
 ## フェーズ6: 統計を IndexedDB へ + 画面を JS エンジンに接続（完了 2026/9/27、既定はサーバー計算のまま）
 
 ### 切り替え方
-- **既定はサーバー計算**（審査通過までは変えない。CLAUDE.md の鉄則）
-- URL に `?engine=local` を付けると `localStorage.poker_engine` に保存され、以後その端末は端末計算。
-  `?engine=server` で戻る。切り替え口は `static/game_api.js`（`GameApi` / `StatsApi`）1か所だけ
+- **既定は端末計算（2026/10/4〜。フェーズ7-1）**。それまではサーバー計算が既定だった
+- URL に `?engine=server` を付けると `localStorage.poker_engine` に保存され、以後その端末はサーバー計算。
+  `?engine=local` で戻る。切り替え口は `static/game_api.js`（`GameApi` / `StatsApi`）1か所だけ
+- 計算系 API と永続ディスクの削除は 2026/11/4 以降（shota 決定「両方1か月」）
 - 端末計算の準備（モジュール読み込み等）に失敗したら自動でサーバー計算に戻る
 - 端末モードのモジュールは端末モードのときだけ動的に読み込む（サーバーモードの通信量は増えない）。
   `static/poker/` を変えたら `game_api.js` の `POKER_JS_VERSION` を上げること
