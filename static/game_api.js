@@ -9,7 +9,7 @@
 // 端末計算のモジュールは端末モードのときだけ読み込む（サーバーモードの通信量を増やさないため）。
 // 依存: i18n.js（withLang）
 
-const POKER_JS_VERSION = 1;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 2;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 const ENGINE_MODE = (() => {
     try {

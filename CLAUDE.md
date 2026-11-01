@@ -76,7 +76,7 @@
   待つ期間は「両方1か月」と shota が決定（2026/10/4）。**1か月以上空けて戻ってきたユーザーの過去統計は失われる**
   のを許容済み。消す前に、端末エンジン失敗時のサーバーへのフォールバック（`GameApi.init`）と
   `/api/preflop_ranges`・課金系 API の扱いを整理すること
-- **評価ロジックの監査結果（2026/11/1）**: 72o のオープンが ◎ になる等の重大な問題あり。MIGRATION_NOTES.md「評価ロジック監査」参照
+- **評価ロジックの監査結果（2026/11/1）**: 13件中 #1 #4 #5 #6（プリフロップの判定）は修正済み（Python/JS 両方）。残りは MIGRATION_NOTES.md「評価ロジック監査」参照
 - 移植完了後の改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
 - **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可）。
@@ -330,8 +330,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=11` / `script.js?v=29` / `home.js?v=6` / `home.css?v=9` /
-   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=4` / `game_api.js?v=2`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 1）で一括管理
+   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=4` / `game_api.js?v=3`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 2）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 

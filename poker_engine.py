@@ -313,7 +313,8 @@ class Evaluator:
         pos_ranges = ranges.RANGES.get(hero_pos, {})
 
         if facing_bet == 0:
-            call_range = pos_ranges.get("open", {})
+            # ファーストイン。レンジ内はレイズで入るのが正解で、リンプ（コール）のレンジは持たない
+            call_range = {}
             raise_range = pos_ranges.get("open", {})
             fold_msg = t("preflop.foldmsg.open")
         elif not is_3bet_pot:
@@ -370,6 +371,13 @@ class Evaluator:
                 return "play", EVAL_OPTIMAL, t("preflop.fold.optimal", fold_msg=fold_msg)
                 
         return "play", EVAL_GOOD, reason_txt
+
+    @staticmethod
+    def apply_first_in(eval_dict, cards, action, hero_pos):
+        """ファーストイン（誰も参加していない場面）の判定で置き換える。ev は呼び出し元の値を保つ"""
+        gto_action = "RAISE" if action == "BET" else action
+        _, evaluation, reason = Evaluator.evaluate_preflop_action_gto(cards, gto_action, hero_pos, False, 0)
+        return {**eval_dict, "evaluation": evaluation, "reason": reason}
 
     @staticmethod
     def evaluate_call(equity, call_amount, pot_size, hero_pos="BTN", cards=None, is_3bet_pot=False, board=None, effective_stack=0.0, range_adv=0.5, hero_range_dict=None, street=None):
@@ -641,11 +649,11 @@ class Evaluator:
 
 
     @staticmethod
-    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, effective_stack=0.0, street=None, cpu_range_dict=None):
+    def evaluate_raise(equity, raise_amount, opponent_bet_size, pot_size, hero_pos="BTN", cards=None, board=None, range_adv=0.5, hero_range_dict=None, effective_stack=0.0, street=None, cpu_range_dict=None, is_3bet_pot=False):
         preflop_prefix = ""
         # PREFLOP RANGE CHECK
         if not board:
-            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "RAISE", hero_pos, is_3bet_pot=False, facing_bet=opponent_bet_size)
+            decision, e_eval, e_reason = Evaluator.evaluate_preflop_action_gto(cards, "RAISE", hero_pos, is_3bet_pot=is_3bet_pot, facing_bet=opponent_bet_size)
             preflop_prefix = e_reason + "\n"
             
             if decision == "fold" or decision == "mix":
@@ -895,6 +903,20 @@ class PokerEngine:
         else:
              return postflop_order.index(self.hero_position) < postflop_order.index(self.cpu_position)
              
+    @property
+    def preflop_raise_count(self):
+        """プリフロップのレイズ回数（オープン=1、3ベット=2）。ポストフロップでも参照する"""
+        return sum(1 for a in self.action_history if a["street"] == "PREFLOP" and a["action"] in ("BET", "RAISE"))
+
+    @property
+    def is_3bet_pot(self):
+        return self.preflop_raise_count >= 2
+
+    @property
+    def is_first_in(self):
+        """プリフロップでまだ誰もアクションしていない"""
+        return self.street == "PREFLOP" and len(self.action_history) == 0
+
     @property
     def is_hero_ip(self):
         """ True if Hero acts last postflop (In Position) """

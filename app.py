@@ -254,8 +254,12 @@ def take_action(req: ActionRequest):
                 hero_all_in = True
 
         # 1. Calc Equity
-        # Determine if 3bet pot (heuristic based on standard sizings)
-        is_3bet_pot = (eng.street == "PREFLOP" and eng.current_bet > 2.5) or (eng.street != "PREFLOP" and eng.pot_size > 12.0)
+        is_3bet_pot = eng.is_3bet_pot
+        is_first_in = eng.is_first_in  # record_action の前に読む
+
+        def first_in(result):
+            return Evaluator.apply_first_in(result, eng.hero_hand, action, eng.hero_position) if is_first_in else result
+
         effective_stack = min(eng.hero_stack, eng.cpu_stack)
 
         is_preflop = (eng.street == "PREFLOP")
@@ -278,10 +282,10 @@ def take_action(req: ActionRequest):
         if action == "FOLD":
             eng.update_range_dict("HERO", "FOLD", 0)
             eng.record_action("HERO", "FOLD", 0, realized_equity, eng.pot_size)
-            eval_dict = Evaluator.evaluate_fold(
+            eval_dict = first_in(Evaluator.evaluate_fold(
                 hero_eq, hero_facing, eng.pot_size,
                 hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, range_adv=hero_range_adv, effective_stack=effective_stack, street=eng.street
-            )
+            ))
             ev_fold = eval_dict.get("ev", 0.0)
             ev_call_alt = Evaluator.ev_call(hero_eq, eng.pot_size, hero_facing) if hero_facing > 0 else 0.0
             ev_loss_fold = max(0.0, ev_call_alt - ev_fold)
@@ -302,10 +306,10 @@ def take_action(req: ActionRequest):
             call_amount = min(hero_facing, eng.hero_stack)  # オールインコール対応
             if call_amount >= eng.hero_stack - 0.01:
                 hero_all_in = True
-            eval_dict = Evaluator.evaluate_call(
+            eval_dict = first_in(Evaluator.evaluate_call(
                 hero_eq, call_amount, eng.pot_size,
                 hero_pos=eng.hero_position, cards=eng.hero_hand, is_3bet_pot=is_3bet_pot, board=eng.board, effective_stack=effective_stack, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, street=eng.street
-            )
+            ))
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
             ev_call_val = eval_dict.get("ev", 0.0)
@@ -327,7 +331,8 @@ def take_action(req: ActionRequest):
                     hero_eq, amount, hero_facing, eng.pot_size,
                     hero_pos=eng.hero_position, cards=eng.hero_hand, board=eng.board, range_adv=hero_range_adv, hero_range_dict=eng.hero_range_dict, effective_stack=effective_stack, street=eng.street,
                     # 「レイズしてコールされたとき勝っているか」の算出に使う
-                    cpu_range_dict=eng.cpu_range_dict
+                    cpu_range_dict=eng.cpu_range_dict,
+                    is_3bet_pot=is_3bet_pot
                 )
             else:
                 eval_dict = Evaluator.evaluate_bet(
@@ -338,6 +343,7 @@ def take_action(req: ActionRequest):
                     # ドンクベット = OOP かつ非アグレッサーが先に打つ
                     is_donk=(eng.street != "PREFLOP" and eng.aggressor != "HERO" and not eng.is_hero_ip)
                 )
+            eval_dict = first_in(eval_dict)
             eval_result = eval_dict["evaluation"]
             eval_reason = eval_dict["reason"]
             ev_bet_val = eval_dict.get("ev", 0.0)

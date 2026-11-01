@@ -171,7 +171,8 @@
       const empty = new Map();
       let callRange, raiseRange, foldMsg;
       if (facingBet === 0) {
-        callRange = getOr(posRanges, 'open', empty);
+        // ファーストイン。レンジ内はレイズで入るのが正解で、リンプ（コール）のレンジは持たない
+        callRange = empty;
         raiseRange = getOr(posRanges, 'open', empty);
         foldMsg = t('preflop.foldmsg.open');
       } else if (!is3betPot) {
@@ -207,6 +208,13 @@
         return ['play', B.EVAL_OPTIMAL, t('preflop.fold.optimal', { fold_msg: foldMsg })];
       }
       return ['play', B.EVAL_GOOD, reason];
+    },
+
+    // ファーストイン（誰も参加していない場面）の判定で置き換える。ev は呼び出し元の値を保つ
+    applyFirstIn(evalDict, cards, action, heroPos) {
+      const gtoAction = action === 'BET' ? 'RAISE' : action;
+      const [, evaluation, reason] = Evaluator.evaluatePreflopActionGto(cards, gtoAction, heroPos, false, 0);
+      return { ...evalDict, evaluation, reason };
     },
 
     evaluateCall(equity, callAmount, potSize, heroPos = 'BTN', cards = null, is3betPot = false, board = null,
@@ -366,11 +374,11 @@
     },
 
     evaluateRaise(equity, raiseAmount, opponentBetSize, potSize, heroPos = 'BTN', cards = null, board = null,
-                  rangeAdv = 0.5, heroRange = null, effectiveStack = 0.0, street = null, cpuRange = null) {
+                  rangeAdv = 0.5, heroRange = null, effectiveStack = 0.0, street = null, cpuRange = null, is3betPot = false) {
       const { BetSizing: B, HandClassifier: HC } = root;
       let prefix = '';
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, false, opponentBetSize);
+        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, is3betPot, opponentBetSize);
         prefix = eReason + '\n';
         if (decision === 'fold' || decision === 'mix') {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: prefix };

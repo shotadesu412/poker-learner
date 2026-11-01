@@ -85,6 +85,20 @@
       return POSTFLOP_ORDER.indexOf(this.heroPosition) > POSTFLOP_ORDER.indexOf(this.cpuPosition);
     }
 
+    // プリフロップのレイズ回数（オープン=1、3ベット=2）。ポストフロップでも参照する
+    get preflopRaiseCount() {
+      return this.actionHistory.filter((a) => a.street === 'PREFLOP' && (a.action === 'BET' || a.action === 'RAISE')).length;
+    }
+
+    get is3betPot() {
+      return this.preflopRaiseCount >= 2;
+    }
+
+    // プリフロップでまだ誰もアクションしていない
+    get isFirstIn() {
+      return this.street === 'PREFLOP' && this.actionHistory.length === 0;
+    }
+
     startNewHand() {
       const { Ranges } = root;
       this.street = 'PREFLOP';

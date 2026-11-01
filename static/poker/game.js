@@ -112,8 +112,10 @@
         if (amount >= maxAdd - 0.01) { amount = maxAdd; heroAllIn = true; }
       }
 
-      // 1. エクイティ（3bet ポットは標準サイズからの推定）
-      const is3betPot = (eng.street === 'PREFLOP' && eng.currentBet > 2.5) || (eng.street !== 'PREFLOP' && eng.potSize > 12.0);
+      // 1. エクイティ
+      const is3betPot = eng.is3betPot;
+      const isFirstIn = eng.isFirstIn;   // recordAction の前に読む
+      const firstIn = (evalDict) => (isFirstIn ? Ev.applyFirstIn(evalDict, eng.heroHand, action, eng.heroPosition) : evalDict);
       const effectiveStack = Math.min(eng.heroStack, eng.cpuStack);
       const isPreflop = eng.street === 'PREFLOP';
       const [heroEq, cpuEq] = this._equity(1000);
@@ -133,8 +135,8 @@
       if (action === 'FOLD') {
         eng.updateRangeDict('HERO', 'FOLD', 0);
         eng.recordAction('HERO', 'FOLD', 0, realizedEquity, eng.potSize);
-        const evalDict = Ev.evaluateFold(heroEq, heroFacing, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
-          eng.board, heroRangeAdv, effectiveStack, eng.street);
+        const evalDict = firstIn(Ev.evaluateFold(heroEq, heroFacing, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
+          eng.board, heroRangeAdv, effectiveStack, eng.street));
         const evFold = evalDict.ev ?? 0.0;
         const evCallAlt = heroFacing > 0 ? Ev.evCall(heroEq, eng.potSize, heroFacing) : 0.0;
         const evLossFold = Math.max(0.0, evCallAlt - evFold);
@@ -148,8 +150,8 @@
       } else if (action === 'CALL') {
         const callAmount = Math.min(heroFacing, eng.heroStack);   // オールインコール対応
         if (callAmount >= eng.heroStack - 0.01) heroAllIn = true;
-        const evalDict = Ev.evaluateCall(heroEq, callAmount, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
-          eng.board, effectiveStack, heroRangeAdv, eng.heroRange, eng.street);
+        const evalDict = firstIn(Ev.evaluateCall(heroEq, callAmount, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
+          eng.board, effectiveStack, heroRangeAdv, eng.heroRange, eng.street));
         evalResult = evalDict.evaluation;
         evalReason = evalDict.reason;
         const evCallVal = evalDict.ev ?? 0.0;
@@ -163,13 +165,14 @@
         let evalDict;
         if (action === 'RAISE') {
           evalDict = Ev.evaluateRaise(heroEq, amount, heroFacing, eng.potSize, eng.heroPosition, eng.heroHand, eng.board,
-            heroRangeAdv, eng.heroRange, effectiveStack, eng.street, eng.cpuRange);
+            heroRangeAdv, eng.heroRange, effectiveStack, eng.street, eng.cpuRange, is3betPot);
         } else {
           // ドンクベット = OOP かつ非アグレッサーが先に打つ
           const isDonk = eng.street !== 'PREFLOP' && eng.aggressor !== 'HERO' && !eng.isHeroIp;
           evalDict = Ev.evaluateBet(heroEq, amount, eng.potSize, eng.heroPosition, eng.heroHand, eng.board, heroRangeAdv,
             effectiveStack, eng.street, eng.heroRange, eng.cpuRange, isDonk);
         }
+        evalDict = firstIn(evalDict);
         evalResult = evalDict.evaluation;
         evalReason = evalDict.reason;
         const evBetVal = evalDict.ev ?? 0.0;
