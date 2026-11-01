@@ -325,6 +325,9 @@ async function takeAction(actionType, amount = 0) {
         // Update state
         currentState = data.state;
 
+        // ハンド終了: 勝った直後ならレビュー依頼（表示を見終わる頃に出す）
+        if (data.state && data.state.finished) noteHandFinished(data);
+
         // ショーダウン勝敗表示
         if (data.state && data.state.showdownResult) {
             setTimeout(() => showShowdownResult(data.state.showdownResult), 400 * speedMult);
@@ -1165,6 +1168,43 @@ function maybeShowHandAd() {
     } else if (phase === 0) {
         showInterstitialAd();
     }
+}
+
+// --- App Store レビュー依頼 ---
+// 表示は iOS 純正のダイアログで、OS が年3回までに制限する（呼んでも出ないことがある）。
+// Apple のガイドラインで禁止されているので、事前に「気に入りましたか？」と聞いて振り分けないこと。
+const REVIEW_MIN_HANDS = 20;       // 累計ハンド数がこれ未満なら頼まない
+const REVIEW_INTERVAL_DAYS = 120;  // 前回からこの日数は頼まない（年3回の上限に合わせる）
+const REVIEW_DELAY_MS = 2500;      // 勝敗の表示を見終わるまで待つ
+
+function readReviewNumber(key) {
+    try { return Number(localStorage.getItem(key)) || 0; } catch (e) { return 0; }
+}
+
+function noteHandFinished(data) {
+    const total = readReviewNumber("poker_total_hands") + 1;
+    try { localStorage.setItem("poker_total_hands", String(total)); } catch (e) { /* 数えられなければ頼まないだけ */ }
+
+    // showdownResult は CPU フォールド時も入るが、それは後から作った手での比較なので使わない
+    const heroWon = data.cpuAction === "FOLD" ||
+        (data.state.showdownResult && data.state.showdownResult.winner === "YOU");
+    if (!heroWon || total < REVIEW_MIN_HANDS) return;
+
+    const elapsedDays = (Date.now() - readReviewNumber("poker_review_requested_at")) / 86400000;
+    if (elapsedDays < REVIEW_INTERVAL_DAYS) return;
+
+    // 次のハンドの開始でインタースティシャルが出るなら、続けて割り込まない
+    if (!isPremium && (handPlayCount + 1) % AD_HAND_INTERVAL === 0) return;
+
+    setTimeout(requestAppReview, REVIEW_DELAY_MS);
+}
+
+function requestAppReview() {
+    try {
+        window.webkit.messageHandlers.requestReview.postMessage({});
+        // 記録は送れたときだけ。旧アプリ・ブラウザでは記録せず、アプリ更新後に頼めるようにする
+        localStorage.setItem("poker_review_requested_at", String(Date.now()));
+    } catch (e) { /* 旧アプリ・iOSアプリ外では無視 */ }
 }
 
 // --- AIコーチのゲート（広告/プレミアム選択） ---

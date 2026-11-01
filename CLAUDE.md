@@ -76,6 +76,7 @@
   待つ期間は「両方1か月」と shota が決定（2026/10/4）。**1か月以上空けて戻ってきたユーザーの過去統計は失われる**
   のを許容済み。消す前に、端末エンジン失敗時のサーバーへのフォールバック（`GameApi.init`）と
   `/api/preflop_ranges`・課金系 API の扱いを整理すること
+- **評価ロジックの監査結果（2026/11/1）**: 72o のオープンが ◎ になる等の重大な問題あり。MIGRATION_NOTES.md「評価ロジック監査」参照
 - 移植完了後の改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
 - **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可）。
@@ -153,6 +154,7 @@ iOSアプリ (SwiftUI + WKWebView)
 | `requestPrice` | 価格表示更新 |
 | `showRewardedAd` / `showInterstitialAd` | 広告表示 |
 | `prepareRewardedAd` / `prepareInterstitialAd` | 表示直前ロード（v1.0.7+） |
+| `requestReview` | App Store レビュー依頼（v1.0.8+）。条件は `script.js` の `noteHandFinished`（累計20ハンド以上・勝った直後・120日に1回） |
 
 | Swift → JS | 用途 |
 |---|---|
@@ -327,7 +329,7 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=11` / `script.js?v=28` / `home.js?v=6` / `home.css?v=9` /
+   現在値: `style.css?v=11` / `script.js?v=29` / `home.js?v=6` / `home.css?v=9` /
    `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=4` / `game_api.js?v=2`（index.html, home.html, stats.html 内）
    `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 1）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
@@ -335,8 +337,7 @@ poker-learner/
 
 ### iOS アプリ
 - バージョンは pbxproj の `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`（2箇所ずつ）。
-  **現在: 1.0.7 (13) — App Store で公開中**（広告表示率改善＋英語対応。2026/9/27 shota 確認）。
-  **次に出すときは 1.0.8 以上 / ビルド 14 以上**にすること
+  **公開中: 1.0.7 (13)**（2026/9/27 shota 確認）。**pbxproj は次回提出用の 1.0.8 (14)**（レビュー依頼を追加、2026/11/1）
   （Organizer に残っている `1.0.8 (13)`(8/14) は誤って作った未提出のもの。使わない）
 - `ITSAppUsesNonExemptEncryption = false` を Info.plist に設定済み
   （HTTPSのみで独自暗号化なし → 免除。提出のたびの質問が出なくなる）

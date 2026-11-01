@@ -1,4 +1,5 @@
 import Combine
+import StoreKit
 import SwiftUI
 import UIKit
 import WebKit
@@ -138,6 +139,11 @@ private final class WeakMessageHandler: NSObject, WKScriptMessageHandler {
                 AdManager.shared.preloadRewarded()
             } else if message.name == "prepareInterstitialAd" {
                 AdManager.shared.preloadInterstitial()
+            } else if message.name == "requestReview" {
+                // いつ頼むかは Web 側（script.js の noteHandFinished）が決める
+                let scene = UIApplication.shared.connectedScenes
+                    .first { $0.activationState == .foregroundActive } as? UIWindowScene
+                if let scene { AppStore.requestReview(in: scene) }
             }
         }
     }
@@ -158,6 +164,7 @@ struct WebViewContainer: UIViewRepresentable {
         config.userContentController.add(handler, name: "showInterstitialAd")
         config.userContentController.add(handler, name: "prepareRewardedAd")
         config.userContentController.add(handler, name: "prepareInterstitialAd")
+        config.userContentController.add(handler, name: "requestReview")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.1, alpha: 1)
