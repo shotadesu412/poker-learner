@@ -80,7 +80,7 @@
 - 移植完了後の改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
 - **ブランチ `phase7-2-ai-coach-only` の内容**: 計算系・統計・サブスク・レンジの API、Python エンジン一式、フォールバック、隠しスイッチ、統計取り込みを削除。プレミアムは localStorage + StoreKit の `onEntitlementStatus` のみ。端末エンジンの読み込み失敗時は再読み込みを案内。**`render.yaml` のディスク設定は意図的に残している**（Blueprint 同期で消えるおそれがあるため、バックアップ後に別作業で外す）。削除前の Python は git タグ `python-engine-final`
-- **マージ後のテスト**: Python が無くなるので `generate.py` / `game_tape.py` は使えない。`node tools/golden/check_js.js` は固定ベクタとの比較として残る。評価を意図的に変えるときのベクタ更新手段は JS 側に作る必要がある
+- **マージ後のテスト**: Python が無くなるので `generate.py` / `game_tape.py` は使えない。回帰テストは `node tools/golden/check_js.js`。評価を意図的に変えるときは、`node tools/golden/compare.js` で修正前後の差分を確認してから `check_js.js --update` で期待値を更新し、`git diff` を見る（レンジとハンド評価のベクタは更新対象外）
 - **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可）。
   push のたびに全ユーザーが一瞬止まるので、ドキュメントだけの変更で push しない
 

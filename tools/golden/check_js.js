@@ -1,12 +1,23 @@
 // JS 移植版をゴールデンテストベクタと突き合わせる。
-//   node tools/golden/check_js.js      （差分があれば exit 1）
-// フェーズが進むごとに CHECKS へ追加していく。
+//   node tools/golden/check_js.js            （差分があれば exit 1）
+//   node tools/golden/check_js.js --update   意図して挙動を変えたときに期待値を今の JS の結果へ更新する
+//
+// --update の前に必ず通常実行と tools/golden/compare.js で差分が意図どおりか確認し、更新後は git diff で確認すること。
+// 更新できるのは評価・計算・ゲーム進行・統計。ranges / range_order / range_update / hand_evaluator / equity_mc は対象外
+// （レンジやハンド評価を変えたときに、誤りをそのまま期待値にしないため。Python 版はタグ python-engine-final）。
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const VEC = path.join(__dirname, 'vectors');
 const load = (name) => JSON.parse(fs.readFileSync(path.join(VEC, name + '.json'), 'utf8'));
+const UPDATE = process.argv.includes('--update');
+const updated = {};
+function save(name, data, count) {
+  if (!UPDATE || !count) return;
+  fs.writeFileSync(path.join(VEC, name + '.json'), JSON.stringify(data, null, 0).replace(/\},\{/g, '},\n{'));
+  updated[name] = count;
+}
 
 function checkHandEvaluator() {
   const { Card, HandEvaluator } = require(path.join(ROOT, 'static', 'poker', 'hand_eval.js'));
@@ -220,6 +231,7 @@ function checkPureFunctions() {
   P('messages').setLang('ja');
   const rows = load('pure_functions');
   const fails = [];
+  let changed = 0;
   const r6 = (x) => Py.round(x, 6);
   const cs = (arr) => arr.map(Card.fromStr);
   for (const r of rows) {
@@ -240,8 +252,10 @@ function checkPureFunctions() {
       case 'bet_sizing': got = BS.evaluateBetSizing(r.pot, r.bet, r.texture).evaluation; break;
       default: fails.push('未知の fn: ' + r.fn); continue;
     }
-    if (got !== r.out) fails.push(`${r.fn} ${JSON.stringify(r)}: 実際 ${got}`);
+    if (got === r.out) continue;
+    if (UPDATE) { r.out = got; changed++; } else fails.push(`${r.fn} ${JSON.stringify(r)}: 実際 ${got}`);
   }
+  save('pure_functions', rows, changed);
   return { n: rows.length, fails };
 }
 
@@ -251,14 +265,17 @@ function checkPreflop() {
   P('messages').setLang('ja');
   const rows = load('preflop');
   const fails = [];
+  let changed = 0;
   const toCards = (combo) => (combo.length === 2 ? [combo[0] + 's', combo[1] + 'h']
     : combo[2] === 's' ? [combo[0] + 's', combo[1] + 's'] : [combo[0] + 's', combo[1] + 'h']).map(Card.fromStr);
   for (const r of rows) {
     const [decision, ev] = Ev.evaluatePreflopActionGto(toCards(r.combo), r.action, r.pos, r.is_3bet_pot, r.facing_bet);
     if (decision !== r.decision || ev !== r.evaluation) {
+      if (UPDATE) { r.decision = decision; r.evaluation = ev; changed++; continue; }
       fails.push(`${r.combo} ${r.pos} ${r.action} facing=${r.facing_bet} 3bet=${r.is_3bet_pot}: 期待 ${r.decision}/${r.evaluation} 実際 ${decision}/${ev}`);
     }
   }
+  save('preflop', rows, changed);
   return { n: rows.length, fails };
 }
 
@@ -268,6 +285,7 @@ function checkPostflop() {
   P('messages').setLang('ja');
   const rows = load('postflop');
   const fails = [];
+  let changed = 0;
   const r6 = (x) => Py.round(x, 6);
   for (const r of rows) {
     const board = BOARDS[r.board].map(Card.fromStr);
@@ -277,13 +295,17 @@ function checkPostflop() {
     if (r.fn === 'call') {
       const c = Ev.evaluateCall(r.equity, r.bet, potIncl, 'BB', hero, false, board, 95.0, r.range_adv, null, r.street);
       bad = c.evaluation !== r.evaluation || r6(c.ev) !== r.ev || r6(c.realized_eq) !== r.realized_eq || r6(c.req_eq) !== r.req_eq;
+      if (bad && UPDATE) Object.assign(r, { evaluation: c.evaluation, ev: r6(c.ev), realized_eq: r6(c.realized_eq), req_eq: r6(c.req_eq) });
     } else {
       const f = Ev.evaluateFold(r.equity, r.bet, potIncl, 'BB', hero, false, board, r.range_adv, 95.0, r.street);
       bad = f.evaluation !== r.evaluation || r6(f.realized_eq) !== r.realized_eq || r6(f.req_eq) !== r.req_eq ||
         (f.mdf === undefined ? null : f.mdf) !== (r.mdf === undefined ? null : r.mdf);
+      if (bad && UPDATE) Object.assign(r, { evaluation: f.evaluation, realized_eq: r6(f.realized_eq), req_eq: r6(f.req_eq), mdf: f.mdf === undefined ? null : f.mdf });
     }
-    if (bad) fails.push(`${r.fn} ${r.board} ${r.hand} eq=${r.equity} pot=${r.pot_before} bet=${r.bet} adv=${r.range_adv}`);
+    if (bad && UPDATE) changed++;
+    else if (bad) fails.push(`${r.fn} ${r.board} ${r.hand} eq=${r.equity} pot=${r.pot_before} bet=${r.bet} adv=${r.range_adv}`);
   }
+  save('postflop', rows, changed);
   return { n: rows.length, fails };
 }
 
@@ -293,6 +315,7 @@ function checkBetRaiseCheck() {
   P('messages').setLang('ja');
   const rows = load('bet_raise_check');
   const fails = [];
+  let changed = 0;
   const board = BOARDS['dry_K83r'].map(Card.fromStr);
   const hero = ['7s', '7d'].map(Card.fromStr);
   const hr = new Map([['AA', 1.0]]), cr = new Map([['KK', 1.0]]);
@@ -304,9 +327,11 @@ function checkBetRaiseCheck() {
         return Ev.evaluateCheck(r.equity, r.pot, 'BTN', r.has_initiative, r.is_hero_ip, hero, board, 0.5, 95.0, r.street, hr, cr);
       }));
     if (got.evaluation !== r.evaluation) {
+      if (UPDATE) { r.evaluation = got.evaluation; changed++; continue; }
       fails.push(`${r.fn} ${JSON.stringify(r)}: 実際 ${got.evaluation}`);
     }
   }
+  save('bet_raise_check', rows, changed);
   return { n: rows.length, fails };
 }
 
@@ -320,6 +345,12 @@ function checkEvaluatorFull() {
   const S = exp.strings;
   const fails = [];
   let n = 0;
+  let changed = 0;
+  const stringIndex = new Map(S.map((x, i) => [x, i]));
+  const intern = (x) => {
+    if (!stringIndex.has(x)) { stringIndex.set(x, S.length); S.push(x); }
+    return stringIndex.get(x);
+  };
   const cs = (arr) => arr.map(Card.fromStr);
   const inLangs = (fn) => {
     Msg.setLang('ja'); const ja = fn();
@@ -342,7 +373,10 @@ function checkEvaluatorFull() {
     const d = diff(`preflop ${r.combo} ${r.pos} ${r.action} facing=${r.facing_bet} 3bet=${r.is_3bet_pot}`,
       { decision: r.decision, evaluation: r.evaluation, reason_ja: S[r.reason_ja], reason_en: S[r.reason_en] },
       { decision: ja[0], evaluation: ja[1], reason_ja: ja[2], reason_en: en[2] });
-    if (d) fails.push(d);
+    if (d && UPDATE) {
+      Object.assign(r, { decision: ja[0], evaluation: ja[1], reason_ja: intern(ja[2]), reason_en: intern(en[2]) });
+      changed++;
+    } else if (d) fails.push(d);
   }
 
   const hr = new Map([['AA', 1.0]]), cr = new Map([['KK', 1.0]]);
@@ -365,7 +399,12 @@ function checkEvaluatorFull() {
       reason_ja: ja.reason, reason_en: en.reason };
     if ('mdf' in r || 'mdf' in ja) { want.mdf = r.mdf; got.mdf = ja.mdf; }
     const d = diff(`${r.fn} ${r.hand} [${r.board}] ${r.pos} eq=${r.equity} pot=${r.pot} bet=${r.bet} stack=${r.stack}`, want, got);
-    if (d) fails.push(d);
+    if (d && UPDATE) {
+      Object.assign(r, { evaluation: ja.evaluation, ev: ja.ev, req_eq: ja.req_eq, realized_eq: ja.realized_eq,
+        reason_ja: intern(ja.reason), reason_en: intern(en.reason) });
+      if ('mdf' in got) r.mdf = ja.mdf;
+      changed++;
+    } else if (d) fails.push(d);
   }
 
   for (const r of exp.parts) {
@@ -384,11 +423,14 @@ function checkEvaluatorFull() {
     };
     const d = diff(`parts ${r.hand} [${r.board}] ${r.pos} spr=${r.spr} street=${r.street}`,
       { eqr: r.eqr, pi: r.pi, category: r.category, draw: r.draw, texture: r.texture, combo: r.combo }, got);
-    if (d) fails.push(d);
+    if (d && UPDATE) { Object.assign(r, got); changed++; } else if (d) fails.push(d);
     const ds = diff(`sizing pot=${r.pot} bet=${r.bet} ${texture} spr=${r.sizing_spr}`,
       { evaluation: r.sizing.evaluation, reason_ja: S[r.sizing.reason_ja], reason_en: S[r.sizing.reason_en] },
       { evaluation: sz.ja.evaluation, reason_ja: sz.ja.reason, reason_en: sz.en.reason });
-    if (ds) fails.push(ds);
+    if (ds && UPDATE) {
+      r.sizing = { evaluation: sz.ja.evaluation, reason_ja: intern(sz.ja.reason), reason_en: intern(sz.en.reason) };
+      changed++;
+    } else if (ds) fails.push(ds);
   }
 
   for (const r of exp.format) {
@@ -401,6 +443,7 @@ function checkEvaluatorFull() {
       if (got !== r.round3) fails.push(`round(${r.x}, 3): 期待 ${r.round3} 実際 ${got}`);
     }
   }
+  save('evaluator_full', exp, changed);
   return { n, fails };
 }
 
@@ -429,6 +472,7 @@ function checkGameTape() {
   const games = load('game_tape');
   const fails = [];
   let n = 0;
+  let changed = 0;
   for (const gm of games) {
     const rng = Rng.seeded(gm.seed);
     const calls = [];
@@ -454,15 +498,24 @@ function checkGameTape() {
       }
       const d = firstDiff(st.res, JSON.parse(JSON.stringify(res)));
       const rngDiff = rng.count() !== st.rng ? `（乱数の消費数 Python ${st.rng} / JS ${rng.count()}）` : '';
-      if (d || rngDiff) {
+      if (UPDATE && (d || rngDiff)) {
+        st.res = JSON.parse(JSON.stringify(res));
+        st.rng = rng.count();
+        changed++;
+      } else if (d || rngDiff) {
         fails.push(`seed=${gm.seed} step${i} ${st.kind} ${JSON.stringify(st.req)}: ${d || ''}${rngDiff}`);
         break;   // 1つずれると以降は全部ずれるので、ゲームごとに最初の1件だけ出す
       }
     }
     n++;
     const d = firstDiff(gm.stats, JSON.parse(JSON.stringify(calls)));
-    if (d && !fails.some((f) => f.startsWith(`seed=${gm.seed} `))) fails.push(`seed=${gm.seed} 統計の保存呼び出し: ${d}`);
+    if (d && UPDATE && !fails.some((f) => f.startsWith(`seed=${gm.seed} `))) {
+      gm.stats = JSON.parse(JSON.stringify(calls));
+      changed++;
+    } else if (d && !fails.some((f) => f.startsWith(`seed=${gm.seed} `))) fails.push(`seed=${gm.seed} 統計の保存呼び出し: ${d}`);
   }
+  // 例外で止まったゲームがあれば、ずれた内容を期待値にしないよう1件も書かない
+  if (!fails.length) save('game_tape', games, changed);
   return { n, fails };
 }
 
@@ -473,6 +526,7 @@ function checkStatsCalc() {
   const vec = load('stats_calc');
   const fails = [];
   let n = 0;
+  let changed = 0;
   // 時刻の書式（Python の isoformat）と往復
   for (const iso of ['2026-09-27T04:30:00.123456+00:00', '2026-09-27T04:30:00+00:00', '2026-01-01T00:00:00.000001+00:00']) {
     n++;
@@ -497,11 +551,12 @@ function checkStatsCalc() {
       for (const k of Object.keys(want)) {
         n++;
         const d = firstDiff(want[k], JSON.parse(JSON.stringify(got[k])));
-        if (d) fails.push(`now=${snap.now} ${lang} ${k}: ${d}`);
+        if (d && UPDATE) { want[k] = JSON.parse(JSON.stringify(got[k])); changed++; } else if (d) fails.push(`now=${snap.now} ${lang} ${k}: ${d}`);
       }
     }
   }
   M.setLang('ja');
+  save('stats_calc', vec, changed);
   return { n, fails };
 }
 
@@ -529,6 +584,16 @@ for (const [name, fn] of Object.entries(CHECKS)) {
     fails.slice(0, 10).forEach((f) => console.log('     ' + f));
   } else {
     console.log(`  OK ${name} (${n.toLocaleString()} 件)`);
+  }
+}
+if (UPDATE) {
+  console.log('\n更新した期待値:', Object.keys(updated).length ? updated : 'なし');
+  if (failed) {
+    console.log('上の NG は更新していない。原因を確認すること');
+  } else {
+    // 書いた内容で本当に通るか、別プロセスで確かめる
+    const r = require('child_process').spawnSync(process.execPath, [__filename], { stdio: 'inherit' });
+    process.exit(r.status);
   }
 }
 process.exit(failed ? 1 : 0);
