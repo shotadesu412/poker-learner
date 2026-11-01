@@ -23,33 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 設定シート下のフッター。7回続けてタップするとサーバー計算モードに切り替える（切り分け用の隠し操作）。
-    // 既定は端末計算。もう一度7回で戻る。
-    // アプリの WKWebView は alert/confirm を表示しないので、状態はフッターの文字で見せる
-    function renderSettingsFooter() {
-        const footer = document.getElementById("home-settings-footer");
-        if (!footer) return;
-        let server = false;
-        try { server = localStorage.getItem("poker_engine") === "server"; } catch (e) { /* 読めなければ OFF 扱い */ }
-        footer.textContent = t("app.name") + (server ? " · " + t("home.engine_server_on") : "");
-        footer.classList.toggle("engine-server", server);
-    }
-    let footerTaps = 0;
-    let footerTapTimer = null;
-    window.onSettingsFooterTap = function() {
-        footerTaps++;
-        clearTimeout(footerTapTimer);
-        footerTapTimer = setTimeout(() => { footerTaps = 0; }, 2000);
-        if (footerTaps < 7) return;
-        footerTaps = 0;
-        try {
-            const next = localStorage.getItem("poker_engine") === "server" ? "local" : "server";
-            localStorage.setItem("poker_engine", next);
-        } catch (e) { /* 保存できない環境では何もしない */ }
-        renderSettingsFooter();
-    };
-    renderSettingsFooter();
-
     window.openHomeSettings = function() {
         const modal = document.getElementById("settings-modal");
         if (!modal) return;
@@ -73,19 +46,10 @@ document.addEventListener("DOMContentLoaded", () => {
             segEn.classList.toggle("active", getLang() === "en");
         }
 
-        // プレミアムステータス: まずキャッシュ値で即描画 → APIで最新化
+        // プレミアムステータス。起動時に StoreKit が onEntitlementStatus で更新する
         // （従来は localStorage の poker_is_premium を読むだけで、どこにも
         //   書き込まれていなかったため加入済みでも常に「アップグレード」表示だった）
         renderPremiumStatus(localStorage.getItem("poker_is_premium") === "true");
-        const uid = localStorage.getItem("poker_user_id") || "";
-        fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(uid)}`))
-            .then(r => r.json())
-            .then(d => {
-                const p = !!d.is_premium;
-                localStorage.setItem("poker_is_premium", p ? "true" : "false");
-                renderPremiumStatus(p);
-            })
-            .catch(() => {});
 
         modal.classList.remove("hidden");
     };
@@ -105,18 +69,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.onRestoreNotFound = window.onRestoreNotFound || function() {};
 
     // StoreKitの実権利状態（起動時にiOS側から必ず呼ばれる）。
-    // 解約・期限切れ・返金後はここでプレミアム解除し、サーバーDBにも反映する。
+    // 解約・期限切れ・返金後はここで解除される。
     window.onEntitlementStatus = function(active) {
-        const wasPremium = localStorage.getItem("poker_is_premium") === "true";
         localStorage.setItem("poker_is_premium", active ? "true" : "false");
         renderPremiumStatus(active);
-        if (!active && wasPremium) {
-            const uid = localStorage.getItem("poker_user_id") || "";
-            if (uid) {
-                fetch(withLang(`/api/subscription/cancel?user_id=${encodeURIComponent(uid)}`), { method: "POST" })
-                    .catch(() => {});
-            }
-        }
     };
 
     window.closeHomeSettings = function() {

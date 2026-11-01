@@ -219,9 +219,6 @@ body {
     -webkit-user-select: none;
     user-select: none;
 }
-.home-settings-footer.engine-server {
-    color: #30d158;
-}
 .home-settings-separator {
     height: 1px;
     background: rgba(255,255,255,0.08);

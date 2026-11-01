@@ -3,16 +3,8 @@ let currentPeriod = "all";
 let isPremium = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const userId = localStorage.getItem("poker_user_id") || "";
 
-    // サブスク状態を取得してからコンテンツをロード
-    try {
-        const res = await fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(userId)}`));
-        const data = await res.json();
-        isPremium = data.is_premium || false;
-    } catch (e) {
-        isPremium = false;
-    }
+    isPremium = localStorage.getItem("poker_is_premium") === "true";
 
     applyPremiumGates();
     loadAll(currentPeriod);
@@ -37,14 +29,12 @@ function applyPremiumGates() {
 
 async function loadAll(period) {
     showLoading(true);
-    const userId = localStorage.getItem("poker_user_id") || "";
     try {
-        // サーバー/端末（IndexedDB）の切り替えは game_api.js の StatsApi が行う
-        const { overview, streets } = await StatsApi.loadPrimary(userId, period);
+        const { overview, streets } = await StatsApi.loadPrimary(period);
         renderOverview(overview);
         renderStreets(streets);
 
-        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(userId, period);
+        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(period);
         renderPosition(position);
         renderLeaks(leaks);
         renderAiHistory(aiHistory);

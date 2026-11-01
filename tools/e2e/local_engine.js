@@ -1,144 +1,71 @@
-// 端末エンジン（既定。?engine=server でサーバー計算）の通し確認。WKWebView と同じ WebKit で実際の画面を動かす。
+// サーバーに計算系 API が無い状態の通し確認。実際の画面を動かす。
 //
-// 準備（リポジトリには入れない。scratchpad 等の作業用フォルダで）:
-//   npm install playwright@1 && npx playwright install webkit
+// 準備（リポジトリには入れない。作業用フォルダで）: npm install playwright@1 && npx playwright install chromium
 // 実行:
-//   OPENAI_API_KEY=dummy POKER_DB_PATH=/tmp/x.db python3 -m uvicorn app:app --port 8765 &
+//   OPENAI_API_KEY=dummy python3 -m uvicorn app:app --port 8765 &
 //   NODE_PATH=<作業用フォルダ>/node_modules node tools/e2e/local_engine.js
 //
-// 確認内容: フラグ無しの新規端末は端末モード・隠しスイッチでサーバーモードへ → サーバーモードで遊ぶ → 端末モードへ切替（初回の統計取り込み）→ ゲーム進行がサーバーを
-// 呼ばない → AIコーチに state が送られる → 分析ページが IndexedDB から集計 → サーバーモードに戻せる
-const { webkit } = require('playwright');
+// 確認内容: ゲームが進む / 通信が静的ファイルと AIコーチだけ / コーチに state が届く / 分析ページが IndexedDB から集計 /
+// プレミアムが localStorage と onEntitlementStatus で決まる / エンジンを読めないときに再読み込みを案内する
+const { chromium } = require('playwright');
 const BASE = 'http://localhost:8765';
-const UID = 'user_e2etest' + Date.now().toString(36);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let fails = 0; const ok = (c, m) => { console.log((c ? '  OK ' : '  NG ') + m); if (!c) fails++; };
 
-async function playActions(page, n) {
-  for (let i = 0; i < n; i++) {
-    await page.waitForFunction(() => currentState && !document.querySelector('.action-btn:disabled') || (currentState && currentState.finished), null, { timeout: 15000 }).catch(() => {});
-    const done = await page.evaluate(async () => {
-      if (!currentState || currentState.finished) { await startHand(); return 'new'; }
-      const f = currentState.facingBet;
-      const acts = f > 0 ? ['CALL', 'CALL', 'RAISE', 'FOLD'] : ['CHECK', 'BET'];
-      const a = acts[Math.floor(Math.random() * acts.length)];
-      const amt = a === 'RAISE' ? Math.round(f * 3 * 10) / 10 : a === 'BET' ? Math.max(2.5, Math.round(currentState.potSize * 5) / 10) : 0;
-      await takeAction(a, amt);
-      return a;
-    });
-    await sleep(900);
-  }
-}
-
 (async () => {
-  const browser = await webkit.launch();
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await ctx.addInitScript((uid) => {
-    localStorage.setItem('poker_user_id', uid);
-    localStorage.setItem('poker_settings', JSON.stringify({ showRange: true, showFeedback: true, speed: 'fast' }));
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => {
     localStorage.setItem('poker_lang', 'ja');
-  }, UID);
+    localStorage.setItem('poker_settings', JSON.stringify({ showRange: true, showFeedback: true, speed: 'fast' }));
+  });
   const page = await ctx.newPage();
-  const errors = [], logs = [], reqs = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  page.on('console', (m) => logs.push(m.type() + ': ' + m.text()));
-  page.on('request', (r) => reqs.push(new URL(r.url()).pathname));
+  const errors = []; const api = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('request', (r) => { const u = new URL(r.url()); if (u.pathname.startsWith('/api/')) api.push(u.pathname); });
 
-  console.log('0. フラグ無しの端末は端末モード（既定）/ 隠しスイッチでサーバーモードへ');
   await page.goto(BASE + '/play');
-  await page.waitForFunction(() => GameApi.game && currentState, null, { timeout: 15000 });
-  ok(await page.evaluate(() => GameApi.mode === 'local' && localStorage.getItem('poker_engine') === null), 'フラグ無しで端末エンジン');
-  ok(!reqs.some((p) => ['/api/start_hand', '/api/action', '/api/state'].includes(p)), 'ゲーム進行でサーバーを呼んでいない');
-  await page.goto(BASE + '/');
-  await sleep(800);
-  const footerText = () => page.evaluate(() => document.getElementById('home-settings-footer').textContent);
-  ok(!(await footerText()).includes('ON'), '既定ではフッターにモード表示なし: ' + await footerText());
-  await page.evaluate(() => { for (let i = 0; i < 7; i++) onSettingsFooterTap(); });
-  ok((await footerText()).includes('サーバー計算モード ON') && await page.evaluate(() => localStorage.getItem('poker_engine') === 'server'), '7回タップでサーバー計算モード: ' + await footerText());
-  await page.evaluate(() => { for (let i = 0; i < 7; i++) onSettingsFooterTap(); });
-  ok(!(await footerText()).includes('ON') && await page.evaluate(() => localStorage.getItem('poker_engine') === 'local'), 'もう7回で端末計算に戻る');
-  // 以降の「初回の統計取り込み」を確かめるため、端末側のデータを空に戻す
-  await page.evaluate(async () => {
-    localStorage.removeItem('poker_engine');
-    const dbs = await indexedDB.databases();
-    await Promise.all(dbs.map((d) => new Promise((res) => { const r = indexedDB.deleteDatabase(d.name); r.onsuccess = r.onerror = r.onblocked = res; })));
-  });
-  reqs.length = 0; logs.length = 0;
+  await page.waitForFunction(() => typeof currentState !== 'undefined' && currentState && GameApi.game);
+  ok(await page.evaluate(() => !document.getElementById('engine-error') || getComputedStyle(document.getElementById('engine-error')).display === 'none'), 'エラー画面は出ない');
 
-  console.log('1. サーバーモードでプレイ（既存ユーザーのデータを作る）');
-  await page.goto(BASE + '/play?engine=server');
-  await sleep(1500);
-  await playActions(page, 12);
-  ok(reqs.some((p) => p === '/api/action'), 'サーバーの /api/action が呼ばれている');
-  ok(!reqs.some((p) => p.startsWith('/static/poker/')), '端末エンジンのモジュールを読み込んでいない');
-  const serverExport = await (await page.request.get(`${BASE}/api/stats/export?user_id=${UID}`)).json();
-  console.log(`   サーバーの統計: actions=${serverExport.actions.length} sessions=${serverExport.sessions.length}`);
-
-  console.log('2. 端末モードに切り替え');
-  reqs.length = 0; logs.length = 0;
-  await page.goto(BASE + '/play?engine=local');
-  await page.waitForFunction(() => GameApi.game && currentState, null, { timeout: 15000 });
-  ok(logs.some((l) => l.includes('サーバーの統計を取り込みました')), '初回の取り込みが走った');
-  ok(logs.some((l) => l.includes('端末エンジンで動作中')), '端末エンジンで動作中');
-  await playActions(page, 25);
-  const apiCalls = reqs.filter((p) => p.startsWith('/api/'));
-  ok(!apiCalls.some((p) => ['/api/start_hand', '/api/action', '/api/state'].includes(p)), `ゲーム進行でサーバーを呼んでいない（呼んだAPI: ${[...new Set(apiCalls)].join(', ')}）`);
-  const st = await page.evaluate(() => ({ street: currentState.street, pot: currentState.potSize, hand: currentState.heroHand, eq: currentState.equity }));
-  console.log('   現在の状態', JSON.stringify(st));
-
-  console.log('3. AIコーチ（ハンド状態を送る）');
-  let coachBody = null;
-  await page.route('**/api/ai_coach*', async (route) => {
-    coachBody = JSON.parse(route.request().postData());
-    // 本物のサーバーにも投げて、state 付きリクエストが 422 にならないことを確認
-    const res = await route.fetch();
-    ok(res.status() === 200, `サーバーが state 付きリクエストを受け付ける (HTTP ${res.status()})`);
-    await route.fulfill({ json: { reply: 'テスト回答。', hand_context: 'TEST_CONTEXT' } });
-  });
-  await page.evaluate(() => { if (!currentState || currentState.finished) return startHand(); });
-  await sleep(500);
-  await page.evaluate(() => requestCoachExplanation());
-  await sleep(1500);
-  ok(coachBody && coachBody.state && coachBody.state.hero.length === 2 && coachBody.state.hero_pos, 'state にハンド情報が入っている: ' + JSON.stringify(coachBody && coachBody.state).slice(0, 160));
-
-  console.log('4. リロード（2回目は取り込みをスキップ）');
-  logs.length = 0;
-  await page.goto(BASE + '/play');
-  await page.waitForFunction(() => GameApi.game && currentState, null, { timeout: 15000 });
-  ok(!logs.some((l) => l.includes('取り込みました')), '2回目は取り込まない');
-  ok(await page.evaluate(() => GameApi.mode === 'local'), 'フラグが localStorage に残っている');
-
-  console.log('5. 分析ページ（端末の IndexedDB から集計）');
-  reqs.length = 0;
-  await page.goto(BASE + '/stats');
-  await sleep(2500);
-  const shown = await page.evaluate(() => ({
-    actions: document.getElementById('stat-actions').textContent,
-    gto: document.getElementById('gto-score').textContent,
-    hist: document.querySelectorAll('#hand-history-list > *, .hand-history-item').length,
-    ai: document.getElementById('ai-history-list').textContent.includes('テスト回答'),
-    invalid: document.body.textContent.includes('Invalid Date') || document.body.textContent.includes('NaN'),
-  }));
-  const local = await page.evaluate(async () => { const d = await StatsStore.loadAll(); return { n: d.actions.filter((a) => a.actor === 'HERO').length, ov: StatsCalc.getOverview(d, 'all') }; });
-  console.log('   表示', JSON.stringify(shown), '集計', JSON.stringify(local.ov));
-  ok(String(local.ov.total_actions) === shown.actions && local.n > serverExport.actions.filter((a) => a.actor === 'HERO').length, '総アクション数 = 取り込み分 + 端末で遊んだ分');
-  ok(shown.ai, 'AIコーチの相談履歴が表示されている');
-  ok(!shown.invalid, '日時・数値の表示崩れ（Invalid Date / NaN）なし');
-  ok(!reqs.some((p) => p.startsWith('/api/stats/') && p !== '/api/stats/export'), `統計APIを呼んでいない（${[...new Set(reqs.filter((p) => p.startsWith('/api/')))].join(', ')}）`);
-  for (const period of ['30d', '7d', 'last']) {
-    await page.click(`.period-btn[data-period="${period}"]`); await sleep(700);
+  for (let i = 0; i < 40; i++) {
+    await page.evaluate(async () => {
+      if (!currentState || currentState.finished) { await startHand(); return; }
+      await takeAction(currentState.facingBet > 0 ? 'CALL' : 'CHECK', 0);
+    });
+    await page.waitForTimeout(150);
   }
-  ok(true, '期間切り替え（直近1セッション含む）');
+  ok(await page.evaluate(() => GameApi.game.engine.handCount > 1), 'ハンドが進む');
+  ok(api.length === 0, `ゲーム中の API 通信なし (${api.join(',')})`);
+  ok(await page.evaluate(() => { fetchPreflopRanges(); return Object.keys(cachedPreflopRanges.BTN || {}).length > 0; }), 'プリフロップレンジを表示できる');
 
-  console.log('6. サーバーモードに戻す');
-  reqs.length = 0;
-  await page.goto(BASE + '/stats?engine=server'); await sleep(1500);
-  ok(reqs.includes('/api/stats/overview') && !reqs.some((p) => p.startsWith('/static/poker/')), 'サーバーの統計を表示');
+  const beforeCoach = api.length;   // ここからはテスト自身のコーチ呼び出しを除外する
+  await page.route('**/api/ai_coach', (route) => {
+    const body = route.request().postDataJSON();
+    ok(!!(body.state && body.state.hero_pos), 'AIコーチに state が届く');
+    route.fulfill({ json: { reply: 'テスト', hand_context: 'ctx' } });
+  });
+  await page.evaluate(() => fetch('/api/ai_coach', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [], user_id: 'x', state: GameApi.coachState() }) }));
 
-  ok(errors.length === 0, 'ページ内の例外なし ' + errors.join(' | '));
-  const errLogs = logs.filter((l) => l.startsWith('error'));
-  if (errLogs.length) console.log('   console.error:', errLogs.slice(0, 5));
+  await page.evaluate(() => { localStorage.setItem('poker_is_premium', 'true'); });
+  await page.goto(BASE + '/stats');
+  await page.waitForTimeout(1500);
+  ok(await page.evaluate(() => isPremium === true), '分析ページのプレミアムは localStorage から');
+  ok(await page.evaluate(async () => (await StatsApi.loadPrimary('all')).overview !== undefined), '統計を端末から集計');
+
+  await page.goto(BASE + '/');
+  await page.evaluate(() => window.onEntitlementStatus(false));
+  ok(await page.evaluate(() => localStorage.getItem('poker_is_premium') === 'false'), '権利なしで解除される');
+  ok(api.filter((x) => x !== '/api/ai_coach').length === 0 && beforeCoach === 0, `画面全体でも API 通信なし (${api.join(',')})`);
+  ok(errors.length === 0, `ページの例外なし ${errors.join(' / ')}`);
+
+  const bad = await ctx.newPage();
+  await bad.route('**/static/poker/engine.js*', (r) => r.abort());
+  await bad.goto(BASE + '/play');
+  await bad.waitForFunction(() => !document.getElementById('engine-error').classList.contains('hidden'));
+  ok(await bad.evaluate(() => getComputedStyle(document.getElementById('engine-error')).display !== 'none'), 'エンジンを読めないと再読み込みを案内');
+
   await browser.close();
-  console.log(fails ? `NG ${fails}件` : 'すべてOK');
+  console.log(fails ? `${fails} 件失敗` : '全件OK');
   process.exit(fails ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})();
