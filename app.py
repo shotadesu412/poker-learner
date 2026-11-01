@@ -813,16 +813,6 @@ def stats_saved_hands(user_id: str = Query("")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/stats/reset")
-def stats_reset():
-    """統計データをすべてリセット（開発・デバッグ用）"""
-    try:
-        stats_logger.reset_all()
-        return {"status": "ok", "message": t("api.stats.reset_ok")}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # ==============================
 # プリフロップ標準レンジ API
 # ==============================
