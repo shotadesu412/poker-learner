@@ -100,6 +100,8 @@ const I18N = {
         "coach.limit_watch_ad": "広告を見て続ける",
         "coach.limit_or": "── または ──",
         "coach.limit_go_premium": "プレミアムで広告なしにする",
+        "error.start_failed": "ハンドを始められませんでした。アプリを開き直してください。",
+        "error.action_failed": "アクションを処理できませんでした。もう一度お試しください。",
         "ad.load_failed": "広告を読み込めませんでした。通信環境をご確認のうえ、しばらくしてからもう一度お試しください。",
 
         // --- レンジ表 ---
@@ -330,6 +332,8 @@ const I18N = {
         "coach.limit_watch_ad": "Watch an ad to continue",
         "coach.limit_or": "── or ──",
         "coach.limit_go_premium": "Go Premium and remove ads",
+        "error.start_failed": "Could not start the hand. Please reopen the app.",
+        "error.action_failed": "Could not process the action. Please try again.",
         "ad.load_failed": "The ad could not be loaded. Please check your connection and try again shortly.",
 
         // --- ranges ---

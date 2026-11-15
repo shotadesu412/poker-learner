@@ -247,7 +247,7 @@ async function startHand() {
         }
     } catch (e) {
         console.error(e);
-        alert("Server communication error");
+        alert(t('error.start_failed'));
     }
 }
 
@@ -329,7 +329,7 @@ async function takeAction(actionType, amount = 0) {
 
     } catch (e) {
         console.error(e);
-        alert("Action failed to process");
+        alert(t('error.action_failed'));
     } finally {
         setTimeout(() => {
             // Re-enable all buttons unconditionally; updateUI will handle hiding the main action area anyway

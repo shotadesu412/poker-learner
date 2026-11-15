@@ -214,6 +214,43 @@ struct WebViewContainer: UIViewRepresentable {
             return nil
         }
 
+        // JS の alert() / confirm() を表示する。WKWebView は UIDelegate で実装しないと
+        // 何も出さずに握りつぶす（広告読み込み失敗・エラーの案内が出ていなかった。v1.0.8 で追加）
+        nonisolated func webView(_ webView: WKWebView,
+                                 runJavaScriptAlertPanelWithMessage message: String,
+                                 initiatedByFrame frame: WKFrameInfo,
+                                 completionHandler: @escaping @MainActor @Sendable () -> Void) {
+            Task { @MainActor in
+                let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
+                if !Self.present(alert) { completionHandler() }
+            }
+        }
+
+        nonisolated func webView(_ webView: WKWebView,
+                                 runJavaScriptConfirmPanelWithMessage message: String,
+                                 initiatedByFrame frame: WKFrameInfo,
+                                 completionHandler: @escaping @MainActor @Sendable (Bool) -> Void) {
+            Task { @MainActor in
+                let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: NSLocalizedString("alert.cancel", comment: ""), style: .cancel) { _ in completionHandler(false) })
+                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
+                if !Self.present(alert) { completionHandler(false) }
+            }
+        }
+
+        /// 最前面の画面にダイアログを出す。出せなかったら false（completionHandler を必ず呼ぶため）
+        private static func present(_ alert: UIAlertController) -> Bool {
+            let root = UIApplication.shared.connectedScenes
+                .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+                .first?.rootViewController
+            guard var top = root else { return false }
+            while let presented = top.presentedViewController { top = presented }
+            if top is UIAlertController { return false }
+            top.present(alert, animated: true)
+            return true
+        }
+
         nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             Task { @MainActor [weak self] in self?.viewModel.didFinishLoading() }
         }

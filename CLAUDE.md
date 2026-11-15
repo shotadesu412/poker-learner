@@ -61,7 +61,7 @@
 | 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
 | 5 | エンジン・CPU AIをJSへ | **完了**（`engine.js` / `game.js`。乱数テープでハンド全体がビット一致。**画面にはまだ未接続**） |
 | 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **完了**（`static/game_api.js`。`?engine=server` / `?engine=local` で端末ごとに切替） |
-| 7 | サーバーをAIコーチ専念構成に縮小 | 7-1 既定を端末計算に切替 = **完了（2026/10/4）** / 7-2 コード削除 = **完了（2026/11/15 main にマージ）** / 永続ディスクの削除 = **未着手**（DB バックアップ後に別作業） |
+| 7 | サーバーをAIコーチ専念構成に縮小 | 7-1 既定を端末計算に切替 = **完了（2026/10/4）** / 7-2 コード削除 = **完了（2026/11/15）** / 永続ディスクの削除 = **完了（2026/11/15）** |
 
 ### 現在の状態と次の一手（2026/11/15 時点）
 
@@ -71,16 +71,13 @@
 - **ゲーム・評価・統計は端末だけで動く**。統計は IndexedDB にしか無い（端末を変える・アプリを消すと消える）
 - **プレミアム判定**: localStorage + StoreKit の `onEntitlementStatus` のみ。サーバー DB には持たない
 - 端末エンジンを読めないときは再読み込みを案内する画面（`#engine-error`）を出す
-- **永続ディスクの撤去（2026/11/15 準備）**: `render.yaml` からディスクと `POKER_DB_PATH` を外すコミットはローカルのみ。
-  順番: `/data/poker_stats.db` を scp で `~/Projects/poker-learner-backup/` にバックアップ → Render の管理画面でディスク削除
-  → この `render.yaml` を push。**ディスク削除は元に戻せないので、バックアップの中身を確認してから**
+- **永続ディスクは 2026/11/15 に削除**。削除前の DB は shota の Mac の `~/Projects/poker-learner-backup/poker_stats_2026-11-15.db`（sha256 一致・integrity ok を確認。git には入れない）
 - 削除前の Python 実装は git タグ `python-engine-final`（`git show python-engine-final:poker_engine.py`）。
   移植前のものは `python-engine-v1`
 - **評価ロジックの監査結果（2026/11/1）**: 13件中 #1 #4 #5 #6（プリフロップの判定）は修正済み。残りは MIGRATION_NOTES.md「評価ロジック監査」参照
 - 改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
-- **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可。ディスクを外せば解消する見込み）。
-  push のたびに全ユーザーが一瞬止まるので、ドキュメントだけの変更で push しない
+- ディスク削除後のデプロイ（2026/11/15）では、15秒おき40回の監視で 502 は出なかった（無停止デプロイ）
 
 ### 評価ロジック・エンジンを変えるときの鉄則
 
@@ -285,15 +282,15 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=13` / `script.js?v=30` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=4` / `stats.js?v=5` / `i18n.js?v=5` / `game_api.js?v=4`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=13` / `script.js?v=31` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=4` / `stats.js?v=5` / `i18n.js?v=6` / `game_api.js?v=4`（index.html, home.html, stats.html 内）
    `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 3）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
 ### iOS アプリ
 - バージョンは pbxproj の `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`（2箇所ずつ）。
-  **公開中: 1.0.7 (13)**（2026/9/27 shota 確認）。**pbxproj は次回提出用の 1.0.8 (14)**（レビュー依頼を追加、2026/11/1）
+  **公開中: 1.0.7 (13)**（2026/9/27 shota 確認）。**pbxproj は次回提出用の 1.0.8 (14)**（レビュー依頼、alert/confirm の表示。2026/11/15 アーカイブ）
   （Organizer に残っている `1.0.8 (13)`(8/14) は誤って作った未提出のもの。使わない）
 - `ITSAppUsesNonExemptEncryption = false` を Info.plist に設定済み
   （HTTPSのみで独自暗号化なし → 免除。提出のたびの質問が出なくなる）
@@ -328,10 +325,8 @@ poker-learner/
    米国のみなら影響軽微だが、**EEA/英国に広げるなら必須**）
 9. `verify_purchase` の実トークン検証（App Store Server API）
 10. 広告表示率の改善効果を AdMob レポートで確認（v1.0.7 浸透後）
-11. **WKWebView の `alert()` / `confirm()` がアプリ内で表示されない**（2026/9/27 発見）。
-    ContentView.swift の Coordinator に `runJavaScriptAlertPanelWithMessage` /
-    `runJavaScriptConfirmPanelWithMessage` が未実装のため。script.js の通信エラー alert や
-    広告読み込み失敗の alert（`ad.load_failed`）が出ていない。次のアプリ更新時に Swift 側で実装する
+11. ~~WKWebView の `alert()` / `confirm()` がアプリ内で表示されない~~ → 1.0.8 (14) で修正
+    （ContentView.swift の Coordinator に実装。シミュレータで alert と confirm の結果が JS に返ることを確認。1.0.7 以前は引き続き出ない）
 
 ## 作業時の注意（このプロジェクト固有）
 

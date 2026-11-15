@@ -14,3 +14,6 @@
 
 /* %@ は StoreKit がロケールに応じて整形した価格文字列 */
 "purchase.price_per_month" = "%@ / 月";
+
+/* JS の confirm() のキャンセルボタン */
+"alert.cancel" = "キャンセル";
