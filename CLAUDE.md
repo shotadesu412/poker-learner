@@ -61,56 +61,40 @@
 | 4 | Evaluator（評価ロジック）をJSへ | **完了**（`evaluator.js` ほか。全出力を日英コメントまでビット一致） |
 | 5 | エンジン・CPU AIをJSへ | **完了**（`engine.js` / `game.js`。乱数テープでハンド全体がビット一致。**画面にはまだ未接続**） |
 | 6 | 統計をIndexedDBへ移行 + 画面を JS エンジンに切替 | **完了**（`static/game_api.js`。`?engine=server` / `?engine=local` で端末ごとに切替） |
-| 7 | サーバーをAIコーチ専念構成に縮小 | **進行中**。7-1 既定を端末計算に切替 = **完了（2026/10/4）** / 7-2 計算系 API と永続ディスクの削除 = **2026/11/4 以降** |
+| 7 | サーバーをAIコーチ専念構成に縮小 | 7-1 既定を端末計算に切替 = **完了（2026/10/4）** / 7-2 コード削除 = **完了（2026/11/15 main にマージ）** / 永続ディスクの削除 = **未着手**（DB バックアップ後に別作業） |
 
-### 現在の状態と次の一手（2026/10/4 時点）
+### 現在の状態と次の一手（2026/11/15 時点）
 
-- **2026/10/4: 全ユーザーの既定を端末計算に切り替えた**（`static/game_api.js` の `ENGINE_MODE`）。
-  9/27〜10/4 の様子見（shota の実機で統計の持ち越し・分析ページ・AIコーチ履歴を確認）で問題なし
-- 既存ユーザーは切替後の初回起動で `/api/stats/export` からサーバーの統計を IndexedDB に取り込む（1回だけ）
-- **全員をサーバー計算に戻す方法**: `ENGINE_MODE` の既定を server に戻して `game_api.js?v=` を上げて push。
-  ただし端末計算の間に積んだ統計は端末（IndexedDB）にしか無いので、戻すとその期間分は分析ページに出ない
-- **サーバー側はまだ何も消していない**（端末エンジンの準備に失敗した端末はサーバー計算に自動で戻るため必要）
-- **次の一手（2026/11/4 以降・着手前に shota に確認）**: 計算系 API（/api/start_hand・/api/action・/api/state・
-  統計系・/api/stats/export）と Python のエンジン一式を削除し、Render の永続ディスクを外す。
-  待つ期間は「両方1か月」と shota が決定（2026/10/4）。**1か月以上空けて戻ってきたユーザーの過去統計は失われる**
-  のを許容済み。消す前に、端末エンジン失敗時のサーバーへのフォールバック（`GameApi.init`）と
-  `/api/preflop_ranges`・課金系 API の扱いを整理すること
-- **評価ロジックの監査結果（2026/11/1）**: 13件中 #1 #4 #5 #6（プリフロップの判定）は修正済み（Python/JS 両方）。残りは MIGRATION_NOTES.md「評価ロジック監査」参照
-- 移植完了後の改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
+- **2026/11/15: フェーズ7-2 を main にマージ**。計算系・統計・サブスク・レンジの API、Python エンジン一式、
+  サーバー計算へのフォールバック、隠しスイッチ（設定の「ポーカーラッシュ」7回タップ）、サーバー統計の取り込みを削除。
+  マージ前に Chromium / WebKit の通し確認と、shota の iPhone（Safari）での確認（判定・レンジ・分析ページ・再読み込み後の統計）を実施
+- **ゲーム・評価・統計は端末だけで動く**。統計は IndexedDB にしか無い（端末を変える・アプリを消すと消える）
+- **プレミアム判定**: localStorage + StoreKit の `onEntitlementStatus` のみ。サーバー DB には持たない
+- 端末エンジンを読めないときは再読み込みを案内する画面（`#engine-error`）を出す
+- **`render.yaml` のディスク設定は意図的に残している**（Blueprint 同期で消えるおそれがあるため）。
+  次の一手: Render の管理画面で `/data/poker_stats.db` をバックアップ → `render.yaml` からディスクを外す → Render でディスク削除。
+  **ディスク削除は元に戻せないので shota の確認を取ってから**
+- 削除前の Python 実装は git タグ `python-engine-final`（`git show python-engine-final:poker_engine.py`）。
+  移植前のものは `python-engine-v1`
+- **評価ロジックの監査結果（2026/11/1）**: 13件中 #1 #4 #5 #6（プリフロップの判定）は修正済み。残りは MIGRATION_NOTES.md「評価ロジック監査」参照
+- 改善候補（影響大・要相談）: `estimate_fold_equity` と `ev_check` の見直し
   （平均損失・リークの精度が上がるが、既存統計と数値が不連続になる）。詳細は MIGRATION_NOTES.md
-- **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可）。
+- **Render のデプロイ中は約1〜2分 502 になる**（永続ディスク付きサービスは無停止デプロイ不可。ディスクを外せば解消する見込み）。
   push のたびに全ユーザーが一瞬止まるので、ドキュメントだけの変更で push しない
 
-### 移植中の鉄則
+### 評価ロジック・エンジンを変えるときの鉄則
 
-- **⚠️ 2026/11/4 まではサーバーの計算系 API を消したり壊したりしない**（/api/start_hand・/api/action・
-  /api/state・統計系・/api/stats/export）。端末エンジンの準備に失敗した端末のフォールバック先であり、
-  戻ってくる既存ユーザーの統計取り込み元でもある。
-  Python 側を変更したら、push 前に「新しく clone した状態」で TestClient を回して動作確認する
-  **実機（アプリ内）でサーバー計算に切り替える: ホーム → 設定 → シート最下部の「ポーカーラッシュ」を7回タップ**
-  （もう一度7回で端末計算に戻る。サーバー計算のときは緑字で「サーバー計算モード ON」と出る。不具合の切り分け用）
-- **画面を通した確認**: `tools/e2e/local_engine.js`（Playwright の WebKit。手順はファイル冒頭）
-
-- **バックアップは git タグ `python-engine-v1`**（移植前のPython実装を固定）
-  `git show python-engine-v1:poker_engine.py` / `git worktree add /tmp/engine-v1 python-engine-v1`
-- **Pythonのファイルはフェーズ7まで消さない**。並行稼働で結果を比較するため
-- **回帰テストを毎回通す**: `python3 tools/golden/generate.py --check`（差分があれば exit 1）
-  36,149件のベクタで現在の挙動を固定してある。意図的な改悪4種で検出できることを実証済み
-- **JS側の検証**: `node tools/golden/check_js.js`（同じベクタで JS 実装を検証。フェーズごとに CHECKS を追加）
-  モンテカルロは乱数列が違うので `vectors/equity_reference.json`（Python で2万回×40局面）と統計検定する。
-  参照値の再生成は `python3 tools/golden/equity_reference.py`（約30秒。エクイティ計算を意図的に変えた時だけ）
-- **エンジン・ゲーム進行は乱数テープで比較**: Python の random と Deck を `tools/golden/fake_random.py` に
-  差し替えて実際の API を回し（`tools/golden/game_tape.py`、約1分）、JS は同じシードの `Rng.seeded` で再生する。
-  JS のエンジン・評価ロジックは乱数を必ず `rng` 経由で使い、**読む順番・短絡評価で読まない条件も Python と同じ**にすること
-- JS 移植コードは `static/poker/` に置く。ビルド工程なしで `<script>` のグローバルとして読め、
+- **回帰テストを毎回通す**: `node tools/golden/check_js.js`（ゴールデンベクタで JS 実装を検証。差分があれば exit 1）
+  モンテカルロは乱数列が違うので `vectors/equity_reference.json`（Python で2万回×40局面）と統計検定する
+- **評価を意図的に変えるとき**: `node tools/golden/compare.js [ref=HEAD] [hands=3000]` で修正前後を同じ条件で比べ、
+  変わった場面が想定どおりか確認 → `node tools/golden/check_js.js --update` で期待値を更新 → `git diff` を見る。
+  レンジ・ハンド評価・エクイティ参照値のベクタは更新対象外（誤った値を正解にしないため）
+- **画面を通した確認**: `tools/e2e/local_engine.js`（Playwright。手順はファイル冒頭。WebKit で回すときは `chromium` を `webkit` に置き換える）
+- エンジン・評価ロジックは乱数を必ず `rng` 経由で使う（乱数テープのベクタと一致させるため）
+- `static/poker/` のコードはビルド工程なしで `<script>` のグローバルとして読め、
   テスト用に Node の `module.exports` でも読める両対応の形にする（`hand_eval.js` が見本）
-- **移植では「今の挙動をそのまま再現する」ことを最優先**。改善は移植後。
-  混ぜると差分が「移植ミス」か「意図した改善」か切り分けられなくなる
-- 気づいた改善点は、影響範囲が小さければ即修正、大きければ `MIGRATION_NOTES.md` に
-  メモするだけにして本筋を止めない
 
-### 移行後の姿
+### 構成（2026/11/15〜）
 
 ```
 iPhone
@@ -132,12 +116,10 @@ Render: 静的配信 + /api/ai_coach のみ（ステートレス・ディスク�
 ```
 iOSアプリ (SwiftUI + WKWebView)
   └── https://poker-learner.onrender.com/ を表示
-        └── FastAPI (app.py) + 素のJS/HTML (static/) ← Render にデプロイ
-              └── SQLite (poker_stats.db, Render永続ディスク /data)
+        └── FastAPI (app.py) ← Render にデプロイ
+              ├── 静的配信（static/。ゲーム・評価・統計は static/poker/ + IndexedDB で端末が計算）
+              └── /api/ai_coach（OpenAI）
 ```
-
-**2026/10/4〜 ゲーム進行・評価・統計は既定で端末側（`static/poker/` + IndexedDB）が計算する。**
-以下のサーバー側の記述（API・DB）はフォールバックと統計取り込み用に残っているもの。
 
 - **Web が本体**: ゲームロジック・課金ゲート・広告カウントは全部 Web 側。
   JS 修正は Render デプロイだけで全ユーザーに即反映（アプリ審査不要）
@@ -192,8 +174,7 @@ iOSアプリ (SwiftUI + WKWebView)
 - `app.py` の `LanguageMiddleware`（純ASGI）が毎リクエストで `set_lang()` する。
   **BaseHTTPMiddleware ではダメ**（downstream が別タスクになり contextvars が
   伝播しない）。同じコルーチンで `await self.app(...)` する形を崩さないこと
-- 利用側: `poker_engine.py`（評価コメント）, `ranges.py`（ハンド解説）,
-  `bet_sizing.py`（サイジング評価）, `stats_logger.py`（リーク文言）, `app.py`
+- 利用側: `app.py`（AIコーチ）のみ
 
 ### フロント側: `static/i18n.js`
 - `I18N = { ja: {...}, en: {...} }` + `t(key, params)`（`{name}` を置換）
@@ -226,20 +207,15 @@ iOSアプリ (SwiftUI + WKWebView)
 
 ```
 poker-learner/
-├── app.py              # FastAPI 本体 (~800行)。全API・ゲームフロー制御・言語ミドルウェア
-├── i18n.py             # ★サーバー側の多言語カタログ (ja/en) + t()/set_lang()
-├── poker_engine.py     # ゲームエンジン (~1600行)。Evaluator(評価), PokerEngine
-├── equity.py           # モンテカルロ・エクイティ計算
-├── ranges.py           # レンジのアクセサ。**データ本体は static/poker/ranges.json**
-├── hand_classifier.py, range_utils.py, bet_sizing.py, ev_calculator.py
-├── stats_logger.py     # SQLite 永続化 (~620行)。統計・サブスク・ハンド履歴
-├── render.yaml         # Render 設定 (uvicorn, /data ディスク, OPENAI_API_KEY)
+├── app.py              # FastAPI 本体 (~250行)。画面配信・/api/ai_coach・言語ミドルウェア
+├── i18n.py             # ★サーバー側の多言語カタログ（AIコーチのプロンプト・APIエラー）
+├── render.yaml         # Render 設定 (uvicorn, OPENAI_API_KEY。/data ディスクは削除待ち)
 ├── static/
 │   ├── i18n.js              # ★フロントの多言語カタログ + t()/applyI18n()/withLang()
 │   ├── home.html/.js/.css   # ホーム画面 ("/")
 │   ├── index.html           # ゲーム画面 ("/play")
 │   ├── script.js            # ゲームJS本体 (~1450行): UI・課金・広告ゲート
-│   ├── game_api.js          # ★ゲーム進行・統計の呼び出し口（サーバー/端末エンジンの切替）
+│   ├── game_api.js          # ★ゲーム進行・統計の呼び出し口（端末エンジン + IndexedDB）
 │   ├── poker/               # ★端末エンジン一式（JS移植。MIGRATION_NOTES.md 参照）
 │   ├── style.css
 │   ├── stats.html/.js/.css  # 分析ページ ("/stats")
@@ -256,38 +232,20 @@ poker-learner/
 ## API ルート（app.py）
 
 - `GET /` ホーム, `GET /play` ゲーム, `GET /stats` 分析, `GET /app-ads.txt`
-- `GET /api/start_hand?user_id=&spot=&position=` 新ハンド
-- `POST /api/action` {action, amount, user_id} ハンド進行の中核。
-  ハンド終了は5経路（HEROフォールド/CPUフォールド/オールイン/リバー/ストリート閉じ）
-  あり、**全てで `_save_hand_record()` を呼んでハンド履歴を保存**している
-- `GET /api/state` リロード時の状態復元
 - `POST /api/ai_coach` OpenAI 呼び出し（モデル: **`gpt-5.6-luna`**, 2026/8/27〜）
   - 設定は app.py 冒頭の `COACH_MODEL` / `COACH_REASONING_EFFORT` / `COACH_MAX_TOKENS`。
     いずれも同名の環境変数で上書き可（Renderの環境変数だけで再デプロイなしに切戻せる）
-  - 任意項目 `state`（端末エンジン時のハンド状態）。無ければサーバーのエンジンを見る。
-    state 経由のときは相談履歴をサーバーに保存せず、`hand_context` を返して端末に保存させる
+  - 必須項目 `state`（端末エンジンのハンド状態）。相談履歴はサーバーに保存せず、`hand_context` を返して端末に保存させる
   - **`temperature` を渡してはいけない**。GPT-5.6 はデフォルト(1.0)以外を拒否し
     400 BadRequest になる（top_p・penalty系も同様）。旧コードは 0.7 を渡していた
   - GPT-5.6 は推論モデルで**思考トークンも `max_completion_tokens` を消費する**ため
     上限を 1000→3000 に引き上げ済み。本文が空で返る場合に備えた分岐もある
-- `GET /api/stats/{overview,position,streets,leaks,personal_range,saved_hands,hand_history}`
-- `GET /api/stats/export?user_id=` 端末モード初回の統計取り込み用（生の行を返す・読み取りのみ）
-- `GET/POST /api/subscription`, `/api/subscription/verify_purchase`, `/api/subscription/cancel`
+- `GET /.well-known/assetlinks.json`
+- 計算系・統計・サブスク・レンジの API は 2026/11/15 に削除（タグ `python-engine-final` に残っている）
 
-### サーバー内部状態の注意
-- エンジンは `_user_engines: dict[user_id, PokerEngine]`（**メモリ内**）。
-  Render 再起動で消える。ハンド途中の復元は `/api/state` が担うが完全ではない
+### 端末側の状態
 - user_id は端末の localStorage で生成・保持（`poker_user_id`）。アカウントは無い
-
-## DB（SQLite, stats_logger.py）
-
-- `actions`: 全アクションログ。**統計系クエリは全て `actor='HERO'` フィルタ**。
-  HERO のみ evaluation(◎◯△×)・ev_loss 付き
-- `sessions`: ハンド単位。2026/7/16 に列追加:
-  `board, cpu_hand, final_pot, winner(YOU/CPU/TIE), action_log(JSON全アクション)`
-- `saved_hands`: AIコーチに相談したハンドとフィードバック
-- `subscriptions`: user_id ごとの is_premium（キャッシュ。正は StoreKit）
-- マイグレーションは `setup_db()` 内の try/except ALTER TABLE パターン（起動毎に実行）
+- 統計・ハンド履歴・AIコーチの相談履歴は IndexedDB（`static/poker/stats_store.js`）
 
 ## 広告（AdMob）
 
@@ -316,10 +274,8 @@ poker-learner/
 
 ## 課金（StoreKit 2）
 
-- StoreKitManager.swift。購入成功で即 `isPremium=true`（サーバー同期は
-  バックグラウンド、失敗しても維持）
-- `verify_purchase` は**現状トークン未検証**（存在すれば有効扱い）。
-  TODO: App Store Server API での実検証
+- StoreKitManager.swift。購入成功で即 `isPremium=true`。Web 側は localStorage に保持し、
+  起動時の `onEntitlementStatus` で上書きする（サーバーには持たない。2026/11/15〜）
 - サンドボックス/審査で「復元」が確認される → `restore()` は必ず
   `AppStore.sync()` を先に呼ぶ実装になっている
 
@@ -329,9 +285,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=11` / `script.js?v=29` / `home.js?v=6` / `home.css?v=9` /
-   `stats.css?v=4` / `stats.js?v=4` / `i18n.js?v=4` / `game_api.js?v=3`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 2）で一括管理
+   現在値: `style.css?v=13` / `script.js?v=30` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=4` / `stats.js?v=5` / `i18n.js?v=5` / `game_api.js?v=4`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 3）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -351,11 +307,9 @@ poker-learner/
 - チームID: `7Z2ZRB6V2J` / Bundle ID: `com.shota.pokerlearner`
 
 ### 動作確認のやり方
-- ローカルに uvicorn/pytest は無い。`/usr/bin/python3`(3.9) + fastapi/httpx はあるので
-  **`fastapi.testclient.TestClient` でインプロセステスト**するのが確実:
-  `OPENAI_API_KEY=dummy` と `POKER_DB_PATH=<一時ファイル>` を環境変数で渡し、
-  `/api/start_hand` → `/api/action` ループで終局まで回す（過去のテスト例は
-  scratchpad に書いた。パターン: CALL/CHECK連打でショーダウン、RAISE 200でオールイン）
+- ロジックは `node tools/golden/check_js.js`、画面は `tools/e2e/local_engine.js`（Playwright）。
+  サーバーは `OPENAI_API_KEY=dummy python3 -m uvicorn app:app --port 8765`（uvicorn は入っている）。
+  `--host 0.0.0.0` で起動すれば同じ Wi-Fi の iPhone の Safari から `http://<MacのIP>:8765/play` で確認できる
 - シミュレータ: `xcrun simctl install/launch --console-pty` でログ確認。
   起動直後は ATT ダイアログが出る（タップが必要）。DEBUG ビルドはテスト広告
 

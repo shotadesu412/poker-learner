@@ -122,25 +122,6 @@
       return out;
     },
 
-    // 端末エンジンへ切り替えた初回だけ、サーバーの統計（/api/stats/export）を取り込む。
-    // 取り込み済みの印と行を同じトランザクションで書くので、途中で失敗したら丸ごと無かったことになり次回やり直す
-    async importFromServer(fetchExport) {
-      await queue;
-      const done = await run(['meta'], 'readonly', ({ meta }) => req2promise(meta.get('imported')));
-      if (done) return { skipped: true };
-      const data = await fetchExport();   // 失敗したら例外 → 呼び出し側でログだけ出して次回再試行
-      const counts = {};
-      await run(STORES, 'readwrite', (s) => {
-        for (const name of ['actions', 'sessions', 'saved_hands']) {
-          const rows = data[name] || [];
-          counts[name] = rows.length;
-          // id は振り直す（id 順に追加するので順番は保たれる）。sessions は session_id がキー
-          for (const r of rows) s[name].put(name === 'sessions' ? r : withoutId(r));
-        }
-        s.meta.put({ key: 'imported', at: now(), counts });
-      });
-      return counts;
-    },
   };
 
   root.StatsStore = StatsStore;

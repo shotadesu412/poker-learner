@@ -24,19 +24,10 @@ let isSpotMode = false;
 let spotPosition = "";        // スポット練習: 固定ポジション（""=ランダム）
 let spotParticipatedOnly = false;  // スポット練習: 参加ハンドのみ
 
-async function loadSubscriptionStatus() {
-    try {
-        const res = await fetch(withLang(`/api/subscription?user_id=${encodeURIComponent(currentUserId)}`));
-        const data = await res.json();
-        // StoreKitの実権利状態が既に届いていればそちらを正とする
-        // （サーバーDBは解約後も premium が残るため上書きしない）
-        if (_entitlementReported) return;
-        isPremium = data.is_premium || false;
-        // ホーム画面の設定表示が参照するため localStorage にも同期
-        localStorage.setItem("poker_is_premium", isPremium ? "true" : "false");
-    } catch (e) {
-        if (!_entitlementReported) isPremium = false;
-    }
+// プレミアム状態の正は StoreKit。起動時の onEntitlementStatus が届くまでは前回の値で描画する
+function loadSubscriptionStatus() {
+    if (_entitlementReported) return;
+    isPremium = localStorage.getItem("poker_is_premium") === "true";
 }
 
 // AI Coach Global States
@@ -745,7 +736,7 @@ async function fetchCoachWithRetry(messages, retries = 2) {
             const response = await fetch(withLang('/api/ai_coach'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // 端末エンジン時はハンド状態も送る（サーバーには状態が無いため）。サーバーモードでは null
+                // ハンド状態はサーバーに無いので毎回送る
                 body: JSON.stringify({ messages, user_id: currentUserId, state: GameApi.coachState() }),
                 signal: controller.signal
             });
@@ -840,8 +831,12 @@ async function watchAdForCoach() {
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
-    // サブスク状態を先に取得。端末エンジン（?engine=local）の準備も並行して行う
-    await Promise.all([loadSubscriptionStatus(), GameApi.init(currentUserId)]);
+    loadSubscriptionStatus();
+    await GameApi.init();
+    if (!GameApi.game) {
+        el('engine-error').classList.remove('hidden');
+        return;
+    }
 
     // #premium ハッシュでページを開いた場合は購入モーダルを自動表示
     if (window.location.hash === '#premium') {
@@ -859,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await GameApi.state();
 
         if (data.has_hand_in_progress) {
-            // サーバー側でゲームが進行中 → 状態を復元してそのまま続行
+            // ゲームが進行中 → 状態を復元してそのまま続行
             currentState = data;
             updateUI();
             return;
@@ -882,14 +877,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 let cachedPreflopRanges = null;
 let standaloneRangePos = 'BTN'; // スタンドアロン（ゲーム外）プリフロップモード用ポジション
 
-async function fetchPreflopRanges() {
-    if (cachedPreflopRanges) return;
-    try {
-        const res = await fetch(withLang('/api/preflop_ranges'));
-        cachedPreflopRanges = await res.json();
-    } catch (e) {
-        console.warn('preflop_ranges fetch failed:', e);
-    }
+function fetchPreflopRanges() {
+    cachedPreflopRanges = cachedPreflopRanges || GameApi.preflopRanges();
 }
 
 // 現在表示中のレンジモードを管理
@@ -1281,37 +1270,19 @@ window.onPurchaseSuccess = async function(info) {
     const statusEl = el('purchase-status');
     const btn = el('btn-purchase');
 
-    // StoreKit が成功した時点で即座にプレミアム有効化（サーバー応答を待たない）
+    // StoreKit が成功した時点でプレミアム有効化
     isPremium = true;
     localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
     if (statusEl) statusEl.textContent = t('purchase.status.activated');
 
-    // サーバーへの同期はバックグラウンドで行う（失敗してもisPremium=trueは維持）
-    try {
-        const res = await fetch('/api/subscription/verify_purchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: currentUserId,
-                purchase_token: String(info.transactionId || ''),
-                product_id: info.productId || ''
-            })
-        });
-        await res.json();
-        // サーバー同期成功・失敗に関わらずisPremium=trueを維持
-    } catch (e) {
-        // サーバーエラーでもisPremium=trueを維持
-        console.warn('[Purchase] サーバー同期失敗（StoreKit購入は有効）:', e);
-    }
-
     setTimeout(closePurchaseModal, 1500);
     if (btn) btn.disabled = false;
 };
 
-window.onRestoreSuccess = async function() {
+window.onRestoreSuccess = function() {
     // isPremiumをすぐに反映（起動時の自動呼び出しでも即時有効化）
-    _entitlementReported = true;   // StoreKit由来の正 → サーバー応答で上書きさせない
+    _entitlementReported = true;
     isPremium = true;
     localStorage.setItem("poker_is_premium", "true");
     applyPremiumUI();
@@ -1324,21 +1295,6 @@ window.onRestoreSuccess = async function() {
         const statusEl = el('purchase-status');
         if (statusEl) statusEl.textContent = t('purchase.status.restored');
         setTimeout(closePurchaseModal, 1500);
-    }
-
-    // サーバーのDB状態と同期（未登録なら登録、登録済みなら何もしない）
-    try {
-        await fetch('/api/subscription/verify_purchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: currentUserId,
-                purchase_token: 'restore',
-                product_id: 'com.shota.pokerlearner.premium.monthly'
-            })
-        });
-    } catch (e) {
-        // サーバー同期失敗でもisPremium=trueは維持（StoreKitが正として扱う）
     }
 };
 
@@ -1356,7 +1312,7 @@ window.onRestoreNotFound = function() {
 };
 
 // StoreKitの実権利状態（起動時にiOS側から必ず呼ばれる）。
-// StoreKitを正とし、サーバーDBに残った古いプレミアム状態（解約・期限切れ・返金後）を解除する。
+// 解約・期限切れ・返金後はここで解除される。
 let _entitlementReported = false;
 window.onEntitlementStatus = function(active) {
     _entitlementReported = true;
@@ -1365,14 +1321,8 @@ window.onEntitlementStatus = function(active) {
         localStorage.setItem("poker_is_premium", "true");
         applyPremiumUI();
     } else {
-        const wasPremium = isPremium || localStorage.getItem("poker_is_premium") === "true";
         isPremium = false;
         localStorage.setItem("poker_is_premium", "false");
-        if (wasPremium) {
-            // サーバーDBにも解除を反映（失敗しても次回起動時に再試行される）
-            fetch(`/api/subscription/cancel?user_id=${encodeURIComponent(currentUserId)}`, { method: 'POST' })
-                .catch(() => {});
-        }
     }
 };
 

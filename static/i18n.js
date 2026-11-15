@@ -46,7 +46,8 @@ const I18N = {
         "home.speed_normal": "通常",
         "home.speed_fast": "速い",
         "home.premium_plan": "プレミアムプラン",
-        "home.engine_server_on": "サーバー計算モード ON",
+        "engine.load_failed": "読み込みに失敗しました。通信環境を確認して、もう一度お試しください。",
+        "engine.retry": "再読み込み",
         "home.premium_active": "加入中",
         "home.premium_upgrade": "アップグレード",
 
@@ -275,7 +276,8 @@ const I18N = {
         "home.speed_normal": "Normal",
         "home.speed_fast": "Fast",
         "home.premium_plan": "Premium",
-        "home.engine_server_on": "Server engine ON",
+        "engine.load_failed": "Couldn't load the game. Check your connection and try again.",
+        "engine.retry": "Reload",
         "home.premium_active": "Active",
         "home.premium_upgrade": "Upgrade",
 
