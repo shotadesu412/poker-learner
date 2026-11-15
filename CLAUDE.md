@@ -71,9 +71,9 @@
 - **ゲーム・評価・統計は端末だけで動く**。統計は IndexedDB にしか無い（端末を変える・アプリを消すと消える）
 - **プレミアム判定**: localStorage + StoreKit の `onEntitlementStatus` のみ。サーバー DB には持たない
 - 端末エンジンを読めないときは再読み込みを案内する画面（`#engine-error`）を出す
-- **`render.yaml` のディスク設定は意図的に残している**（Blueprint 同期で消えるおそれがあるため）。
-  次の一手: Render の管理画面で `/data/poker_stats.db` をバックアップ → `render.yaml` からディスクを外す → Render でディスク削除。
-  **ディスク削除は元に戻せないので shota の確認を取ってから**
+- **永続ディスクの撤去（2026/11/15 準備）**: `render.yaml` からディスクと `POKER_DB_PATH` を外すコミットはローカルのみ。
+  順番: `/data/poker_stats.db` を scp で `~/Projects/poker-learner-backup/` にバックアップ → Render の管理画面でディスク削除
+  → この `render.yaml` を push。**ディスク削除は元に戻せないので、バックアップの中身を確認してから**
 - 削除前の Python 実装は git タグ `python-engine-final`（`git show python-engine-final:poker_engine.py`）。
   移植前のものは `python-engine-v1`
 - **評価ロジックの監査結果（2026/11/1）**: 13件中 #1 #4 #5 #6（プリフロップの判定）は修正済み。残りは MIGRATION_NOTES.md「評価ロジック監査」参照
@@ -209,7 +209,7 @@ iOSアプリ (SwiftUI + WKWebView)
 poker-learner/
 ├── app.py              # FastAPI 本体 (~250行)。画面配信・/api/ai_coach・言語ミドルウェア
 ├── i18n.py             # ★サーバー側の多言語カタログ（AIコーチのプロンプト・APIエラー）
-├── render.yaml         # Render 設定 (uvicorn, OPENAI_API_KEY。/data ディスクは削除待ち)
+├── render.yaml         # Render 設定 (uvicorn, OPENAI_API_KEY。ディスクなし)
 ├── static/
 │   ├── i18n.js              # ★フロントの多言語カタログ + t()/applyI18n()/withLang()
 │   ├── home.html/.js/.css   # ホーム画面 ("/")
