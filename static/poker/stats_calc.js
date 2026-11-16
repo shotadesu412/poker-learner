@@ -117,8 +117,9 @@
 
   function getPositionStats(data) {
     const hero = heroActions(data);
-    return ['LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'].map((pos) => {
-      const mine = hero.filter((a) => a.hero_pos === pos);
+    // ゲームは UTG と記録する（6-max では LJ と同じ席）。以前は 'LJ' で集計していたため UTG のハンドが常に0件だった
+    return ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'].map((pos) => {
+      const mine = hero.filter((a) => a.hero_pos === pos || (pos === 'UTG' && a.hero_pos === 'LJ'));
       const pf = mine.filter((a) => a.street === 'PREFLOP');
       const hands = countDistinctSessions(pf);
       if (hands === 0) return { pos, hands: 0, vpip: 0.0, pfr: 0.0, gto_rate: 0.0 };
@@ -192,6 +193,8 @@
         timestamp: r.timestamp,
         hand_context: r.hand_context,
         ai_feedback: r.ai_feedback,
+        // 2026/11/16〜 保存しているハンド状態（それより前の行には無い）
+        ...(r.hand_state ? { hand_state: r.hand_state } : {}),
       }));
   }
 

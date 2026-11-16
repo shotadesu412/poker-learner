@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 3;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 4;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -47,12 +47,23 @@ const GameApi = {
         }
     },
 
+    // このハンドでのあなたのアクションの判定（◎◯△×）。AIコーチに渡す
+    heroEvaluations: [],
+
     async startHand(spot, position) {
+        this.heroEvaluations = [];
         return detach(this.game.startHand({ spot, position }));
     },
 
     async action(action, amount) {
-        return detach(this.game.action({ action, amount }));
+        const result = detach(this.game.action({ action, amount }));
+        this.heroEvaluations.push(result.evaluation || "");
+        return result;
+    },
+
+    // このアクションであなたが追加で出せる上限（自分のスタックと、相手がコールできる額の小さい方）
+    heroMaxBet() {
+        return this.game.engine.maxAdditionalBet("HERO");
     },
 
     // ページを離れるとハンドは消える（新しいハンドから始まる）
@@ -73,16 +84,26 @@ const GameApi = {
             board: eng.board.map(Card.toStr),
             hero: eng.heroHand.map(Card.toStr),
             cpu: eng.cpuHand.map(Card.toStr),
-            history: eng.actionHistory.map(a => ({
-                street: a.street, actor: a.actor, action: a.action, amount: a.amount || 0,
-            })),
+            // あなたのアクションにはアプリの判定と、その時点の勝率（実現率込み）を添える。
+            // コーチがアプリの判定と食い違う講評や、ハンドの強さを取り違えた講評をしないため
+            history: (() => {
+                let heroIndex = 0;
+                return eng.actionHistory.map(a => {
+                    const row = { street: a.street, actor: a.actor, action: a.action, amount: a.amount || 0 };
+                    if (a.actor === "HERO") {
+                        row.evaluation = this.heroEvaluations[heroIndex++] || "";
+                        if (typeof a.equity === "number") row.equity = Math.round(a.equity * 1000) / 10;
+                    }
+                    return row;
+                });
+            })(),
         };
     },
 
     // AIコーチの最初の回答を相談履歴に残す
-    saveCoachFeedback(handContext, reply) {
+    saveCoachFeedback(handContext, reply, handState) {
         if (!handContext) return;
-        StatsStore.saveAiFeedback(this.game.sessionId, handContext, reply);
+        StatsStore.saveAiFeedback(this.game.sessionId, handContext, reply, handState || null);
     },
 
     // レンジ表示用（/api/preflop_ranges の置き換え）。{ ポジション: { コンボ: 重み } }
@@ -90,7 +111,10 @@ const GameApi = {
         const toObject = (v) => (v instanceof Map
             ? Object.fromEntries([...v].map(([k, x]) => [k, toObject(x)]))
             : v);
-        return toObject(Ranges.positionRanges);
+        const ranges = toObject(Ranges.positionRanges);
+        // 6-max では UTG と LJ は同じ席。画面は UTG 表記、データは LJ キーなので両方で引けるようにする
+        if (ranges.LJ && !ranges.UTG) ranges.UTG = ranges.LJ;
+        return ranges;
     },
 };
 

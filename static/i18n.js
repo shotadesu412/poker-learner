@@ -75,7 +75,8 @@ const I18N = {
         "game.spot_mode_on": "スポット練習 ON",
         "game.spot_fix_position": "ポジション固定",
         "game.spot_random": "ランダム",
-        "game.spot_participated_only": "参加ハンドのみ（フォールドは自動スキップ）",
+        "game.spot_participated_only": "プリフロップでフォールドしたら次のハンドへ自動で進む",
+        "game.spot_desc": "ポジションを選んで、そこで参加すべきハンドだけを配って練習します",
 
         // --- ベットサイズ選択 ---
         "bet.panel_title.bet": "ベットサイズ選択",
@@ -86,7 +87,8 @@ const I18N = {
         "bet.size_small_x": "小 Small ({mult}x)",
         "bet.size_medium_x": "中 Medium ({mult}x)",
         "bet.size_large_x": "大 Large ({mult}x)",
-        "bet.size_allin": "All-in (5.0x)",
+        "bet.size_allin": "オールイン All-in",
+        "action.call_allin": "コール ({amount}bb・オールイン)",
 
         // --- AIコーチ ---
         "coach.title": "AI ポーカーコーチ",
@@ -138,7 +140,7 @@ const I18N = {
         "purchase.feature.position_stats": "ポジション別詳細統計",
         "purchase.feature.leaks": "よくあるミス分析（リーク）",
         "purchase.feature.hand_history": "ハンド履歴（直近30件）",
-        "purchase.feature.spot_mode": "スポット練習モード",
+        "purchase.feature.spot_mode": "スポット練習（ポジションを固定し、参加すべきハンドだけを集中練習）",
         "purchase.start": "サブスクリプションを開始",
         "purchase.restore": "購入を復元",
         "purchase.privacy": "プライバシーポリシー",
@@ -307,7 +309,8 @@ const I18N = {
         "game.spot_mode_on": "Spot practice ON",
         "game.spot_fix_position": "Lock position",
         "game.spot_random": "Random",
-        "game.spot_participated_only": "Played hands only (auto-skip folds)",
+        "game.spot_participated_only": "Auto-deal the next hand after a preflop fold",
+        "game.spot_desc": "Pick a position and get dealt only the hands you should play from it",
 
         // --- bet sizing ---
         "bet.panel_title.bet": "Choose bet size",
@@ -318,7 +321,8 @@ const I18N = {
         "bet.size_small_x": "Small ({mult}x)",
         "bet.size_medium_x": "Medium ({mult}x)",
         "bet.size_large_x": "Large ({mult}x)",
-        "bet.size_allin": "All-in (5.0x)",
+        "bet.size_allin": "All-in",
+        "action.call_allin": "Call ({amount}bb, all-in)",
 
         // --- AI coach ---
         "coach.title": "AI Poker Coach",
@@ -370,7 +374,7 @@ const I18N = {
         "purchase.feature.position_stats": "Detailed stats by position",
         "purchase.feature.leaks": "Common mistakes (leak finder)",
         "purchase.feature.hand_history": "Hand history (last 30)",
-        "purchase.feature.spot_mode": "Spot practice mode",
+        "purchase.feature.spot_mode": "Spot practice (lock a position and drill only the hands you should play)",
         "purchase.start": "Start subscription",
         "purchase.restore": "Restore purchase",
         "purchase.privacy": "Privacy Policy",

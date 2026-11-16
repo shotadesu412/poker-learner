@@ -132,6 +132,66 @@ function renderLeaks(leaks) {
 // ==============================
 // AIコーチ履歴
 // ==============================
+function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// コーチの回答を読みやすく（ゲーム画面の formatCoachText と同じ記法: 【】/[] 見出し、- 箇条書き）
+function formatCoachReply(text) {
+    return escapeHtml(text)
+        .replace(/【([^】]+)】/g, '<strong class="coach-heading">【$1】</strong>')
+        .replace(/\[([^\][\n]{1,40})\]/g, '<strong class="coach-heading">[$1]</strong>')
+        .replace(/^-\s+/gm, '<span class="coach-bullet">▸</span> ');
+}
+
+// 2026/11/16 より前の相談履歴は、AIに送った生テキスト（hand_context）しか残っていない。
+// そこからカード・ポジション・アクションを読み取り、新しい保存形式（hand_state）と同じ形にする
+function parseLegacyHandContext(text) {
+    if (!text) return null;
+    const cardsIn = (re) => {
+        const m = text.match(re);
+        if (!m) return [];
+        return (m[1].match(/[2-9TJQKA][shdc]/g) || []);
+    };
+    const hero = cardsIn(/(?:Hero|あなた|You)[^\n]*?(?:ハンド|hand) ([^/\n]*)/);
+    const board = cardsIn(/(?:ボード|Board): ([^\n]*)/);
+    const posMatch = text.match(/(?:Hero|あなた|You)[^:\n]*: (\w+) \//);
+    const history = [];
+    const lineRe = /^\[(PREFLOP|FLOP|TURN|RIVER)\] (\S+?)\((\w+|\?)\): (\w+)(?: ([\d.]+)bb)?/gm;
+    let m;
+    while ((m = lineRe.exec(text)) !== null) {
+        const isCpu = /^(CPU|相手|Opponent)$/.test(m[2]);
+        history.push({ street: m[1], actor: isCpu ? "CPU" : "HERO", action: m[4], amount: m[5] ? Number(m[5]) : 0 });
+    }
+    if (!hero.length && !history.length) return null;
+    return { hero, board, hero_pos: posMatch ? posMatch[1] : "", history };
+}
+
+// ハンド履歴と同じ見た目で、ストリートごとのアクションを並べる
+function renderActionRows(history) {
+    const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
+    const streetLabel = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
+    const streets = [];
+    (history || []).forEach(a => {
+        const last = streets[streets.length - 1];
+        if (!last || last.street !== a.street) streets.push({ street: a.street, items: [a] });
+        else last.items.push(a);
+    });
+    return streets.map(g => {
+        const chips = g.items.map(a => {
+            const isHero = a.actor !== "CPU";
+            const cls = isHero ? (evalClass[a.evaluation] || "") : "hh-cpu";
+            const who = isHero ? t("stats.you") : "CPU";
+            const lbl = actionLabel[a.action] || escapeHtml(a.action);
+            const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+            const ev = isHero && a.evaluation ? ` ${escapeHtml(a.evaluation)}` : "";
+            return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>`;
+        }).join("");
+        return `<div class="hh-street-row"><span class="hh-street">${streetLabel[g.street] || escapeHtml(g.street)}</span>${chips}</div>`;
+    }).join("");
+}
+
 function renderAiHistory(historyData) {
     const container = document.getElementById("ai-history-list");
     if (!historyData || historyData.length === 0) {
@@ -141,14 +201,30 @@ function renderAiHistory(historyData) {
     container.innerHTML = historyData.map((h, i) => {
         const dt = new Date(h.timestamp);
         const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const st = h.hand_state || parseLegacyHandContext(h.hand_context);
+        let handHtml;
+        if (st) {
+            const cards = formatCards((st.hero || []).join(",")) || "??";
+            const pos = st.hero_pos ? `<span class="hh-pos">${escapeHtml(st.hero_pos)}</span>` : "";
+            const boardHtml = (st.board || []).length
+                ? `<div class="hh-detail-row"><span class="hh-detail-label">${t("stats.board")}</span>${formatCards(st.board.join(","))}</div>` : "";
+            handHtml = `<div class="ai-hand-box">
+                <div class="ai-hand-head"><span class="hh-cards">${cards}</span>${pos}</div>
+                ${boardHtml}
+                <div class="hh-streets">${renderActionRows(st.history) || t("stats.no_actions")}</div>
+            </div>`;
+        } else {
+            // 読み取れない形式は、そのまま（ただし読める色で）出す
+            handHtml = `<div class="ai-context-box">${escapeHtml(h.hand_context)}</div>`;
+        }
         return `<div class="ai-history-item">
             <div class="ai-history-header" onclick="toggleCollapse('ai-body-${i}', 'ai-toggle-${i}')">
                 <span style="font-weight:bold;">${t("stats.hand_n", { n: historyData.length - i })} <span class="ai-history-date">(${dateStr})</span></span>
                 <span class="ai-history-toggle" id="ai-toggle-${i}">${t("stats.show_detail")}</span>
             </div>
             <div class="ai-history-body" id="ai-body-${i}">
-                <div class="ai-context-box">${h.hand_context}</div>
-                <div class="ai-feedback-box">${h.ai_feedback}</div>
+                ${handHtml}
+                <div class="ai-feedback-box">${formatCoachReply(h.ai_feedback)}</div>
             </div>
         </div>`;
     }).join("");

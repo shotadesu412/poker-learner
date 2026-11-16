@@ -264,6 +264,10 @@ poker-learner/
   - 設定は app.py 冒頭の `COACH_MODEL` / `COACH_REASONING_EFFORT` / `COACH_MAX_TOKENS`。
     いずれも同名の環境変数で上書き可（Renderの環境変数だけで再デプロイなしに切戻せる）
   - 必須項目 `state`（端末エンジンのハンド状態）。相談履歴はサーバーに保存せず、`hand_context` を返して端末に保存させる
+  - `state.history` のあなたのアクションには、アプリの判定（`evaluation`）と勝率（`equity`）が付く（2026/11/16〜）。
+    プロンプトは「あなた/相手」と呼ぶ、ストリートごとに方針は1つ、ブラフのストーリーはブラフの時だけ、という形。
+    端末側は `hand_state`（送った state）も相談履歴に保存し、分析ページはそれをハンド履歴と同じ見た目で描く
+    （それより前の行は `hand_context` の生テキストを `parseLegacyHandContext` で読み取る）
   - **`temperature` を渡してはいけない**。GPT-5.6 はデフォルト(1.0)以外を拒否し
     400 BadRequest になる（top_p・penalty系も同様）。旧コードは 0.7 を渡していた
   - GPT-5.6 は推論モデルで**思考トークンも `max_completion_tokens` を消費する**ため
@@ -273,6 +277,9 @@ poker-learner/
 
 ### 端末側の状態
 - user_id は端末の localStorage で生成・保持（`poker_user_id`）。アカウントは無い
+- **ポジション表記は UTG**（6-max では LJ と同じ席）。レンジデータ（`ranges.json` の `position_ranges`）のキーだけ LJ。
+  画面側で UTG から引けるようにしてある（`GameApi.preflopRanges`）。分析ページのポジション別は 2026/11/16 まで
+  'LJ' で集計していたため UTG のハンドが常に0件だった（修正済み・旧 LJ 行も UTG に合算）
 - 統計・ハンド履歴・AIコーチの相談履歴は IndexedDB（`static/poker/stats_store.js`）
 
 ## 広告（AdMob）
@@ -313,9 +320,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=13` / `script.js?v=31` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=4` / `stats.js?v=5` / `i18n.js?v=6` / `game_api.js?v=4`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 3）で一括管理
+   現在値: `style.css?v=14` / `script.js?v=32` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=5` / `stats.js?v=6` / `i18n.js?v=7` / `game_api.js?v=5`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 4）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 

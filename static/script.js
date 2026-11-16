@@ -117,6 +117,14 @@ function renderFaceDownCards(containerId, count) {
     }
 }
 
+// 相手のポジション。エンジンはプリフロップで相手が動くまで "???" で伏せるが、
+// あなたが SB なら残っているのは BB だけなので伏せる意味がない
+function displayCpuPos() {
+    if (!currentState) return '';
+    if (currentState.cpuPos === '???' && currentState.heroPos === 'SB') return 'BB';
+    return currentState.cpuPos || '';
+}
+
 function updateUI() {
     if (!currentState) return;
 
@@ -130,7 +138,7 @@ function updateUI() {
     updateHTML('hero-stack', currentState.heroStack.toFixed(1));
     updateHTML('cpu-stack', currentState.cpuStack.toFixed(1));
     updateHTML('hero-pos', `(${currentState.heroPos})`);
-    updateHTML('cpu-pos', `(${currentState.cpuPos})`);
+    updateHTML('cpu-pos', `(${displayCpuPos()})`);
     // レンジバーは非表示のため更新不要（heroRangeRaw/cpuRangeRaw はレンジモーダルで使用）
 
     // レンジバーは非表示（設定から削除済み）
@@ -157,13 +165,22 @@ function updateUI() {
         const hasVoluntaryBet = (currentState.street === "PREFLOP" && currentState.currentBet > 1.0) ||
             (currentState.street !== "PREFLOP" && currentState.currentBet > 0);
 
+        // 追加で出せる上限。相手がオールイン済み・自分のスタックがコール額以下ならレイズは成立しない
+        const maxAdd = heroMaxBet();
+        const canRaise = maxAdd > currentState.facingBet + 0.05;
+        // コール額はスタックまで（足りなければオールインのコール）
+        const callAmount = Math.min(currentState.facingBet, currentState.heroStack);
+        const callLabel = (currentState.heroStack <= currentState.facingBet + 0.01)
+            ? t('action.call_allin', { amount: callAmount.toFixed(1) })
+            : t('action.call_amount', { amount: callAmount.toFixed(1) });
+
         if (hasVoluntaryBet) {
             el('btn-check').style.display = 'none';
             el('btn-bet').style.display = 'none';
 
             el('btn-call').style.display = '';
-            el('btn-raise').style.display = '';
-            el('btn-call').innerText = t('action.call_amount', { amount: currentState.facingBet.toFixed(1) });
+            el('btn-raise').style.display = canRaise ? '' : 'none';
+            el('btn-call').innerText = callLabel;
             el('btn-fold').disabled = false;
         } else {
             el('btn-raise').style.display = 'none';
@@ -171,14 +188,14 @@ function updateUI() {
             // Unopened pot: if facing the 1bb blind (or limp) we can still Call (Limp)
             if (currentState.facingBet > 0) {
                 el('btn-call').style.display = '';
-                el('btn-call').innerText = t('action.call_amount', { amount: currentState.facingBet.toFixed(1) });
+                el('btn-call').innerText = callLabel;
                 el('btn-check').style.display = 'none';
             } else {
                 el('btn-call').style.display = 'none';
                 el('btn-check').style.display = '';
             }
 
-            el('btn-bet').style.display = '';
+            el('btn-bet').style.display = canRaise ? '' : 'none';
             el('btn-fold').disabled = false;
         }
     }
@@ -386,16 +403,29 @@ function getActionSizes(actionType) {
             options = [
                 { label: t('bet.size_small_x', { mult: mults[0] }), amount: facing * mults[0] },
                 { label: t('bet.size_medium_x', { mult: mults[1] }), amount: facing * mults[1] },
-                { label: street === "RIVER" ? t('bet.size_allin') : t('bet.size_large_x', { mult: mults[2] }), amount: facing * mults[2] }
+                { label: t('bet.size_large_x', { mult: mults[2] }), amount: facing * mults[2] }
             ];
         }
     }
 
-    // round to 1 decimal place cleanly
-    return options.map(o => ({
-        label: o.label,
-        amount: Math.round(o.amount * 10) / 10
-    }));
+    // 上限（スタック・相手がコールできる額）を超えるサイズはオールインにまとめる。
+    // 以前は上限を見ずに「150bb」のようなボタンを出していた（実際の投入はエンジンが上限で止める）
+    const maxAdd = heroMaxBet();
+    const out = [];
+    for (const o of options) {
+        const amount = Math.round(o.amount * 10) / 10;
+        if (amount >= maxAdd - 0.05) {
+            if (!out.some(x => x.allIn)) out.push({ label: t('bet.size_allin'), amount: maxAdd, allIn: true });
+        } else {
+            out.push({ label: o.label, amount });
+        }
+    }
+    return out;
+}
+
+// あなたがこのアクションで追加で出せる上限（bb）
+function heroMaxBet() {
+    try { return GameApi.heroMaxBet(); } catch (e) { return Infinity; }
 }
 
 function openBetPanel(actionType) {
@@ -733,11 +763,12 @@ async function fetchCoachWithRetry(messages, retries = 2) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒タイムアウト
+            const handState = GameApi.coachState();
             const response = await fetch(withLang('/api/ai_coach'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 // ハンド状態はサーバーに無いので毎回送る
-                body: JSON.stringify({ messages, user_id: currentUserId, state: GameApi.coachState() }),
+                body: JSON.stringify({ messages, user_id: currentUserId, state: handState }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -745,7 +776,7 @@ async function fetchCoachWithRetry(messages, retries = 2) {
             const data = await response.json();
             if (data.reply) {
                 // 最初の相談だけ履歴に残す（サーバーの save_ai_feedback と同じ条件）
-                if (messages.length === 1) GameApi.saveCoachFeedback(data.hand_context, data.reply);
+                if (messages.length === 1) GameApi.saveCoachFeedback(data.hand_context, data.reply, handState);
                 return data.reply;
             }
             throw new Error('empty reply');
@@ -945,7 +976,7 @@ function renderRangeGrid() {
     const heroRange = currentState ? (currentState.heroRangeRaw || {}) : {};
     const cpuRange = currentState ? (currentState.cpuRangeRaw || {}) : {};
     const heroPos = currentState ? (currentState.heroPos || '') : standaloneRangePos;
-    const cpuPos = currentState ? (currentState.cpuPos || '') : '';
+    const cpuPos = currentState ? displayCpuPos() : '';
 
     // スタンドアロン時はポジション選択を表示
     const sel = el('standalone-pos-selector');

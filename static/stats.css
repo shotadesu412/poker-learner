@@ -3,7 +3,7 @@
     --bg-color: #1a1e1b;
     --surface-color: #262c28;
     --text-main: #e2e8e4;
-    --text-muted: #8c9b91;
+    --text-muted: #a7b5ac;   /* 2026/11/16 #8c9b91 から明るく（暗い背景で読みにくかった） */
     --accent-blue: #3b82f6;
     --accent-green: #10b981;
     --accent-red: #ef4444;
@@ -430,13 +430,37 @@ body {
     display: block;
 }
 
+.ai-hand-box {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.ai-hand-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.ai-feedback-box .coach-heading {
+    display: inline-block;
+    margin-top: 6px;
+    color: #fbbf24;
+}
+
+.ai-feedback-box .coach-bullet {
+    color: var(--accent-blue);
+}
+
 .ai-context-box {
     background: rgba(0, 0, 0, 0.3);
     padding: 12px;
     border-radius: 6px;
-    font-family: monospace;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-main);
     white-space: pre-wrap;
     margin-bottom: 12px;
 }
@@ -575,8 +599,8 @@ body {
 }
 .hh-cards {
     font-weight: bold;
-    color: var(--accent-blue);
     min-width: 60px;
+    white-space: nowrap;
 }
 .hh-pos {
     color: var(--accent-orange);
@@ -606,8 +630,9 @@ body {
     gap: 6px;
 }
 .hh-action {
-    font-size: 0.78rem;
-    padding: 2px 8px;
+    font-size: 0.85rem;
+    padding: 3px 9px;
+    color: var(--text-main);
     border-radius: 10px;
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--border-color);
@@ -616,7 +641,7 @@ body {
 .hh-action.eval-good    { border-color: var(--eval-good);    color: var(--eval-good); }
 .hh-action.eval-marginal{ border-color: var(--eval-marginal);color: var(--eval-marginal); }
 .hh-action.eval-bad     { border-color: var(--eval-bad);     color: var(--eval-bad); }
-.hh-action.hh-cpu       { border-color: rgba(255,255,255,0.14); color: var(--text-muted); }
+.hh-action.hh-cpu       { border-color: rgba(255,255,255,0.22); color: #d5ddd8; }
 
 /* ハンド履歴: 勝敗バッジ・ポット・カード・ストリート行 */
 .hh-result {
@@ -634,11 +659,19 @@ body {
     color: var(--text-muted);
     white-space: nowrap;
 }
+/* カードは白地のチップにして、テキストではなくカードとして読めるようにする */
 .hh-card {
+    display: inline-block;
     font-weight: bold;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    padding: 2px 5px;
     margin-right: 3px;
+    border-radius: 4px;
+    background: #f8fafc;
+    color: #111827;
 }
-.hh-card.card-red { color: #f87171; }
+.hh-card.card-red { color: #dc2626; }
 .hh-detail-row {
     display: flex;
     align-items: center;
@@ -648,7 +681,7 @@ body {
 }
 .hh-detail-label {
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     min-width: 48px;
 }
 .hh-streets {
@@ -664,7 +697,7 @@ body {
 }
 .hh-street {
     color: var(--accent-orange);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: bold;
     min-width: 72px;
 }

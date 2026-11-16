@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, PlainTextResponse
+from typing import Optional
 from pydantic import BaseModel, Field
 import os
 from openai import OpenAI
@@ -101,6 +102,8 @@ class CoachAction(BaseModel):
     actor: str = Field("", max_length=8)
     action: str = Field("", max_length=16)
     amount: float = 0.0
+    evaluation: str = Field("", max_length=4)   # あなたのアクションのアプリ判定（◎◯△×）
+    equity: Optional[float] = None                # その時点の勝率(%)
 
 class CoachHandState(BaseModel):
     """端末のエンジン（static/poker/game.js）で遊んでいるときに、相談するハンドの状態を送ってもらう。
@@ -138,6 +141,8 @@ def _trim_to_last_sentence(text: str) -> str:
 def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
                    board, hero, cpu, pot, history) -> str:
     """AIコーチに渡すハンド状況の文章。board/hero/cpu はカード文字列のリスト"""
+    # リストのまま埋め込むと "['As', 'Kd']" になり、相談履歴にもその形で残るため空白区切りにする
+    cards = lambda cs: " ".join(cs) if cs else "-"
     context_str = t(
         "coach.context_header",
         street=street,
@@ -145,19 +150,29 @@ def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
         cpu_pos=cpu_pos,
         hero_stack=round(hero_stack, 1),
         cpu_stack=round(cpu_stack, 1),
-        board=board,
-        hero=hero,
-        cpu=cpu if cpu else t("coach.unknown_cards"),
+        board=cards(board),
+        hero=cards(hero),
+        cpu=cards(cpu) if cpu else t("coach.unknown_cards"),
         pot=pot,
     )
     # 各アクションにもポジションを添える。"HERO: CALL" だけだと
     # どの位置からのアクションか分からず、コーチが講評できない
+    # 呼び名は「あなた / 相手」。"HERO" のまま渡すとコーチが Hero 表記で答えるため
     pos_of = {"HERO": hero_pos, "CPU": cpu_pos}
+    name_of = {"HERO": t("coach.actor.hero"), "CPU": t("coach.actor.cpu")}
     for act in history:
         amt = act.get('amount', 0)
         amt_str = f" {round(amt, 1)}bb" if amt > 0 else ""
         actor = act['actor']
-        context_str += f"[{act['street']}] {actor}({pos_of.get(actor, '?')}): {act['action']}{amt_str}\n"
+        notes = []
+        if actor == "HERO":
+            if act.get("evaluation"):
+                notes.append(t("coach.action_verdict", mark=act["evaluation"]))
+            if act.get("equity") is not None:
+                notes.append(t("coach.action_equity", eq=float(act["equity"])))
+        note_str = f" [{' / '.join(notes)}]" if notes else ""
+        context_str += (f"[{act['street']}] {name_of.get(actor, actor)}({pos_of.get(actor, '?')}): "
+                        f"{act['action']}{amt_str}{note_str}\n")
     return context_str
 
 

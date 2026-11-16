@@ -105,8 +105,9 @@
     },
 
     // stats_logger.save_ai_feedback
-    saveAiFeedback(sessionId, handContext, aiFeedback) {
-      const row = { user_id: '', session_id: sessionId, timestamp: now(), hand_context: handContext, ai_feedback: aiFeedback };
+    // handState は AIコーチに送ったハンド状態（game_api.js の coachState）。分析ページで見やすく描画するために残す
+    saveAiFeedback(sessionId, handContext, aiFeedback, handState = null) {
+      const row = { user_id: '', session_id: sessionId, timestamp: now(), hand_context: handContext, ai_feedback: aiFeedback, hand_state: handState };
       return enqueue(() => run(['saved_hands'], 'readwrite', ({ saved_hands }) => { saved_hands.add(row); }));
     },
 
