@@ -321,8 +321,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=14` / `script.js?v=32` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=5` / `stats.js?v=6` / `i18n.js?v=7` / `game_api.js?v=5`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 4）で一括管理
+   `stats.css?v=5` / `stats.js?v=6` / `i18n.js?v=7` / `game_api.js?v=6`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` は `game_api.js` の `POKER_JS_VERSION`（現在 5）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -395,6 +395,13 @@ poker-learner/
   ある（EQR・SPR・MDF・ブラフキャッチャー等）。安易に数値をいじらない。
   変更するときは git log の該当コミットの意図を確認する
 - CPU戦略の仕様: プリフロップのオープンに対して CPU は フォールドなし
-  （95%コール/5%3ベット）— 練習機会を最大化するための意図的な仕様
+  （95%コール/5%3ベット）— 練習機会を最大化するための意図的な仕様。CPU が先に動くときも必ず参加する（SB は時々リンプ）
+- **CPU は実際の手札で判断する**（2026/11/16〜。`engine.js` の `_cpuPreflop` / `_cpuPostflop`）。
+  手札はプリフロップで初めて必要になった時点で「その行動に合うレンジ」から引き、山札から抜く。
+  判断は「CPU の手札 vs あなたの推定レンジ」の勝率。以前はあなたの実際の手札から計算していた（透視）。
+  CPU の手札はハンド中に画面にもコーチにも出さないこと（`GameApi.coachState` はショーダウン後だけ送る）
+- 実測の目安（あなた役の簡易ルールで6000ハンド）: フロップのドンク 11% / Cベット 53〜59% / あなたのベットへのレイズ 4〜12% /
+  3ベットへのフォールド 29% / フロップ時点の SPR 中央値 16（3ベットポット 7）/ オールインまで行くハンド 0.5%。
+  100bb は標準的な深さで変える必要なし（2026/11/16 確認）
 - Web は素の JS（フレームワークなし）。既存のコードスタイル（グローバル関数 +
   onclick 属性 + el() ヘルパー）に合わせる

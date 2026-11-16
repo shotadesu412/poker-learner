@@ -68,11 +68,9 @@
         cpuMsg = '';
         if (eng.isHeroTurn()) break;
 
-        // CPU が先手
-        const [, cpuEqNext] = root.Equity.calcEquityMonteCarlo(eng.heroHand, eng.board, eng.heroRange, eng.cpuRange,
-          'CPU', false, 50, this.rngFn);
+        // CPU が先手（CPU は自分の手札で判断する。engine.js の cpuDecide 参照）
         const cpuFacing = eng.currentBet - eng.cpuInvested;
-        const [cpuAction, cpuAmount] = eng.cpuDecide(cpuEqNext, 'CHECK', cpuFacing);
+        const [cpuAction, cpuAmount] = eng.cpuDecide(null, 'CHECK', cpuFacing);
         if (cpuAction === 'FOLD') continue;   // 初手フォールドなら裏で配り直す
         if (['CALL', 'BET', 'RAISE'].includes(cpuAction)) {
           const betAmount = cpuAction === 'CALL' ? cpuFacing : cpuAmount;
@@ -291,9 +289,8 @@
         if (idx + 1 < eng.STREETS.length) {
           eng.advanceStreet(eng.STREETS[idx + 1]);
           if (!eng.isHeroTurn()) {
-            const [, cpuEqNext] = root.Equity.calcEquityMonteCarlo(eng.heroHand, eng.board, eng.heroRange, eng.cpuRange,
-              'CPU', false, 50, this.rngFn);
-            let [cpuAction2, cpuAmount2] = eng.cpuDecide(cpuEqNext, 'CHECK', 0);
+            let [cpuAction2, cpuAmount2] = eng.cpuDecide(null, 'CHECK', 0);
+            const cpuEqNext = cpuEq;   // 記録用（あなた視点の勝率の裏返し）
             if (cpuAction2 === 'BET' || cpuAction2 === 'RAISE') {
               cpuAmount2 = Math.min(cpuAmount2, eng.maxAdditionalBet('CPU'));
             }

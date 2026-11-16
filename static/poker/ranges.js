@@ -210,15 +210,19 @@
           continue;
         }
         let w = weight;
-        // 小さいベット = レンジベット（ほぼ絞らない）/ 大きいベット = ポラライズ（中間が抜ける）
+        // 小さいベット = 広め（中間も残る）/ 大きいベット = ポラライズ（強い手 + 少しのブラフ）。
+        // 2026/11/16: 以前は弱い側を 0.8（大）/ 0.7（小）残しておりブラフが多すぎる前提だった。
+        // CPU が実際の手札で打つようになって測ると、CPU のリバーベットに対する表示勝率 49% に対し
+        // 実際の勝率は 20% だった。実測に合わせて弱い側を減らしている
+        const isRiver = board && board.length >= 5;   // リバーは次のカードが無いので、さらに強い手に寄る
         if (actionType === 'LARGE_BET') {
           if (percentile < 0.30) w = weight * 1.0;
-          else if (percentile < 0.70) w = weight * 0.2;
-          else w = weight * 0.8;
+          else if (percentile < 0.70) w = weight * (isRiver ? 0.08 : 0.15);
+          else w = weight * (isRiver ? 0.18 : 0.25);
         } else if (actionType === 'SMALL_BET') {
           if (percentile < 0.50) w = weight * 1.0;
-          else if (percentile < 0.80) w = weight * 0.9;
-          else w = weight * 0.7;
+          else if (percentile < 0.80) w = weight * 0.5;
+          else w = weight * 0.35;
         } else if (actionType === 'CALL') {
           if (percentile < 0.20) w = weight * 0.3;
           else if (percentile < 0.80) w = weight * 1.0;

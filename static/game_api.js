@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 4;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 5;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -83,7 +83,9 @@ const GameApi = {
             pot: eng.potSize,
             board: eng.board.map(Card.toStr),
             hero: eng.heroHand.map(Card.toStr),
-            cpu: eng.cpuHand.map(Card.toStr),
+            // CPU は配られた時点で手札を持つので、見せていない手札（ハンド中・CPU のフォールド）はコーチに渡さない
+            cpu: (eng.handFinished && !eng.actionHistory.some(a => a.actor === "CPU" && a.action === "FOLD"))
+                ? eng.cpuHand.map(Card.toStr) : [],
             // あなたのアクションにはアプリの判定と、その時点の勝率（実現率込み）を添える。
             // コーチがアプリの判定と食い違う講評や、ハンドの強さを取り違えた講評をしないため
             history: (() => {
