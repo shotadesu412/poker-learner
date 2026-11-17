@@ -167,8 +167,16 @@
       const loss = Math.max(0, best.ev - chosen.ev);
       const lossPct = loss / Math.max(0.5, ctx.pot);
       const B = root.BetSizing;
-      let evaluation = lossPct <= GRADE.optimal ? B.EVAL_OPTIMAL : lossPct <= GRADE.good ? B.EVAL_GOOD
-        : lossPct <= GRADE.marginal ? B.EVAL_MARGINAL : B.EVAL_BAD;
+      // モデルが苦手な比べ方は基準を 1.5 倍に緩める（監査で予測の誤差が大きかった）:
+      //   - サイズだけの違い（ベット/レイズ同士）: 降りる割合のサイズ依存は近似
+      //   - 強い手（勝率60%以上）でのスロープレイ（ベット/レイズの代わりにチェック/コール。EV はプラス）:
+      //     後のストリートで取れる分の見積もりが粗く、ソルバーでも混ぜることが多い
+      const aggr = (o) => o.action === 'BET' || o.action === 'RAISE';
+      const sizeOnly = aggr(chosen) && aggr(best);
+      const slowplay = !aggr(chosen) && aggr(best) && chosen.ev > 0 && ctx.eq >= 0.6 && chosen.action !== 'FOLD';
+      const k = sizeOnly || slowplay ? 1.5 : 1.0;
+      let evaluation = lossPct <= GRADE.optimal * k ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * k ? B.EVAL_GOOD
+        : lossPct <= GRADE.marginal * k ? B.EVAL_MARGINAL : B.EVAL_BAD;
 
       const name = (o) => PostflopEV.actionName(o, ctx);
       const lines = [];

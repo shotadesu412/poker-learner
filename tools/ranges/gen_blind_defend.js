@@ -1,6 +1,10 @@
-// BB の「オープンに対するコールレンジ」をオープンした位置ごとに作り、ranges.json に書き込む（2026/11/17）。
-//   node tools/ranges/gen_bb_defend.js          … 計算結果を表示するだけ
-//   node tools/ranges/gen_bb_defend.js --write  … ranges.json の BB に vs_open_call_vs_<位置> を書き込む（既存の値は上書き）
+// BB と SB の「オープンに対するコールレンジ」をオープンした位置ごとに作り、ranges.json に書き込む（2026/11/17）。
+//   node tools/ranges/gen_blind_defend.js          … 計算結果を表示するだけ
+//   node tools/ranges/gen_blind_defend.js --write  … ranges.json の BB/SB に vs_open_call_vs_<位置> を書き込む（既存の値は上書き）
+//
+// SB: 6人卓の標準チャートは SB を「3ベットかフォールド」にする（後ろの BB にスクイーズされるため）。
+// このアプリは2人の勝負で、BB はすでに降りている（ブラインドは死に金）ので、その理由が当てはまらない。
+// 監査でも SB の勝率40%以上のコールはフォールドより得だった（+0.97bb）。BB と同じ方法でコールレンジを作る。
 //
 // 以前の BB のコールレンジ（vs_open_call）は全ハンドの約21%で、オープンした位置にかかわらず共通だった。
 // 公開されている 6max 100bb の解析では BB は BTN のオープンに 45〜70% 程度で守る。大量ハンドの検証でも、
@@ -67,38 +71,54 @@ function classEquities(openMap, seed) {
   return out;
 }
 
-const result = {};
-const chartCall = Ranges.getRangeByCategory('BB', 'vs_open_call');
-const chart3 = Ranges.getRangeByCategory('BB', 'vs_open_3bet');
-OPENERS.forEach((op, k) => {
-  const size = BetSizing.PREFLOP_OPENS[op];
-  const req = (size - 1) / (size * 2 + (op === 'SB' ? 0 : 0.5));   // SB のオープンは SB 自身のブラインド込み
-  const eqs = classEquities(Ranges.getRangeByCategory(op, 'open'), 20261117 + k);
-  const call = {};
-  let combos = 0;
-  for (const cls of Ranges.ALL_HANDS_DICT.keys()) {
-    const inCall = (chartCall.get(cls) || 0) > 0;
-    const in3 = (chart3.get(cls) || 0) > 0;
-    if (inCall) call[cls] = chartCall.get(cls);
-    else if (!in3 && eqs.get(cls) * realization(cls) >= req) call[cls] = 1.0;
-    if (call[cls] || in3) combos += W(cls) * Math.max(call[cls] || 0, in3 ? chart3.get(cls) : 0);
+const result = { BB: {}, SB: {} };
+// オープンの総額（SB は自分のブラインド 0.5 にオープン額を足す。エンジンと同じ）
+const openTotal = (op) => BetSizing.PREFLOP_OPENS[op] + (op === 'SB' ? 0.5 : 0);
+let k = 0;
+for (const defender of ['BB', 'SB']) {
+  const chartCall = Ranges.getRangeByCategory(defender, 'vs_open_call');
+  const chart3 = Ranges.getRangeByCategory(defender, 'vs_open_3bet');
+  // SB の vs_open_call は空で、getRangeByCategory が call ∪ 3bet に合成する。表のコールは無いものとして扱う
+  const callChart = defender === 'SB' ? new Map() : chartCall;
+  for (const op of OPENERS) {
+    if (op === defender) continue;
+    if (defender === 'SB' && op === 'SB') continue;
+    if (defender === 'SB' && !['UTG', 'HJ', 'CO', 'BTN'].includes(op)) continue;
+    const size = openTotal(op);
+    const posted = defender === 'BB' ? 1.0 : 0.5;
+    const dead = defender === 'BB' ? (op === 'SB' ? 0 : 0.5) : 1.0;   // 降りた側のブラインド
+    const req = (size - posted) / (size * 2 + dead);
+    const eqs = classEquities(Ranges.getRangeByCategory(op, 'open'), 20261117 + k++);
+    const call = {};
+    let combos = 0;
+    for (const cls of Ranges.ALL_HANDS_DICT.keys()) {
+      const inCall = (callChart.get(cls) || 0) > 0;
+      const in3 = (chart3.get(cls) || 0) > 0;
+      if (inCall) call[cls] = callChart.get(cls);
+      // BB vs SB だけはポストフロップで BB が後に動く（IP）。IP の実現率は OOP より約0.15高い（上限1.0）
+      const R = defender === 'BB' && op === 'SB' ? Math.min(1.0, realization(cls) + 0.15) : realization(cls);
+      if (!inCall && !in3 && eqs.get(cls) * R >= req) call[cls] = 1.0;
+      if (call[cls] || in3) combos += W(cls) * Math.max(call[cls] || 0, in3 ? chart3.get(cls) : 0);
+    }
+    result[defender][op] = call;
+    console.log(`${defender} vs ${op}: オープン ${size}bb / 必要勝率 ${(req * 100).toFixed(1)}% / 守る割合（コール+3ベット）${(combos / 1326 * 100).toFixed(1)}%`);
   }
-  result[op] = call;
-  console.log(`${op}: オープン ${size}bb / 必要勝率 ${(req * 100).toFixed(1)}% / 守る割合（コール+3ベット）${(combos / 1326 * 100).toFixed(1)}%`);
-});
+}
 
 if (process.argv.includes('--write')) {
   const file = path.join(D, 'ranges.json');
   let text = fs.readFileSync(file, 'utf8');
   const fmt = (m) => '{' + Object.entries(m).map(([k, v]) => `"${k}": ${Number.isInteger(v) ? v.toFixed(1) : v}`).join(', ') + '}';
-  const bbStart = text.indexOf('  "BB": {\n   "open": {},');
-  if (bbStart < 0) throw new Error('ranges.BB が見つからない');
-  // 既存の vs_open_call_vs_* を消してから、vs_open_call の次の行に入れる
   text = text.replace(/\n   "vs_open_call_vs_[A-Z]+": \{[^\n]*\},/g, '');
-  const anchorStart = text.indexOf('   "vs_open_call": ', text.indexOf('  "BB": {\n   "open": {},'));
-  const anchorEnd = text.indexOf('\n', anchorStart);
-  const lines = OPENERS.map((op) => `   "vs_open_call_vs_${op}": ${fmt(result[op])},`).join('\n');
-  text = text.slice(0, anchorEnd + 1) + lines + '\n' + text.slice(anchorEnd + 1);
+  for (const defender of ['BB', 'SB']) {
+    const head = `  "${defender}": {\n   "open": `;
+    const blockStart = text.indexOf(head, text.indexOf('"ranges": {'));
+    if (blockStart < 0) throw new Error(`ranges.${defender} が見つからない`);
+    const anchorStart = text.indexOf('   "vs_open_call": ', blockStart);
+    const anchorEnd = text.indexOf('\n', anchorStart);
+    const lines = Object.keys(result[defender]).map((op) => `   "vs_open_call_vs_${op}": ${fmt(result[defender][op])},`).join('\n');
+    text = text.slice(0, anchorEnd + 1) + lines + '\n' + text.slice(anchorEnd + 1);
+  }
   fs.writeFileSync(file, text);
   console.log('ranges.json に書き込みました');
 }
