@@ -854,6 +854,7 @@ body {
 .reason-text {
     font-size: 0.95rem;
     line-height: 1.5;
+    white-space: pre-line;   /* 判定の根拠は改行区切りで届く */
     flex: 1;
     overflow-y: auto;
     padding-bottom: 10px;

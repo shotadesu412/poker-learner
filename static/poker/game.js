@@ -8,12 +8,13 @@
 //
 // ⚠️ 乱数を読む順番（エクイティ計算の回数・順序を含む）は app.py と同じにしてある。
 //
-// 依存: engine.js とその依存すべて, pyfmt.js
+// 依存: engine.js とその依存すべて, pyfmt.js, postflop_ev.js
 
 (function (root) {
   if (typeof module !== 'undefined') {
     require('./engine.js');
     require('./pyfmt.js');
+    require('./postflop_ev.js');
   }
 
   const noop = () => {};
@@ -22,6 +23,18 @@
       const r = Math.random() * 16 | 0;
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     }));
+
+  // コンボ単位（"AhKh"）のレンジを 169 種類のハンド名ごとの重み（最大1）に直す。ハンド名のレンジはそのまま
+  function rangeForDisplay(m) {
+    const isCombo = [...m.keys()].some((k) => k.length === 4);
+    if (!isCombo) return m;
+    const RM = root.RangeModel;
+    const cls = RM.toClassMap(RM.toVec(m));
+    let mx = 0;
+    for (const v of cls.values()) mx = Math.max(mx, v);
+    if (mx > 0) for (const [k, v] of cls) cls.set(k, Math.round(v / mx * 1000) / 1000);
+    return cls;
+  }
 
   class Game {
     constructor({ rng, hooks } = {}) {
@@ -116,6 +129,15 @@
       const firstIn = (evalDict) => (isFirstIn ? Ev.applyFirstIn(evalDict, eng.heroHand, action, eng.heroPosition) : evalDict);
       const effectiveStack = Math.min(eng.heroStack, eng.cpuStack);
       const isPreflop = eng.street === 'PREFLOP';
+
+      // ポストフロップは選べるアクションの期待値を比べて判定する（postflop_ev.js）。
+      // アクション前の局面で計算する（レンジの更新・チップの移動より先）
+      if (!isPreflop && ['FOLD', 'CALL', 'CHECK', 'BET', 'RAISE'].includes(action)) {
+        return this._postflopAction(action, amount, heroAllIn);
+      }
+
+      // オープンした位置（BB のコールレンジがオープンした位置で変わる）
+      const openerPos = eng.preflopRaiseCount === 1 && eng.aggressor === 'CPU' ? eng.cpuPosition : null;
       const [heroEq, cpuEq] = this._equity(1000);
       const heroRangeAdv = Equity.calcRangeAdvantage(eng.heroHand, eng.board, eng.heroRange, eng.cpuRange,
         isPreflop, 400, this.rngFn);
@@ -134,7 +156,7 @@
         eng.updateRangeDict('HERO', 'FOLD', 0);
         eng.recordAction('HERO', 'FOLD', 0, realizedEquity, eng.potSize);
         const evalDict = firstIn(Ev.evaluateFold(heroEq, heroFacing, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
-          eng.board, heroRangeAdv, effectiveStack, eng.street));
+          eng.board, heroRangeAdv, effectiveStack, eng.street, openerPos));
         const evFold = evalDict.ev ?? 0.0;
         const evCallAlt = heroFacing > 0 ? Ev.evCall(heroEq, eng.potSize, heroFacing) : 0.0;
         const evLossFold = Math.max(0.0, evCallAlt - evFold);
@@ -149,7 +171,7 @@
         const callAmount = Math.min(heroFacing, eng.heroStack);   // オールインコール対応
         if (callAmount >= eng.heroStack - 0.01) heroAllIn = true;
         const evalDict = firstIn(Ev.evaluateCall(heroEq, callAmount, eng.potSize, eng.heroPosition, eng.heroHand, is3betPot,
-          eng.board, effectiveStack, heroRangeAdv, eng.heroRange, eng.street));
+          eng.board, effectiveStack, heroRangeAdv, eng.heroRange, eng.street, openerPos));
         evalResult = evalDict.evaluation;
         evalReason = evalDict.reason;
         const evCallVal = evalDict.ev ?? 0.0;
@@ -163,7 +185,7 @@
         let evalDict;
         if (action === 'RAISE') {
           evalDict = Ev.evaluateRaise(heroEq, amount, heroFacing, eng.potSize, eng.heroPosition, eng.heroHand, eng.board,
-            heroRangeAdv, eng.heroRange, effectiveStack, eng.street, eng.cpuRange, is3betPot);
+            heroRangeAdv, eng.heroRange, effectiveStack, eng.street, eng.cpuRange, is3betPot, openerPos);
         } else {
           // ドンクベット = OOP かつ非アグレッサーが先に打つ
           const isDonk = eng.street !== 'PREFLOP' && eng.aggressor !== 'HERO' && !eng.isHeroIp;
@@ -195,6 +217,64 @@
         throw new Error('Invalid action');
       }
 
+      return this._afterHero(action, amount, heroAllIn, evalResult, evalReason, cpuEq);
+    }
+
+    // ポストフロップのあなたのアクション: 判定 → 記録 → CPU の応答
+    _postflopAction(action, amount, heroAllIn) {
+      const { Py, PostflopEV } = root;
+      const eng = this.engine;
+      const heroFacing = eng.currentBet - eng.heroInvested;
+      if (action === 'CALL') {
+        amount = Math.min(heroFacing, eng.heroStack);
+        if (amount >= eng.heroStack - 0.01) heroAllIn = true;
+      }
+      const pf = PostflopEV.evaluate(eng, action, amount);
+      // OOP で主導権の無い側が先にチェックするのは基本どおり。期待値の差が小さければ ◯ を下回らない
+      let evaluation = pf.evaluation;
+      let reason = pf.reason;
+      const B = root.BetSizing;
+      const firstCheckOop = action === 'CHECK' && eng.aggressor !== 'HERO' && !eng.isHeroIp;
+      if (firstCheckOop && (evaluation === B.EVAL_MARGINAL || evaluation === B.EVAL_BAD) && pf.loss_pct <= 0.15) {
+        evaluation = B.EVAL_GOOD;
+      }
+      // ドンクベット（OOP で主導権の無い側が先に打つ）は ◎ にしない（以前からの仕様）
+      const isDonk = action === 'BET' && eng.aggressor !== 'HERO' && !eng.isHeroIp
+        && !eng.actionHistory.some((a) => a.street === eng.street);
+      if (isDonk && evaluation === B.EVAL_OPTIMAL) {
+        evaluation = B.EVAL_GOOD;
+        reason = root.Messages.t('bet.donk') + '\n' + reason;
+      }
+      const eq = pf.realized_eq;
+      const common = { street: eng.street, actor: 'HERO', equity: eq, hero_pos: eng.heroPosition };
+      const evLoss = pf.ev_loss;
+
+      if (action === 'FOLD') {
+        eng.updateRangeDict('HERO', 'FOLD', 0);
+        eng.recordAction('HERO', 'FOLD', 0, eq, eng.potSize);
+        this._log({ ...common, action: 'FOLD', amount: 0.0, pot_size: eng.potSize, evaluation, ev_loss: evLoss });
+        eng.handFinished = true;
+        const state = this.gameState({ finished: true, showCpuHand: true });
+        this._saveHandRecord(state, 'CPU');
+        return { evaluation, reason, ev_loss: Py.round(evLoss, 3), metrics: pf, state, message: 'You Folded' };
+      }
+      if (action === 'CHECK') {
+        eng.updateRangeDict('HERO', 'CHECK', 0);
+        eng.recordAction('HERO', 'CHECK', 0, eq, eng.potSize);
+        this._log({ ...common, action: 'CHECK', amount: 0.0, pot_size: eng.potSize, evaluation, ev_loss: evLoss });
+      } else {
+        eng.updateRangeDict('HERO', action, amount);
+        eng.recordAction('HERO', action, amount, eq, eng.potSize);
+        eng.placeBet('HERO', amount);
+        this._log({ ...common, action, amount, pot_size: eng.potSize, evaluation, ev_loss: evLoss });
+      }
+      return this._afterHero(action, amount, heroAllIn, evaluation, reason, 1 - eq);
+    }
+
+    // あなたのアクションの後: CPU の応答・ストリートの進行・決着
+    _afterHero(action, amount, heroAllIn, evalResult, evalReason, cpuEq) {
+      const { Py } = root;
+      const eng = this.engine;
       // 3. CPU のアクション
       const cpuFacing = eng.currentBet - eng.cpuInvested;
       let streetClosedByHero = false;
@@ -340,7 +420,10 @@
       const [heroEq] = this._equity(500);
       const dispStack = Math.min(eng.heroStack, eng.cpuStack);
       const dispSpr = (dispStack > 0 && eng.potSize > 0) ? (dispStack / eng.potSize) : 10.0;
-      const realizedEq = Ev.realizeEquity(heroEq, Ev.getEqrModifier(eng.heroPosition, eng.heroHand, false, eng.board, 0.5, dispSpr));
+      // 表示用の勝率。リバーは残りのカードが無いので割り引かない。IP/OOP は実際の位置関係で決める
+      const realizedEq = eng.street === 'RIVER' ? heroEq
+        : Ev.realizeEquity(heroEq, Ev.getEqrModifier(eng.heroPosition, eng.heroHand, false, eng.board, 0.5, dispSpr, null,
+          eng.street === 'PREFLOP' ? null : eng.isHeroIp));
 
       if (finished && showCpuHand && eng.cpuHand.length === 0) eng.generateRealizedCpuHand();
 
@@ -393,8 +476,9 @@
         showdownResult,
         heroRange: compressRange(eng.heroRange),
         cpuRange: compressRange(eng.cpuRange),
-        heroRangeRaw: Object.fromEntries(eng.heroRange),
-        cpuRangeRaw: Object.fromEntries(eng.cpuRange),
+        // 画面のレンジ表は 169 種類のハンド名で引く。ポストフロップのレンジはコンボ単位なので平均に直す
+        heroRangeRaw: Object.fromEntries(rangeForDisplay(eng.heroRange)),
+        cpuRangeRaw: Object.fromEntries(rangeForDisplay(eng.cpuRange)),
         finished,
         // サーバーはレスポンス時点のスナップショットを返すので、ここでもコピーを渡す
         history: eng.actionHistory.map((a) => ({ ...a })),

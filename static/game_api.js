@@ -2,12 +2,12 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 5;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 6;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
     "rng", "hand_table", "hand_eval", "pyfmt", "messages", "ranges", "range_utils", "equity",
-    "ev_calculator", "hand_classifier", "bet_sizing", "evaluator", "engine", "game",
+    "ev_calculator", "hand_classifier", "bet_sizing", "range_model", "postflop_ev", "evaluator", "engine", "game",
     "stats_calc", "stats_store",
 ];
 const POKER_STATS_MODULES = ["pyfmt", "messages", "stats_calc", "stats_store"];
@@ -34,7 +34,9 @@ const GameApi = {
     async init() {
         try {
             await loadPokerModules(POKER_GAME_MODULES);
-            await Promise.all([Ranges.load(), Messages.load()]);
+            // JSON もキャッシュに古いものが残らないよう、JS と同じ版番号を付ける
+            const v = `?v=${POKER_JS_VERSION}`;
+            await Promise.all([Ranges.load(`/static/poker/ranges.json${v}`), Messages.load(`/static/poker/messages.json${v}`)]);
             this.game = new PokerGame({
                 hooks: {
                     startSession: (sid, pos, hand) => StatsStore.startSession(sid, pos, hand),
@@ -127,7 +129,7 @@ const StatsApi = {
     init() {
         this.ready = this.ready || (async () => {
             await loadPokerModules(POKER_STATS_MODULES);
-            await Messages.load();
+            await Messages.load(`/static/poker/messages.json?v=${POKER_JS_VERSION}`);
         })();
         return this.ready;
     },

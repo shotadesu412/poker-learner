@@ -82,10 +82,11 @@
     },
 
     // EQR（エクイティ実現率）。加算合成 + SPR レバレッジ + ストリート別の上下限
-    getEqrModifier(heroPos, cards = null, is3betPot = false, board = null, rangeAdv = 0.5, spr = 10.0, street = null) {
+    // isIpOverride: 実際の IP/OOP（相手の位置で決まる）。省略時は従来どおりポジション名で決め打ち（プリフロップの判定用）
+    getEqrModifier(heroPos, cards = null, is3betPot = false, board = null, rangeAdv = 0.5, spr = 10.0, street = null, isIpOverride = null) {
       let baseEqr = 1.0;
       const category = Evaluator.categorizeHand(cards, board);
-      const isIp = IP_POSITIONS.includes(heroPos);
+      const isIp = isIpOverride === null ? IP_POSITIONS.includes(heroPos) : isIpOverride;
 
       baseEqr += isIp ? 0.10 : -0.10;
 
@@ -165,7 +166,8 @@
     },
 
     // 戻り値: [decision('play'|'mix'|'fold'), 評価記号, 解説文]
-    evaluatePreflopActionGto(cards, actionTaken, heroPos, is3betPot, facingBet) {
+    // openerPos（省略可）: BB でオープンに対応するとき、オープンした位置ごとのコールレンジを使う（2026/11/17〜）
+    evaluatePreflopActionGto(cards, actionTaken, heroPos, is3betPot, facingBet, openerPos = null) {
       const { Ranges, BetSizing: B } = root;
       const posRanges = Ranges.RANGES.get(heroPos) || new Map();
       const empty = new Map();
@@ -178,6 +180,7 @@
       } else if (!is3betPot) {
         // BB のコールレンジを相手の位置で変えるデータは無いので共通の vs_open_call を使う
         callRange = getOr(posRanges, 'vs_open_call', empty);
+        if (openerPos && posRanges.has('vs_open_call_vs_' + openerPos)) callRange = posRanges.get('vs_open_call_vs_' + openerPos);
         raiseRange = getOr(posRanges, 'vs_open_3bet', getOr(posRanges, '3bet', empty));
         foldMsg = t('preflop.foldmsg.vs_open');
       } else {
@@ -218,14 +221,14 @@
     },
 
     evaluateCall(equity, callAmount, potSize, heroPos = 'BTN', cards = null, is3betPot = false, board = null,
-                 effectiveStack = 0.0, rangeAdv = 0.5, heroRange = null, street = null) {
+                 effectiveStack = 0.0, rangeAdv = 0.5, heroRange = null, street = null, openerPos = null) {
       const B = root.BetSizing;
       if (callAmount === 0) {
         return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: B.EVAL_OPTIMAL, reason: t('call.free_check') };
       }
       let preflopPrefix = '';
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'CALL', heroPos, is3betPot, callAmount);
+        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'CALL', heroPos, is3betPot, callAmount, openerPos);
         preflopPrefix = eReason + '\n';
         if (decision === 'fold' || decision === 'mix') {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: preflopPrefix };
@@ -260,13 +263,13 @@
     },
 
     evaluateFold(equity, opponentBetSize, potSize, heroPos = 'BTN', cards = null, is3betPot = false, board = null,
-                 rangeAdv = 0.5, effectiveStack = 0.0, street = null) {
+                 rangeAdv = 0.5, effectiveStack = 0.0, street = null, openerPos = null) {
       const B = root.BetSizing;
       if (opponentBetSize === 0) {
         return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: B.EVAL_BAD, reason: t('fold.no_bet') };
       }
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'FOLD', heroPos, is3betPot, opponentBetSize);
+        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'FOLD', heroPos, is3betPot, opponentBetSize, openerPos);
         if (decision === 'mix') {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: eReason };
         }
@@ -374,11 +377,11 @@
     },
 
     evaluateRaise(equity, raiseAmount, opponentBetSize, potSize, heroPos = 'BTN', cards = null, board = null,
-                  rangeAdv = 0.5, heroRange = null, effectiveStack = 0.0, street = null, cpuRange = null, is3betPot = false) {
+                  rangeAdv = 0.5, heroRange = null, effectiveStack = 0.0, street = null, cpuRange = null, is3betPot = false, openerPos = null) {
       const { BetSizing: B, HandClassifier: HC } = root;
       let prefix = '';
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, is3betPot, opponentBetSize);
+        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, is3betPot, opponentBetSize, openerPos);
         prefix = eReason + '\n';
         if (decision === 'fold' || decision === 'mix') {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: prefix };

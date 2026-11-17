@@ -12,7 +12,7 @@
 (function (root) {
   if (typeof module !== 'undefined') {
     for (const m of ['hand_eval', 'ranges', 'range_utils', 'equity', 'evaluator', 'hand_classifier',
-      'bet_sizing', 'rng']) require('./' + m + '.js');
+      'bet_sizing', 'rng', 'range_model']) require('./' + m + '.js');
   }
 
   const getOr = (m, key, dflt) => (m && m.has(key) ? m.get(key) : dflt);
@@ -119,10 +119,10 @@
 
       if (this.isHeroTurn()) {
         this.heroRange = new Map(Ranges.getRangeByCategory(this.heroPosition, 'open'));
-        this.cpuRange = new Map(Ranges.getRangeByCategory(this.cpuPosition, 'vs_open_call'));
+        this.cpuRange = new Map(Ranges.getRangeByCategory(this.cpuPosition, 'vs_open_call', this.heroPosition));
       } else {
         this.cpuRange = new Map(Ranges.getRangeByCategory(this.cpuPosition, 'open'));
-        this.heroRange = new Map(Ranges.getRangeByCategory(this.heroPosition, 'vs_open_call'));
+        this.heroRange = new Map(Ranges.getRangeByCategory(this.heroPosition, 'vs_open_call', this.cpuPosition));
       }
 
       if (this.heroPosition === 'SB') { this.heroStack -= 0.5; this.heroInvested = 0.5; }
@@ -271,22 +271,40 @@
         if (action === 'BET' || action === 'RAISE') {
           const cat = numRaises === 0 ? 'open' : numRaises === 1 ? '3bet' : '4bet_bluff';
           updated = new Map(Ranges.getRangeByCategory(pos, cat));
+        } else if (actor === 'CPU' && numRaises === 2 && this.aggressor === 'HERO' && (action === 'CALL' || action === 'FOLD')) {
+          // CPU が 3ベットにコール/フォールド: 実際に使った確率（_vs3betProbs）でベイズ更新
+          const RM = root.RangeModel;
+          const table = RM.tableFor([]);
+          const vec = RM.toVec(current);
+          const eq = table.equityVector(vec, RM.toVec(this.heroRange));
+          const facing = this.currentBet - this.cpuInvested;
+          const mdfE = this._vs3betMdfE(eq, vec, facing);
+          const out = new Float64Array(RM.N);
+          for (let i = 0; i < RM.N; i++) {
+            if (!(vec[i] > 0) || Number.isNaN(eq[i])) continue;
+            const cls = PokerEngine.comboKey(RM.combos()[i]);
+            out[i] = vec[i] * this._vs3betProbs(cls, eq[i], facing, mdfE)[action];
+          }
+          updated = RM.toMap(out);
         } else if (action === 'CALL') {
           const cat = numRaises === 0 ? 'open' : numRaises === 1 ? 'vs_open_call' : 'vs_3bet_call';
-          updated = new Map(Ranges.getRangeByCategory(pos, cat));
+          const opener = actor === 'HERO' ? this.cpuPosition : this.heroPosition;
+          updated = new Map(Ranges.getRangeByCategory(pos, cat, opener));
         } else if (action === 'FOLD') {
           updated = new Map([...current.keys()].map((k) => [k, 0.0]));
         } else {
           updated = current;
         }
+      } else if (action === 'FOLD') {
+        updated = new Map([...current.keys()].map((k) => [k, 0.0]));
       } else {
-        let type = 'CHECK';
-        if (action === 'BET' || action === 'RAISE') {
-          type = actionAmount / Math.max(1.0, this.potSize) >= 0.5 ? 'LARGE_BET' : 'SMALL_BET';
-        } else if (action === 'CALL') type = 'CALL';
-        else if (action === 'FOLD') type = 'FOLD';
-        updated = type === 'CHECK' ? current
-          : Ranges.updateRangeAfterAction(current, type, actionAmount, this.board);
+        // ベイズ更新: 重み × P(このアクション | 手札)。CPU の行動は同じモデルで決まる（range_model.js）
+        const RM = root.RangeModel;
+        const table = RM.tableFor(this.board);
+        const vec = RM.toVec(current);
+        const opp = RM.toVec(actor === 'HERO' ? this.cpuRange : this.heroRange);
+        const ctx = this._modelContext(actor);
+        updated = RM.toMap(RM.posterior(table, vec, opp, ctx, action, actionAmount, actor === 'CPU'));
       }
       if (actor === 'HERO') this.heroRange = updated; else this.cpuRange = updated;
     }
@@ -298,74 +316,11 @@
       return betSize / (pot + 2 * betSize);
     }
 
-    // ショーダウン用に CPU の実ハンドを作る。cpuEffectiveEquity（実際に意思決定した強さ）に近いものを選ぶ
+    // CPU の手札は行動を決める時点で必ず持っている。万一無ければ（CPU が一度も動いていない等）
+    // 今の CPU のレンジから引く（以前はショーダウンで「勝率が近い手」を後から作っていた）
     generateRealizedCpuHand() {
-      if (this.cpuHand.length === 2) return;   // 2026/11/16〜 CPU は実際の手札を持っている
-      const { Card, Ranges, HandEvaluator } = root;
-      const dead = new Set(this.heroHand.map(Card.toStr).concat(this.board.map(Card.toStr)));
-      let valid = [];
-      for (const [comboStr, weight] of this.cpuRange) {
-        if (weight <= 0.0) continue;
-        for (const pair of Ranges.parseCombo(comboStr)) {
-          if (!pair.some((c) => dead.has(c))) valid.push([pair, weight]);
-        }
-      }
-      if (valid.length === 0) {
-        // 重みが全滅（FOLD 更新後など）: CPU ポジションのオープンレンジから均等に（UTG の別名解決はしない。Python と同じ）
-        const fallback = getOr(Ranges.positionRanges, this.cpuPosition, new Map());
-        for (const comboStr of fallback.keys()) {
-          for (const pair of Ranges.parseCombo(comboStr)) {
-            if (!pair.some((c) => dead.has(c))) valid.push([pair, 1.0]);
-          }
-        }
-        if (valid.length === 0) { this.cpuHand = []; return; }
-      }
-
-      const targetEq = this.cpuEffectiveEquity;
-      let chosen;
-      if (targetEq !== null && targetEq !== undefined && this.board.length >= 3) {
-        const scored = valid.map(([pair, w]) => {
-          let score;
-          try { score = HandEvaluator.evaluate(this.board, pair.map(Card.fromStr)); } catch (e) { score = 5000; }
-          return [pair, w, score];
-        });
-        const scores = scored.map((x) => x[2]);
-        const minS = Math.min(...scores), maxS = Math.max(...scores);
-        const range = Math.max(1, maxS - minS);
-        const norm = (s) => 1.0 - (s - minS) / range;
-        // targetEq に近い上位20%を候補にして重み付きで引く（sort は安定なので Python と同順）
-        const byDist = scored.slice().sort((a, b) => Math.abs(norm(a[2]) - targetEq) - Math.abs(norm(b[2]) - targetEq));
-        const topN = Math.max(1, Math.floor(byDist.length / 5));
-        const candidates = byDist.slice(0, topN);
-        let totalW = 0;
-        for (const [, w] of candidates) totalW += w;
-        if (totalW <= 0) {
-          chosen = candidates[0][0];
-        } else {
-          const r = this.rng.uniform(0, totalW);
-          let cum = 0.0;
-          chosen = candidates[0][0];
-          for (const [pair, w] of candidates) {
-            cum += w;
-            if (r <= cum) { chosen = pair; break; }
-          }
-        }
-      } else {
-        let total = 0;
-        for (const [, w] of valid) total += w;
-        if (total <= 0) {
-          chosen = this.rng.choice(valid)[0];
-        } else {
-          const r = this.rng.uniform(0, total);
-          let cum = 0.0;
-          chosen = valid[valid.length - 1][0];
-          for (const [pair, w] of valid) {
-            cum += w;
-            if (r <= cum) { chosen = pair; break; }
-          }
-        }
-      }
-      this.cpuHand = chosen.map(Card.fromStr);
+      if (this.cpuHand.length === 2) return;
+      this._assignCpuHand(this.cpuRange);
     }
 
     updatePot(amount) { this.potSize += amount; }
@@ -469,7 +424,7 @@
           this.cpuLastActionIntent = 'VALUE';
           return ['RAISE', Math.min(this.cpuStack, Math.max(facing * raiseMult, facing + 2.0))];
         }
-        this._assignCpuHand(Ranges.getRangeByCategory(pos, 'vs_open_call'));
+        this._assignCpuHand(Ranges.getRangeByCategory(pos, 'vs_open_call', this.heroPosition));
         this.cpuLastActionIntent = 'CALL';
         return ['CALL', facing];
       }
@@ -477,18 +432,23 @@
       // 手札を持った状態でレイズされた（オープン→3ベットされた / リンプ→レイズされた / 3ベット→4ベットされた）
       const eReq = root.Evaluator.calculateRequiredEquity(facing, this.potSize);
       if (raises === 2 && this.aggressor === 'HERO') {
-        const w4 = this._inRange('vs_3bet_4bet'), wb = this._inRange('4bet_bluff'), wc = this._inRange('vs_3bet_call');
+        // 3ベットされた: レンジ表（4ベット/コール）+ 表の外でも 3ベットのレンジに十分戦える手はコール。
+        // あなたから見た CPU のレンジも同じ確率で更新する（updateRangeDict）
+        const RM = root.RangeModel;
+        const table = RM.tableFor([]);
+        const idx = RM.comboIndex(this.cpuHand);
+        const cpuVec = RM.toVec(this.cpuRange);
+        cpuVec[idx] = Math.max(cpuVec[idx], 1e-9);
+        const eqv = table.equityVector(cpuVec, RM.toVec(this.heroRange));
+        const eq3 = eqv[idx];
+        const mdfE = this._vs3betMdfE(eqv, cpuVec, facing);
+        const pr = this._vs3betProbs(PokerEngine.comboKey(this.cpuHand), Number.isNaN(eq3) ? 0.5 : eq3, facing, mdfE);
         const r = rng.random();
-        if (r < w4 || rng.random() < wb * 0.5) {
-          this.cpuLastActionIntent = r < w4 ? 'VALUE' : 'BLUFF';
-          return ['RAISE', Math.min(this.cpuStack, facing * rng.choice([2.2, 2.5]))];
+        if (r < pr.RAISE) {
+          this.cpuLastActionIntent = r < pr.value ? 'VALUE' : 'BLUFF';
+          return ['RAISE', Math.min(this.cpuStack, facing * 2.4)];
         }
-        if (r < w4 + wc) { this.cpuLastActionIntent = 'CALL'; return ['CALL', facing]; }
-        // レンジ表の外でも、3ベットのレンジに十分戦える手（IP はやや広め）はコール。
-        // それ以外は降りる（実戦の 3ベットへのフォールド率は 5〜6割）
-        // 3ベットのレンジに対して十分戦える手だけ（OOP はさらに厳しく）
-        const eq3 = this._cpuEquity(200);
-        if (eq3 >= (cpuIsIp ? 0.42 : 0.46) && eq3 >= eReq) { this.cpuLastActionIntent = 'CALL'; return ['CALL', facing]; }
+        if (r < pr.RAISE + pr.CALL) { this.cpuLastActionIntent = 'CALL'; return ['CALL', facing]; }
         this.cpuLastActionIntent = 'FOLD';
         return ['FOLD', 0];
       }
@@ -508,100 +468,88 @@
       return ['FOLD', 0];
     }
 
+    // 3ベットに対する防衛の下限の勝率（CPU のレンジのうち上位 MDF × VS3BET_MDF_SHARE に入る境目）
+    _vs3betMdfE(eqv, vec, facing) {
+      const mdf = Math.max(0, this.potSize - facing) / Math.max(0.01, this.potSize);
+      return root.RangeModel.quantileE(eqv, vec, mdf * PokerEngine.VS3BET_MDF_SHARE);
+    }
+
+    // 3ベットに対する CPU の行動確率（手札の種類 cls と、3ベットのレンジに対する勝率 eq3 から）
+    _vs3betProbs(cls, eq3, facing, mdfE) {
+      const R = root.Ranges;
+      const pos = this.cpuPosition;
+      const w = (cat) => { const m = R.getRangeByCategory(pos, cat); return m === R.ALL_HANDS_DICT ? 0 : (m.get(cls) || 0); };
+      const w4 = w('vs_3bet_4bet'), wb = w('4bet_bluff'), wc = w('vs_3bet_call');
+      const value = Math.min(1, w4);
+      const bluff = (1 - value) * Math.min(1, wb) * 0.5;
+      const raise = value + bluff;
+      const callChart = Math.min(1 - raise, wc * (1 - Math.min(1, wb) * 0.5));
+      // 値段で決める: 3ベットのレンジに対する勝率 × 実現率 ≥ 必要勝率。小さい 3ベットほど広く守る。
+      // さらにレンジの上位（MDF × VS3BET_MDF_SHARE）は降りない（mdfE。小さい 3ベットに降りすぎないため）
+      const eReq = facing / (this.potSize + facing);
+      const realize = !this.isHeroIp ? PokerEngine.VS3BET_REALIZE.IP : PokerEngine.VS3BET_REALIZE.OOP;
+      const byPrice = 1 / (1 + Math.exp(-(eq3 * realize - eReq) / 0.015));
+      const byMdf = mdfE === undefined ? 0 : 1 / (1 + Math.exp(-(eq3 - mdfE) / 0.015));
+      const byEq = Math.max(byPrice, byMdf);
+      const call = callChart + (1 - raise - callChart) * byEq;
+      return { RAISE: raise, value, CALL: call, FOLD: Math.max(0, 1 - raise - call) };
+    }
+
+    // 行動モデルに渡す状況（勝率 e と手札ごとの値は呼び出し側で足す）。アクションを記録する前の状態で呼ぶこと
+    _modelContext(actor) {
+      const isHero = actor === 'HERO';
+      const inv = isHero ? this.heroInvested : this.cpuInvested;
+      const other = isHero ? 'CPU' : 'HERO';
+      return {
+        street: this.street,
+        facing: Math.max(0, this.currentBet - inv),
+        pot: this.potSize,
+        stack: isHero ? this.heroStack : this.cpuStack,
+        wasAggressor: this.aggressor === actor,
+        ip: isHero ? this.isHeroIp : !this.isHeroIp,
+        opponentChecked: this.actionHistory.some((a) => a.street === this.street && a.actor === other && a.action === 'CHECK'),
+        texture: this.classifyBoardTexture(this.board),
+      };
+    }
+
+    // CPU の手札の、あなたの推定レンジに対する勝率（レンジ推定と同じ計算）
+    _cpuHandEquity() {
+      const RM = root.RangeModel;
+      const table = RM.tableFor(this.board);
+      const idx = RM.comboIndex(this.cpuHand);
+      const one = new Float64Array(RM.N);
+      one[idx] = 1;
+      const e = table.equityVector(one, RM.toVec(this.heroRange))[idx];
+      return { table, idx, e: Number.isNaN(e) ? 0.5 : e };
+    }
+
     _cpuPostflop(facing) {
-      const { Evaluator: Ev, HandClassifier } = root;
-      const rng = this.rng;
-      const st = this.street;
-      const pot = this.potSize;
-      const eq = this._cpuEquity(300);
-      this.cpuEffectiveEquity = eq;
-      const draw = HandClassifier.detectDrawStrength(this.cpuHand, this.board);
-      const strongDraw = draw === 'STRONG_DRAW';
-      const isRiver = st === 'RIVER';
-      // 残りスタックに対して大きすぎるベットは、オールインにまとめる
-      const sizeOrJam = (amount) => (amount >= this.cpuStack * 0.6 ? this.cpuStack : amount);
-
+      const RM = root.RangeModel;
+      const { table, idx, e } = this._cpuHandEquity();
+      this.cpuEffectiveEquity = e;
+      const nr = table.nowRank[idx];
+      const s = { ...this._modelContext('CPU'), e, made: nr <= 6185, draw: table.draw(idx) };
       if (facing > 0.01) {
-        // ---- ベット/レイズされた ----
-        const eReq = Ev.calculateRequiredEquity(facing, pot);
-        const r = rng.random();
-        const raiseAmt = sizeOrJam(facing * 3.0);
-        if (eq >= (isRiver ? 0.88 : 0.82) && r < 0.6) {
-          this.cpuLastActionIntent = 'VALUE';
-          return ['RAISE', raiseAmt];
-        }
-        if (!isRiver && strongDraw && r < 0.20) {
-          this.cpuLastActionIntent = 'BLUFF';
-          return ['RAISE', raiseAmt];
-        }
-        if (isRiver && eq < 0.12 && r < 0.04) {
-          this.cpuLastActionIntent = 'BLUFF';
-          return ['RAISE', raiseAmt];
-        }
-        // 生の勝率をそのまま全部は回収できない（OOP・役なしは特に）。リバーは残りのカードが無いので割り引かない
-        const cpuIpNow = !this.isHeroIp;
-        const madeHand = root.HandEvaluator.evaluate(this.board, this.cpuHand) <= 6185;   // ワンペア以上
-        let realize = 1.0;
-        if (!isRiver) {
-          realize = cpuIpNow ? 0.92 : 0.80;
-          if (!madeHand && !strongDraw) realize *= 0.80;
-        }
-        // ドローは次のカードで勝てる分を少し上乗せして考える
-        const need = eReq - (!isRiver && strongDraw ? 0.04 : 0.0);
-        const eqReal = eq * realize;
-        if (eqReal >= need || (eqReal >= need * 0.9 && rng.random() < 0.25)) {
-          this.cpuLastActionIntent = 'CALL';
-          return ['CALL', facing];
-        }
-        this.cpuLastActionIntent = 'FOLD';
-        return ['FOLD', 0];
+        s.facing = facing;
+        // 防衛の下限（レンジ推定の posterior と同じ計算）
+        const cpuVec = RM.toVec(this.cpuRange);
+        s.mdfE = RM.mdfEdge(table.equityVector(cpuVec, RM.toVec(this.heroRange)), cpuVec, s);
       }
-
-      // ---- 先に動く / チェックされた ----
-      const cpuIp = !this.isHeroIp;
-      const wasAggressor = this.aggressor === 'CPU';   // 直前のストリートまでで最後にベット/レイズしたのが CPU
-      const heroChecked = this.actionHistory.some((a) => a.street === st && a.actor === 'HERO' && a.action === 'CHECK');
-      const texture = this.classifyBoardTexture(this.board);
-      const r = rng.random();
-
-      let size;
-      if (st === 'FLOP') size = (wasAggressor && (texture === 'dry' || texture === 'paired')) ? 0.33 : 0.66;
-      else if (st === 'TURN') size = 0.66;
-      else size = eq >= 0.85 ? 1.0 : 0.75;
-      const betAmt = sizeOrJam(Math.max(1.0, pot * size));
-
-      const valueThr = { FLOP: 0.65, TURN: 0.68, RIVER: 0.70 }[st];
-      // あなたが前のストリートで攻めていて、CPU が OOP で先に動く場面（ドンク）は基本チェック
-      const donkSpot = !wasAggressor && !cpuIp && !heroChecked;
-
-      if (eq >= valueThr) {
-        if (r < (donkSpot ? 0.35 : 0.85)) {
-          this.cpuLastActionIntent = 'VALUE';
-          return ['BET', betAmt];
-        }
-        return ['CHECK', 0];
-      }
-
-      let bluffP;
-      if (donkSpot) bluffP = strongDraw ? 0.10 : 0.03;
-      else if (wasAggressor) {
-        // 前のストリートで攻めた側（Cベット・バレル）
-        if (st === 'FLOP') bluffP = eq < 0.45 ? (strongDraw ? 0.65 : 0.45) : 0.35;
-        else if (st === 'TURN') bluffP = strongDraw ? 0.55 : (eq < 0.35 ? 0.25 : 0.15);
-        else bluffP = eq < 0.20 ? 0.40 : 0.0;
-      } else {
-        // チェックされた（あなたが攻めるのをやめた）
-        if (st === 'FLOP') bluffP = strongDraw ? 0.50 : (eq < 0.45 ? 0.35 : 0.20);
-        else if (st === 'TURN') bluffP = strongDraw ? 0.45 : (eq < 0.35 ? 0.30 : 0.15);
-        else bluffP = eq < 0.20 ? 0.30 : 0.0;
-      }
-      if (r < bluffP) {
-        this.cpuLastActionIntent = eq < 0.45 ? 'BLUFF' : 'VALUE';
-        return ['BET', betAmt];
-      }
-      return ['CHECK', 0];
+      const dist = RM.ActionModel.probs(s);
+      let r = this.rng.random();
+      let pick = dist[dist.length - 1];
+      for (const o of dist) { if (r < o.p) { pick = o; break; } r -= o.p; }
+      if (pick.action === 'FOLD') this.cpuLastActionIntent = 'FOLD';
+      else if (pick.action === 'CALL') this.cpuLastActionIntent = 'CALL';
+      else if (pick.action === 'CHECK') this.cpuLastActionIntent = null;
+      else this.cpuLastActionIntent = e < 0.45 ? 'BLUFF' : 'VALUE';
+      return [pick.action, pick.amount];
     }
   }
+
+  // 3ベットにレンジ表の外でコールするときの実現率（IP は後のストリートで有利）と、防衛の下限（MDF の何割は守るか）
+  PokerEngine.VS3BET_REALIZE = { IP: 0.85, OOP: 0.75 };
+  PokerEngine.VS3BET_MDF_SHARE = 0.8;
 
   root.PokerEngine = PokerEngine;
   root.PokerDeck = Deck;

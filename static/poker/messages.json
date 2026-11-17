@@ -318,5 +318,73 @@
  "leak.message": {
   "ja": "[{severity}] {pos}ポジション {street}での{action}",
   "en": "[{severity}] {action} from {pos} ({street})"
+ },
+ "pf.verdict.best": {
+  "ja": "【最善】{act}が、この場面でいちばん期待値の高い選択です。",
+  "en": "[Best] {act} has the highest expected value in this spot."
+ },
+ "pf.verdict.close": {
+  "ja": "【ほぼ最善】最善は{best}ですが、差はポットの{pct:.1f}%（{bb:.1f}bb）でほとんどありません。",
+  "en": "[Near best] {best} is slightly better, but the difference is only {pct:.1f}% of the pot ({bb:.1f}bb)."
+ },
+ "pf.verdict.good": {
+  "ja": "【悪くない】最善は{best}です。差はポットの{pct:.1f}%（{bb:.1f}bb）と小さめです。",
+  "en": "[Fine] {best} is better, but only by {pct:.1f}% of the pot ({bb:.1f}bb)."
+ },
+ "pf.verdict.inaccuracy": {
+  "ja": "【やや損】{best}の方が期待値が高い場面です。差はポットの{pct:.1f}%（{bb:.1f}bb）。",
+  "en": "[Inaccuracy] {best} has higher expected value here, by {pct:.1f}% of the pot ({bb:.1f}bb)."
+ },
+ "pf.verdict.mistake": {
+  "ja": "【損】{best}の方がはっきり期待値が高い場面です。差はポットの{pct:.1f}%（{bb:.1f}bb）。",
+  "en": "[Mistake] {best} is clearly better here, by {pct:.1f}% of the pot ({bb:.1f}bb)."
+ },
+ "pf.basis.facing": {
+  "ja": "相手のベットに対する勝率は{eq:.0f}%。後のストリートで実際に回収できる分を見込むと{real:.0f}%で、コールに必要な勝率は{req:.0f}%です。",
+  "en": "Your equity against the betting range is {eq:.0f}%. Counting how much of it you can actually realize on later streets, it is {real:.0f}%; a call needs {req:.0f}%."
+ },
+ "pf.basis.facing_river": {
+  "ja": "相手のベットに対する勝率は{eq:.0f}%で、コールに必要な勝率は{req:.0f}%です。",
+  "en": "Your equity against the betting range is {eq:.0f}%; a call needs {req:.0f}%."
+ },
+ "pf.basis.check": {
+  "ja": "相手の推定レンジに対する今の勝率は{eq:.0f}%です。",
+  "en": "Your current equity against the estimated range is {eq:.0f}%."
+ },
+ "pf.basis.bet": {
+  "ja": "{act}の場合、相手が降りる見込みは約{fe:.0f}%、続けてくる手に対する勝率は{eqc:.0f}%です。",
+  "en": "With {act}, the opponent folds about {fe:.0f}% of the time, and your equity against the hands that continue is {eqc:.0f}%."
+ },
+ "pf.ev_list": {
+  "ja": "期待値の比較（フォールド/何もしない場合を0として）:\n{list}",
+  "en": "Expected value (relative to folding / doing nothing):\n{list}"
+ },
+ "pf.act.fold": {
+  "ja": "フォールド",
+  "en": "Fold"
+ },
+ "pf.act.call": {
+  "ja": "コール",
+  "en": "Call"
+ },
+ "pf.act.check": {
+  "ja": "チェック",
+  "en": "Check"
+ },
+ "pf.you": {
+  "ja": "← あなた",
+  "en": "← you"
+ },
+ "pf.act.allin": {
+  "ja": "オールイン",
+  "en": "All-in"
+ },
+ "pf.act.bet": {
+  "ja": "ポットの{pct:.0f}%ベット",
+  "en": "{pct:.0f}% pot bet"
+ },
+ "pf.act.raise": {
+  "ja": "レイズ（{x:.1f}倍）",
+  "en": "Raise ({x:.1f}x)"
  }
 }

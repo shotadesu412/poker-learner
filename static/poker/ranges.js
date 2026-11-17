@@ -91,9 +91,13 @@
     //  - UTG の open は LJ へエイリアス
     //  - vs_open_call が空なら call ∪ 3bet を合成（SB の 3bet-or-fold 対応）
     //  - それでも空なら全ハンド
-    getRangeByCategory(category, action = 'open') {
+    // openerPos: BB の vs_open_call は、オープンした位置ごとのレンジ（vs_open_call_vs_<位置>）があればそれを使う
+    getRangeByCategory(category, action = 'open', openerPos = null) {
       const posData = this.RANGES.get(category) || new Map();
       let result = posData.get(action);
+      if (action === 'vs_open_call' && openerPos && posData.has('vs_open_call_vs_' + openerPos)) {
+        result = posData.get('vs_open_call_vs_' + openerPos);
+      }
       const empty = (r) => !r || r.size === 0;
 
       if (empty(result) && action === 'open' && category === 'UTG') {
