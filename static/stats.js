@@ -219,7 +219,7 @@ function renderAiHistory(historyData) {
         }
         return `<div class="ai-history-item">
             <div class="ai-history-header" onclick="toggleCollapse('ai-body-${i}', 'ai-toggle-${i}')">
-                <span style="font-weight:bold;">${t("stats.hand_n", { n: historyData.length - i })} <span class="ai-history-date">(${dateStr})</span></span>
+                <span style="font-weight:700;">${t("stats.hand_n", { n: historyData.length - i })} <span class="ai-history-date">(${dateStr})</span></span>
                 <span class="ai-history-toggle" id="ai-toggle-${i}">${t("stats.show_detail")}</span>
             </div>
             <div class="ai-history-body" id="ai-body-${i}">
@@ -321,7 +321,7 @@ function renderPersonalRange(data) {
     const hasData = data && Object.keys(data).length > 0;
 
     if (!hasData) {
-        container.innerHTML = `<div class="no-data" style="grid-column:span 13;padding:16px;text-align:center;font-size:0.8rem;color:#666;">${t("stats.no_preflop_data")}</div>`;
+        container.innerHTML = `<div class="no-data" style="grid-column:span 13;">${t("stats.no_preflop_data")}</div>`;
         return;
     }
 
@@ -348,15 +348,17 @@ function renderPersonalRange(data) {
                 const playRate = total > 0 ? played / total : 0;
                 const opacity = Math.max(0.3, Math.min(1.0, 0.3 + playRate * 0.7));
 
-                let bg = "#374151"; // fold / no play
+                // 色は3つだけ: オープン = 緑 / 3ベット = 白 / コール = 灰色。参加率が低いほど薄く
+                let bg = null;
                 if ((d["3BET"] || 0) > 0 && (d["3BET"] || 0) >= (d.OPEN || 0)) {
-                    bg = `rgba(139,92,246,${opacity})`; // 3bet = purple
+                    bg = `rgba(226,232,228,${opacity})`; // 3bet
                 } else if ((d.OPEN || 0) > 0) {
-                    bg = `rgba(16,185,129,${opacity})`; // open = green
+                    bg = `rgba(16,185,129,${opacity})`; // open
                 } else if ((d.CALL || 0) > 0) {
-                    bg = `rgba(59,130,246,${opacity})`; // call = blue
+                    bg = `rgba(154,166,159,${opacity})`; // call
                 }
-                cell.style.background = bg;
+                if (bg) cell.classList.add("pr-played");
+                if (bg) cell.style.background = bg;
 
                 const tip = t("stats.pr_tooltip", { combo: combo, open: d.OPEN||0, threebet: d["3BET"]||0, call: d.CALL||0, fold: d.FOLD||0 });
                 cell.innerHTML += `<span class="pr-tooltip">${tip}</span>`;

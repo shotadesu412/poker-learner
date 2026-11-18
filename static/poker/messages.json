@@ -1,103 +1,91 @@
 {
- "preflop.foldmsg.open": {
-  "ja": "オープン可能なハンドです。",
-  "en": "This hand is inside your opening range."
- },
- "preflop.foldmsg.vs_open": {
-  "ja": "このポジションの推奨レンジでは参加しにくいハンドです。",
-  "en": "This hand is hard to continue with from this position's recommended range."
- },
- "preflop.foldmsg.vs_3bet": {
-  "ja": "3-Bet/4-Betに対してはフォールドが基本となるハンドです。",
-  "en": "Against a 3-bet/4-bet, folding is the default with this hand."
- },
  "preflop.call.good": {
-  "ja": "【良い選択】このハンドでのコールは基本的なプレイです。 {reason}",
-  "en": "[Good choice] Calling is the standard play with this hand. {reason}"
+  "ja": "【推奨どおり】{hand} は、{spot}でコールするハンドです。",
+  "en": "[As recommended] In {spot}, {hand} is a call."
  },
  "preflop.call.should_raise": {
-  "ja": "【レイズ推奨】このハンドはコールよりレイズして主導権を握る方が効果的です。 {reason}",
-  "en": "[Raise instead] This hand plays better as a raise, taking the initiative rather than calling. {reason}"
+  "ja": "【{raise}推奨】{hand} は、{spot}ではコールではなく{raise}で入るハンドです。",
+  "en": "[Raise recommended] In {spot}, play {hand} with a raise ({raise}), not a call."
  },
  "preflop.call.out_of_range": {
-  "ja": "【改善余地あり】{fold_msg} {reason}",
-  "en": "[Room to improve] {fold_msg} {reason}"
+  "ja": "【フォールド推奨】{hand} は、{spot}では参加しないハンドです。",
+  "en": "[Fold recommended] In {spot}, {hand} is a fold."
  },
  "preflop.raise.optimal": {
-  "ja": "【推奨】良いレイズ(3-Bet/4-Bet)です。主導権を握りましょう。 {reason}",
-  "en": "[Recommended] A good raise (3-bet/4-bet). Take the initiative. {reason}"
+  "ja": "【推奨どおり】{hand} は、{spot}で{raise}するハンドです。",
+  "en": "[As recommended] In {spot}, the recommended play with {hand} is: {raise}."
  },
  "preflop.raise.should_call": {
-  "ja": "【コール推奨】このハンドはレイズよりコールで参加する方が無難です。 {reason}",
-  "en": "[Call instead] This hand is safer entering the pot as a call rather than a raise. {reason}"
+  "ja": "【コール推奨】{hand} は、{spot}では{raise}ではなくコールで入るハンドです。",
+  "en": "[Call recommended] In {spot}, {hand} is a call rather than a raise ({raise})."
  },
  "preflop.raise.out_of_range": {
-  "ja": "【改善余地あり】{fold_msg} {reason}\n(ブラフとして打つ場合は頻度に注意してください)",
-  "en": "[Room to improve] {fold_msg} {reason}\n(If you are using it as a bluff, keep the frequency low.)"
+  "ja": "【フォールド推奨】{hand} は、{spot}では{raise}の範囲に入りません。",
+  "en": "[Fold recommended] In {spot}, {hand} is outside the range for this raise ({raise})."
  },
  "preflop.fold.too_strong": {
-  "ja": "【フォールド過多】強いハンドです。レイズで参加することを検討しましょう。 {reason}",
-  "en": "[Over-folding] This is a strong hand. Consider entering the pot with a raise. {reason}"
+  "ja": "【降りすぎ】{hand} は、{spot}で{raise}するハンドです。",
+  "en": "[Over-folding] In {spot}, the recommended play with {hand} is: {raise}."
  },
  "preflop.fold.callable": {
-  "ja": "【フォールド過多】コールできる強さのハンドです。相手にブラフの余地を与えすぎないようにしましょう。 {reason}",
-  "en": "[Over-folding] This hand is strong enough to call. Don't give your opponent too much room to bluff. {reason}"
+  "ja": "【降りすぎ】{hand} は、{spot}でコールするハンドです。",
+  "en": "[Over-folding] In {spot}, {hand} is a call."
  },
  "preflop.fold.slightly_tight": {
-  "ja": "【やや降り過ぎ】プレイできるハンドです。頻繁にフォールドすると相手に読まれやすくなります。 {reason}",
-  "en": "[Slightly tight] This hand is playable. Folding it too often makes you predictable. {reason}"
+  "ja": "{hand} は、{spot}で一定の頻度で参加するハンドです。",
+  "en": "In {spot}, {hand} plays some of the time."
  },
  "preflop.fold.optimal": {
-  "ja": "【推奨】このハンドではフォールドが無難な選択です。 {fold_msg}",
-  "en": "[Recommended] Folding is the safe choice with this hand. {fold_msg}"
+  "ja": "【推奨どおり】{hand} は、{spot}では降りるハンドです。",
+  "en": "[As recommended] In {spot}, {hand} is a fold."
  },
  "call.free_check": {
   "ja": "チェック可能な状況です。無料でカードを見られるときはチェックが基本です。",
   "en": "You can check here. When you can see the next card for free, checking is the default."
  },
  "call.optimal": {
-  "ja": "リスクに対して勝率({eq:.1f}%)が十分に高く、極めて優位なコールです。",
-  "en": "Your equity ({eq:.1f}%) is far above the risk you are taking — a clearly profitable call."
+  "ja": "【推奨】勝率は約{eq:.0f}%（必要 {req:.0f}%）で、十分に足りています。",
+  "en": "[Recommended] Equity about {eq:.0f}% (you need {req:.0f}%): plenty."
  },
  "call.good": {
-  "ja": "ベット額に対して見合う勝率({eq:.1f}%)があり、妥当な防衛（コール）です。",
-  "en": "Your equity ({eq:.1f}%) justifies the price you are paying — a sound defensive call."
+  "ja": "【良い選択】勝率は約{eq:.0f}%（必要 {req:.0f}%）で足りています。",
+  "en": "[Good] Equity about {eq:.0f}% (you need {req:.0f}%): enough."
  },
  "call.implied_good": {
-  "ja": "現在の勝率({eq:.1f}%)はオッズにわずかに届いていませんが、後のラウンドで稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。",
-  "en": "Your current equity ({eq:.1f}%) falls just short of the pot odds, but factoring in what you can win on later streets (implied odds) this is still a profitable call."
+  "ja": "【良い選択】勝率は約{eq:.0f}%（必要 {req:.0f}%）でわずかに足りませんが、後で稼げる分を含めればプラスです。",
+  "en": "[Good] Equity about {eq:.0f}% (you need {req:.0f}%): slightly short, but profitable with implied odds."
  },
  "call.marginal": {
-  "ja": "勝率({eq:.1f}%)がオッズに届いていません。相手のブラフをキャッチするなどの明確な理由がない限り、頻繁なコールは控えましょう。",
-  "en": "Your equity ({eq:.1f}%) does not meet the pot odds. Unless you have a clear read — such as catching a bluff — avoid calling here too often."
+  "ja": "【やや損】勝率は約{eq:.0f}%（必要 {req:.0f}%）で足りません。",
+  "en": "[Slightly losing] Equity about {eq:.0f}% (you need {req:.0f}%): not enough."
  },
  "call.implied_marginal": {
-  "ja": "現在の勝率({eq:.1f}%)はオッズにあっていませんが、後のラウンドで大きく稼げる可能性（インプライドオッズ）を加味すれば利益的なコールです。",
-  "en": "Your current equity ({eq:.1f}%) does not meet the pot odds, but the potential to win a big pot later (implied odds) keeps this call profitable."
+  "ja": "【やや損】勝率は約{eq:.0f}%（必要 {req:.0f}%）で足りません。",
+  "en": "[Slightly losing] Equity about {eq:.0f}% (you need {req:.0f}%): not enough."
  },
  "call.bad": {
-  "ja": "【見送り推奨】相手のベット額に対してハンドの強さが見合っていません。フォールドも選択肢として検討してみましょう。",
-  "en": "[Consider passing] Your hand strength does not justify the size of your opponent's bet. Folding is worth considering here."
+  "ja": "【損】勝率は約{eq:.0f}%（必要 {req:.0f}%）で、大きく足りません。",
+  "en": "[Losing] Equity about {eq:.0f}% (you need {req:.0f}%): far short."
  },
  "fold.no_bet": {
   "ja": "ベットがない状況でのフォールドは不利な選択です。無料でカードを見られる場合はチェックを選びましょう。",
   "en": "Folding when there is no bet to face only costs you. When you can see a card for free, check instead."
  },
  "fold.clear_loss": {
-  "ja": "【明確な損失】必要勝率({req:.1f}%)を大きく上回るハンド({eq:.1f}%)を捨ててしまいました。これはバリューハンドであり、コールかレイズで戦うべき場面です。",
-  "en": "[Clear loss] You folded a hand ({eq:.1f}%) well above the required equity ({req:.1f}%). This is a value hand — you should be calling or raising here."
+  "ja": "【明確な損失】勝率は約{eq:.0f}%（必要 {req:.0f}%）で、十分に戦える手です。",
+  "en": "[Clear loss] Equity about {eq:.0f}% (you need {req:.0f}%): easily good enough to continue."
  },
  "fold.tight": {
-  "ja": "【ややタイト】勝率({eq:.1f}%)はオッズ({req:.1f}%)を上回っています。毎回降りると相手のブラフに搾取されるため、この強さのハンドは一定頻度で防衛したいところです。",
-  "en": "[Slightly tight] Your equity ({eq:.1f}%) beats the pot odds ({req:.1f}%). Folding every time lets your opponent bluff you profitably — defend with this hand strength at some frequency."
+  "ja": "【ややタイト】勝率は約{eq:.0f}%（必要 {req:.0f}%）で足りています。",
+  "en": "[A bit tight] Equity about {eq:.0f}% (you need {req:.0f}%): enough to continue."
  },
  "fold.bluffcatcher": {
-  "ja": "【妥当な選択】勝率({eq:.1f}%)がオッズ({req:.1f}%)に近いブラフキャッチャーです。この位置のハンドはコールとフォールドの期待値がほぼ等しく、どちらを選んでも大きな損はありません。",
-  "en": "[Reasonable] This is a bluff-catcher whose equity ({eq:.1f}%) sits right around the pot odds ({req:.1f}%). Calling and folding have nearly identical EV here, so neither costs you much."
+  "ja": "【妥当】勝率は約{eq:.0f}%（必要 {req:.0f}%）で、コールとほぼ同じです。",
+  "en": "[Reasonable] Equity about {eq:.0f}% (you need {req:.0f}%): about the same as calling."
  },
  "fold.optimal": {
-  "ja": "逆転の確率({eq:.1f}%)が必要勝率({req:.1f}%)に届かないため、無駄なチップの支払いを避ける適切なフォールドです。",
-  "en": "Your chance of coming from behind ({eq:.1f}%) falls short of the required equity ({req:.1f}%), so this is a correct fold that saves chips."
+  "ja": "【推奨】勝率は約{eq:.0f}%（必要 {req:.0f}%）で足りないので、降りるのが正解です。",
+  "en": "[Recommended] Equity about {eq:.0f}% (you need {req:.0f}%): not enough, so fold."
  },
  "bet.optimal.range_adv": {
   "ja": "【推奨】レンジ優位がある状況でのベットは効果的です。アグレッシブに主導権を握りましょう。",
@@ -124,8 +112,8 @@
   "en": "[Room to improve] Checking and seeing what develops likely has higher EV in this spot."
  },
  "bet.donk": {
-  "ja": "【悪くはないが非標準】ハンドは十分に強いのですが、ポジション不利で先に打つ（ドンクベット）のは標準的ではありません。相手に打たせてチェックレイズを狙う方が、レンジを読まれにくく価値も取りやすい場面です。",
-  "en": "[Playable but non-standard] Your hand is strong enough, but leading out from out of position (a donk bet) is not the standard line. Checking to the aggressor and going for a check-raise usually disguises your range better and wins more."
+  "ja": "【悪くはないが非標準】ポジション不利で先に打つ（ドンクベット）のは標準的ではありません。",
+  "en": "[Playable but non-standard] Leading out of position (a donk bet) is not standard."
  },
  "bet.medium_should_check": {
   "ja": "【チェック推奨】ショーダウンで勝てる可能性はありますが、コールされると負けている方が多い強さです。ベットすると弱いハンドを降ろして強いハンドにだけコールされるため、チェックしてポットを小さく保つ方が得です。",
@@ -196,12 +184,12 @@
   "en": "A suited ace or suited king — good playability plus useful blocker effects."
  },
  "hand.trap_offsuit": {
-  "ja": "ドミネートされやすい危険なトラップハンドです。",
-  "en": "A dangerous trap hand that is easily dominated."
+  "ja": "オフスートのブロードウェイは、相手の強いレンジに対してキッカー負け（ドミネート）しやすいハンドです。",
+  "en": "Offsuit broadway hands are often dominated by stronger ranges (kicker problems)."
  },
  "hand.marginal_broadway": {
-  "ja": "強いレンジに支配されやすく、弱いレンジには強いマージナルなハンドです。",
-  "en": "A marginal hand: dominated by strong ranges, but ahead of weak ones."
+  "ja": "強いレンジにはドミネートされやすく、弱いレンジには強い、相手次第のハンドです。",
+  "en": "Dominated by strong ranges but strong against weak ones: its value depends on the opponent's range."
  },
  "hand.kicker_risk": {
   "ja": "プレイアビリティは高いものの、トップペア時のキッカー負けリスクがあります。",
@@ -224,8 +212,8 @@
   "en": "A pocket pair with set-mining potential."
  },
  "hand.standard": {
-  "ja": "ポジションに応じた標準的なレンジ構成ハンドです。",
-  "en": "A standard range-building hand for this position."
+  "ja": "",
+  "en": ""
  },
  "hand.range.standard": {
   "ja": "このポジションと状況における標準的な参加レンジです。",
@@ -320,32 +308,32 @@
   "en": "[{severity}] {action} from {pos} ({street})"
  },
  "pf.verdict.best": {
-  "ja": "【最善】{act}が、この場面でいちばん期待値の高い選択です。",
-  "en": "[Best] {act} has the highest expected value in this spot."
+  "ja": "【最善】{act}が最善です。",
+  "en": "[Best] {act} is the best play."
  },
  "pf.verdict.close": {
-  "ja": "【ほぼ最善】最善は{best}ですが、差はポットの{pct:.1f}%（{bb:.1f}bb）でほとんどありません。",
-  "en": "[Near best] {best} is slightly better, but the difference is only {pct:.1f}% of the pot ({bb:.1f}bb)."
+  "ja": "【ほぼ最善】{best}とほぼ同じです。",
+  "en": "[Near best] About as good as {best}."
  },
  "pf.verdict.good": {
-  "ja": "【悪くない】最善は{best}です。差はポットの{pct:.1f}%（{bb:.1f}bb）と小さめです。",
-  "en": "[Fine] {best} is better, but only by {pct:.1f}% of the pot ({bb:.1f}bb)."
+  "ja": "【悪くない】{best}がわずかに上です。",
+  "en": "[Fine] {best} is slightly better."
  },
  "pf.verdict.inaccuracy": {
-  "ja": "【やや損】{best}の方が期待値が高い場面です。差はポットの{pct:.1f}%（{bb:.1f}bb）。",
-  "en": "[Inaccuracy] {best} has higher expected value here, by {pct:.1f}% of the pot ({bb:.1f}bb)."
+  "ja": "【やや損】{best}の方が良い場面です。",
+  "en": "[Inaccuracy] {best} is better here."
  },
  "pf.verdict.mistake": {
-  "ja": "【損】{best}の方がはっきり期待値が高い場面です。差はポットの{pct:.1f}%（{bb:.1f}bb）。",
-  "en": "[Mistake] {best} is clearly better here, by {pct:.1f}% of the pot ({bb:.1f}bb)."
+  "ja": "【損】{best}の方がはっきり良い場面です。",
+  "en": "[Mistake] {best} is clearly better here."
  },
  "pf.basis.facing": {
-  "ja": "相手のベットに対する勝率は{eq:.0f}%。後のストリートで実際に回収できる分を見込むと{real:.0f}%で、コールに必要な勝率は{req:.0f}%です。",
-  "en": "Your equity against the betting range is {eq:.0f}%. Counting how much of it you can actually realize on later streets, it is {real:.0f}%; a call needs {req:.0f}%."
+  "ja": "勝率は約{eq:.0f}%（コールに必要 {req:.0f}%）。",
+  "en": "Equity about {eq:.0f}% (you need {req:.0f}% to call)."
  },
  "pf.basis.facing_river": {
-  "ja": "相手のベットに対する勝率は{eq:.0f}%で、コールに必要な勝率は{req:.0f}%です。",
-  "en": "Your equity against the betting range is {eq:.0f}%; a call needs {req:.0f}%."
+  "ja": "勝率は約{eq:.0f}%（コールに必要 {req:.0f}%）。",
+  "en": "Equity about {eq:.0f}% (you need {req:.0f}% to call)."
  },
  "pf.basis.check": {
   "ja": "相手の推定レンジに対する今の勝率は{eq:.0f}%です。",
@@ -386,5 +374,257 @@
  "pf.act.raise": {
   "ja": "レイズ（{x:.1f}倍）",
   "en": "Raise ({x:.1f}x)"
+ },
+ "preflop.spot.open": {
+  "ja": "{pos} から最初に参加する場面",
+  "en": "an unopened pot from the {pos}"
+ },
+ "preflop.spot.vs_limp": {
+  "ja": "BB で SB のリンプに対する場面",
+  "en": "the BB facing an SB limp"
+ },
+ "preflop.spot.vs_open": {
+  "ja": "{pos} で {opener} のオープンに対する場面",
+  "en": "the {pos} facing a {opener} open"
+ },
+ "preflop.spot.vs_open_generic": {
+  "ja": "{pos} で相手のオープンに対する場面",
+  "en": "the {pos} facing an open"
+ },
+ "preflop.spot.vs_3bet": {
+  "ja": "{pos} でオープンして {villain} に3ベットされた場面",
+  "en": "the {pos} facing a 3-bet from the {villain}"
+ },
+ "preflop.spot.vs_3bet_generic": {
+  "ja": "{pos} でオープンして3ベットされた場面",
+  "en": "the {pos} facing a 3-bet"
+ },
+ "preflop.spot.vs_4bet": {
+  "ja": "{pos} で3ベットして {villain} に4ベットされた場面",
+  "en": "the {pos} facing a 4-bet from the {villain}"
+ },
+ "preflop.spot.vs_4bet_generic": {
+  "ja": "{pos} で3ベットして4ベットされた場面",
+  "en": "the {pos} facing a 4-bet"
+ },
+ "preflop.act.open": {
+  "ja": "オープン（レイズ）",
+  "en": "Open-raise"
+ },
+ "preflop.act.raise": {
+  "ja": "レイズ",
+  "en": "Raise"
+ },
+ "preflop.act.3bet": {
+  "ja": "3ベット",
+  "en": "3-bet"
+ },
+ "preflop.act.4bet": {
+  "ja": "4ベット",
+  "en": "4-bet"
+ },
+ "preflop.act.5bet": {
+  "ja": "5ベット（オールイン）",
+  "en": "5-bet (all-in)"
+ },
+ "preflop.act.call": {
+  "ja": "コール",
+  "en": "Call"
+ },
+ "preflop.act.fold": {
+  "ja": "フォールド",
+  "en": "Fold"
+ },
+ "preflop.act.check": {
+  "ja": "チェック",
+  "en": "Check"
+ },
+ "preflop.freq": {
+  "ja": "推奨: {list}",
+  "en": "Recommended: {list}"
+ },
+ "preflop.freq.item": {
+  "ja": "{act} {p:.0f}%",
+  "en": "{act} {p:.0f}%"
+ },
+ "preflop.freq.sep": {
+  "ja": "・",
+  "en": " / "
+ },
+ "preflop.call.plain": {
+  "ja": "{hand} は、{spot}でコールするハンドです。",
+  "en": "In {spot}, {hand} is a call."
+ },
+ "preflop.raise.plain": {
+  "ja": "{hand} は、{spot}で{raise}するハンドです。",
+  "en": "In {spot}, the recommended play with {hand} is: {raise}."
+ },
+ "preflop.limp.check": {
+  "ja": "【推奨どおり】SB のリンプに対して、{hand} はチェックでフロップを見るハンドです。",
+  "en": "[As recommended] Against the SB limp, {hand} checks and sees the flop."
+ },
+ "preflop.limp.check_strong": {
+  "ja": "【悪くない】チェックでも問題ありませんが、{hand} はレイズしてバリューを取れる強さです。",
+  "en": "[Fine] Checking is OK, but {hand} is strong enough to raise for value."
+ },
+ "preflop.limp.raise_value": {
+  "ja": "【推奨どおり】{hand} は強いので、SB のリンプにレイズしてバリューを取るのが良い選択です。",
+  "en": "[As recommended] {hand} is strong, so raising the SB limp for value is good."
+ },
+ "preflop.limp.raise_other": {
+  "ja": "【悪くない】リンプへのレイズはブラフも混ぜるので、{hand} のレイズも選択肢です。",
+  "en": "[Fine] Raises against a limp include some bluffs, so raising {hand} is an option."
+ },
+ "preflop.why.no_limp": {
+  "ja": "最初に参加するときは、リンプではなくレイズが基本です。",
+  "en": "When you are first in, raise rather than limp."
+ },
+ "preflop.why.open": {
+  "ja": "後ろに{n}人残るので、オープンは全体の約{pct:.0f}%の強い手に絞ります。",
+  "en": "With {n} players behind, open only the strongest {pct:.0f}% or so."
+ },
+ "preflop.why.open_btn": {
+  "ja": "後ろはブラインドだけでポジションも取れるので、約{pct:.0f}%と広くオープンします。",
+  "en": "Only the blinds are behind and you have position, so open wide: about {pct:.0f}%."
+ },
+ "preflop.why.open_sb": {
+  "ja": "相手は BB だけですが、ずっとポジション不利です。オープンは約{pct:.0f}%（このアプリはレイズかフォールドで判定）。",
+  "en": "Only the BB is left, but you are out of position all hand. Open about {pct:.0f}% (graded as raise-or-fold)."
+ },
+ "preflop.why.vs_limp": {
+  "ja": "BB はチェックで無料でフロップを見られます。強い手だけレイズしてバリューを取ります。",
+  "en": "The BB sees the flop for free by checking. Raise only strong hands for value."
+ },
+ "preflop.why.vs_open_bb": {
+  "ja": "BB は1bb払っていて最後に動くので、安く参加できます。{opener} のオープンには約{def:.0f}%を守ります。",
+  "en": "The BB has 1bb in and closes the action, so it gets a good price. Against a {opener} open, defend about {def:.0f}%."
+ },
+ "preflop.why.vs_open_bb_generic": {
+  "ja": "BB は1bb払っていて最後に動くので、安く参加でき、約{def:.0f}%を守ります。",
+  "en": "The BB has 1bb in and closes the action, so it defends about {def:.0f}%."
+ },
+ "preflop.why.vs_open_bb_sb": {
+  "ja": "SB 相手なら BB がポジションを取れるので、さらに広く守れます。",
+  "en": "Against the SB, the BB also has position, so it defends even wider."
+ },
+ "preflop.why.vs_open_sb": {
+  "ja": "SB は後ろの BB にスクイーズされやすく、ずっとポジション不利なので、理論上は「3ベットかフォールド」です（このアプリでは BB は降りていますが、実戦の基準で判定しています）。",
+  "en": "The SB gets squeezed by the BB behind and is out of position all hand, so theory plays 3-bet-or-fold (the BB has folded in this app, but you are graded by real 6-max standards)."
+ },
+ "preflop.why.vs_open_ip": {
+  "ja": "後ろにまだ{n}人残っていてスクイーズされやすいので、参加は全体の約{tot:.0f}%の強い手に絞ります。",
+  "en": "With {n} players still behind, you risk a squeeze, so continue only with the strongest {tot:.0f}% or so."
+ },
+ "preflop.why.vs_open_btn": {
+  "ja": "BTN はポジションを取れるので、コールも使えます。",
+  "en": "The BTN has position, so calling is also an option."
+ },
+ "preflop.why.vs_3bet": {
+  "ja": "3ベットに対しては、オープンした手の上位約{tot:.0f}%だけで続けます。",
+  "en": "Against a 3-bet, continue with only the top {tot:.0f}% or so of your opens."
+ },
+ "preflop.why.vs_3bet_ip": {
+  "ja": "ポジションがあるので、コールも使えます。",
+  "en": "With position, calling is also an option."
+ },
+ "preflop.why.vs_3bet_oop": {
+  "ja": "ポジション不利なので、4ベットかフォールドに寄せます。",
+  "en": "Out of position, lean toward 4-bet or fold."
+ },
+ "preflop.why.vs_4bet": {
+  "ja": "4ベットに対しては、ごく一部の強い手だけで続けます。",
+  "en": "Against a 4-bet, continue with only a few premium hands."
+ },
+ "preflop.why.vs_3bet_generic": {
+  "ja": "3ベットに対しては、強い手（全体の約{tot:.0f}%）だけで続けます。",
+  "en": "Against a 3-bet, continue with only strong hands (about {tot:.0f}% of all hands)."
+ },
+ "pf.why.allin": {
+  "ja": "少し残すより、全部入れた方が続けてくる手から多く取れます。",
+  "en": "Putting it all in wins more from the hands that continue than leaving a little behind."
+ },
+ "pf.why.size": {
+  "ja": "打つのは正解で、差はサイズだけです。",
+  "en": "Betting is right; only the size differs."
+ },
+ "pf.why.soft_size": {
+  "ja": "（サイズの差は判定を緩めています）",
+  "en": "(Size differences are graded leniently.)"
+ },
+ "pf.why.value": {
+  "ja": "強い手なので、打ってバリューを取るのが基本です。",
+  "en": "Strong hand: bet for value."
+ },
+ "pf.why.missed_value": {
+  "ja": "強い手です。{act}にしても続けてくる手にまだ勝てるので、{alt}より多く取れます。",
+  "en": "Strong hand. Even against the hands that continue after {act}, you are still ahead, so it earns more than {alt}."
+ },
+ "pf.why.bluff": {
+  "ja": "勝てない手でも、{act}なら相手が約{fe:.0f}%降ります。",
+  "en": "You rarely win at showdown, but {act} folds them out about {fe:.0f}% of the time."
+ },
+ "pf.why.missed_bluff": {
+  "ja": "このままでは勝てない手ですが、{act}なら相手が約{fe:.0f}%降ります。",
+  "en": "This hand rarely wins as is, but {act} folds them out about {fe:.0f}% of the time."
+ },
+ "pf.why.protect": {
+  "ja": "中くらいの手ですが、打って相手のドローなどに無料でカードを見せない方が得です。",
+  "en": "Medium hand, but betting is better so their draws do not see free cards."
+ },
+ "pf.why.missed_protect": {
+  "ja": "中くらいの手ですが、{alt}より、打って相手のドローなどに無料でカードを見せない方が得です。",
+  "en": "Medium hand, but betting beats {alt} so their draws do not see free cards."
+ },
+ "pf.why.soft_slowplay": {
+  "ja": "（強い手のスロープレイは混ぜる戦略もあるので、判定を緩めています）",
+  "en": "(Slow-playing strong hands is sometimes mixed in, so this is graded leniently.)"
+ },
+ "pf.why.trap_better": {
+  "ja": "強い手ですが、打つと弱い手やブラフが降りてしまうので、{best}の方が得です。",
+  "en": "Strong hand, but betting folds out weak hands and bluffs, so {best} earns more."
+ },
+ "pf.why.bad_bluff": {
+  "ja": "相手が降りるのは約{fe:.0f}%だけで、ブラフとしては割に合いません。",
+  "en": "They fold only about {fe:.0f}% of the time, not enough for a bluff."
+ },
+ "pf.why.pot_control": {
+  "ja": "ショーダウン向きの中くらいの手です。打つと強い手だけが続けてくるので、{best}でポットを小さく保ちます。",
+  "en": "A medium hand that wants showdown. Betting gets continued only by stronger hands, so {best} keeps the pot small."
+ },
+ "pf.why.call": {
+  "ja": "必要な勝率があるので、コールで守る場面です。",
+  "en": "You have the equity you need, so defend by calling."
+ },
+ "pf.why.overfold": {
+  "ja": "必要な勝率を上回っているので、降りるのは損です（降りすぎると相手のブラフに得をさせます）。",
+  "en": "You have more than the equity you need, so folding loses (over-folding lets their bluffs profit)."
+ },
+ "pf.why.fold": {
+  "ja": "必要な勝率に届かないので、降りるのが正解です。",
+  "en": "You lack the equity to call, so folding is right."
+ },
+ "pf.why.overcall": {
+  "ja": "後のストリートの分を含めても、必要な勝率に届きません。",
+  "en": "Even counting later streets, you lack the equity to call."
+ },
+ "pf.why.check_strong": {
+  "ja": "強い手ですが、ここはチェックで相手に打たせる方が得です。",
+  "en": "Strong hand, but checking to let them bet earns more here."
+ },
+ "pf.why.check_medium": {
+  "ja": "中くらいの手なので、チェックでショーダウンを目指します。",
+  "en": "Medium hand: check toward showdown."
+ },
+ "pf.why.check_weak": {
+  "ja": "打っても十分に降りないので、チェックが最善です。",
+  "en": "Betting does not fold out enough, so check."
+ },
+ "pf.note.oop_check": {
+  "ja": "（ポジション不利で先にチェックするのは基本なので、◯ にしています）",
+  "en": "(Checking first out of position is standard, so this is graded ◯.)"
+ },
+ "pf.ev_diff": {
+  "ja": "期待値の差: {bb:.1f}bb",
+  "en": "EV difference: {bb:.1f}bb"
  }
 }

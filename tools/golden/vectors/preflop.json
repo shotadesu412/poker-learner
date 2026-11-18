@@ -362,8 +362,8 @@
  {
   "action": "RAISE",
   "combo": "22",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -398,8 +398,8 @@
  {
   "action": "RAISE",
   "combo": "22",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -794,8 +794,8 @@
  {
   "action": "RAISE",
   "combo": "32o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -830,8 +830,8 @@
  {
   "action": "RAISE",
   "combo": "32o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -1226,8 +1226,8 @@
  {
   "action": "RAISE",
   "combo": "32s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -1262,8 +1262,8 @@
  {
   "action": "RAISE",
   "combo": "32s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -1658,8 +1658,8 @@
  {
   "action": "RAISE",
   "combo": "33",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -1694,8 +1694,8 @@
  {
   "action": "RAISE",
   "combo": "33",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -2090,8 +2090,8 @@
  {
   "action": "RAISE",
   "combo": "42o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -2126,8 +2126,8 @@
  {
   "action": "RAISE",
   "combo": "42o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -2522,8 +2522,8 @@
  {
   "action": "RAISE",
   "combo": "42s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -2558,8 +2558,8 @@
  {
   "action": "RAISE",
   "combo": "42s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -2954,8 +2954,8 @@
  {
   "action": "RAISE",
   "combo": "43o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -2990,8 +2990,8 @@
  {
   "action": "RAISE",
   "combo": "43o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -3386,8 +3386,8 @@
  {
   "action": "RAISE",
   "combo": "43s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -3422,8 +3422,8 @@
  {
   "action": "RAISE",
   "combo": "43s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -3818,8 +3818,8 @@
  {
   "action": "RAISE",
   "combo": "44",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -3854,8 +3854,8 @@
  {
   "action": "RAISE",
   "combo": "44",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -4250,8 +4250,8 @@
  {
   "action": "RAISE",
   "combo": "52o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -4286,8 +4286,8 @@
  {
   "action": "RAISE",
   "combo": "52o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -4682,8 +4682,8 @@
  {
   "action": "RAISE",
   "combo": "52s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -4718,8 +4718,8 @@
  {
   "action": "RAISE",
   "combo": "52s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -5114,8 +5114,8 @@
  {
   "action": "RAISE",
   "combo": "53o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -5150,8 +5150,8 @@
  {
   "action": "RAISE",
   "combo": "53o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -5546,8 +5546,8 @@
  {
   "action": "RAISE",
   "combo": "53s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -5582,8 +5582,8 @@
  {
   "action": "RAISE",
   "combo": "53s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -5978,8 +5978,8 @@
  {
   "action": "RAISE",
   "combo": "54o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -6014,8 +6014,8 @@
  {
   "action": "RAISE",
   "combo": "54o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -6410,8 +6410,8 @@
  {
   "action": "RAISE",
   "combo": "54s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -6446,8 +6446,8 @@
  {
   "action": "RAISE",
   "combo": "54s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -6842,8 +6842,8 @@
  {
   "action": "RAISE",
   "combo": "55",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -6878,8 +6878,8 @@
  {
   "action": "RAISE",
   "combo": "55",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -7274,8 +7274,8 @@
  {
   "action": "RAISE",
   "combo": "62o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -7310,8 +7310,8 @@
  {
   "action": "RAISE",
   "combo": "62o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -7706,8 +7706,8 @@
  {
   "action": "RAISE",
   "combo": "62s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -7742,8 +7742,8 @@
  {
   "action": "RAISE",
   "combo": "62s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -8138,8 +8138,8 @@
  {
   "action": "RAISE",
   "combo": "63o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -8174,8 +8174,8 @@
  {
   "action": "RAISE",
   "combo": "63o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -8570,8 +8570,8 @@
  {
   "action": "RAISE",
   "combo": "63s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -8606,8 +8606,8 @@
  {
   "action": "RAISE",
   "combo": "63s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -9002,8 +9002,8 @@
  {
   "action": "RAISE",
   "combo": "64o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -9038,8 +9038,8 @@
  {
   "action": "RAISE",
   "combo": "64o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -9434,8 +9434,8 @@
  {
   "action": "RAISE",
   "combo": "64s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -9470,8 +9470,8 @@
  {
   "action": "RAISE",
   "combo": "64s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -9866,8 +9866,8 @@
  {
   "action": "RAISE",
   "combo": "65o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -9902,8 +9902,8 @@
  {
   "action": "RAISE",
   "combo": "65o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -10298,8 +10298,8 @@
  {
   "action": "RAISE",
   "combo": "65s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -10334,8 +10334,8 @@
  {
   "action": "RAISE",
   "combo": "65s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -10730,8 +10730,8 @@
  {
   "action": "RAISE",
   "combo": "66",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -10766,8 +10766,8 @@
  {
   "action": "RAISE",
   "combo": "66",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -11162,8 +11162,8 @@
  {
   "action": "RAISE",
   "combo": "72o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -11198,8 +11198,8 @@
  {
   "action": "RAISE",
   "combo": "72o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -11594,8 +11594,8 @@
  {
   "action": "RAISE",
   "combo": "72s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -11630,8 +11630,8 @@
  {
   "action": "RAISE",
   "combo": "72s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -12026,8 +12026,8 @@
  {
   "action": "RAISE",
   "combo": "73o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -12062,8 +12062,8 @@
  {
   "action": "RAISE",
   "combo": "73o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -12458,8 +12458,8 @@
  {
   "action": "RAISE",
   "combo": "73s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -12494,8 +12494,8 @@
  {
   "action": "RAISE",
   "combo": "73s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -12890,8 +12890,8 @@
  {
   "action": "RAISE",
   "combo": "74o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -12926,8 +12926,8 @@
  {
   "action": "RAISE",
   "combo": "74o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -13322,8 +13322,8 @@
  {
   "action": "RAISE",
   "combo": "74s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -13358,8 +13358,8 @@
  {
   "action": "RAISE",
   "combo": "74s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -13754,8 +13754,8 @@
  {
   "action": "RAISE",
   "combo": "75o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -13790,8 +13790,8 @@
  {
   "action": "RAISE",
   "combo": "75o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -14186,8 +14186,8 @@
  {
   "action": "RAISE",
   "combo": "75s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -14222,8 +14222,8 @@
  {
   "action": "RAISE",
   "combo": "75s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -14618,8 +14618,8 @@
  {
   "action": "RAISE",
   "combo": "76o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -14654,8 +14654,8 @@
  {
   "action": "RAISE",
   "combo": "76o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -15050,8 +15050,8 @@
  {
   "action": "RAISE",
   "combo": "76s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -15086,8 +15086,8 @@
  {
   "action": "RAISE",
   "combo": "76s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -15482,8 +15482,8 @@
  {
   "action": "RAISE",
   "combo": "77",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -15518,8 +15518,8 @@
  {
   "action": "RAISE",
   "combo": "77",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -15914,8 +15914,8 @@
  {
   "action": "RAISE",
   "combo": "82o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -15950,8 +15950,8 @@
  {
   "action": "RAISE",
   "combo": "82o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -16346,8 +16346,8 @@
  {
   "action": "RAISE",
   "combo": "82s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -16382,8 +16382,8 @@
  {
   "action": "RAISE",
   "combo": "82s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -16778,8 +16778,8 @@
  {
   "action": "RAISE",
   "combo": "83o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -16814,8 +16814,8 @@
  {
   "action": "RAISE",
   "combo": "83o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -17210,8 +17210,8 @@
  {
   "action": "RAISE",
   "combo": "83s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -17246,8 +17246,8 @@
  {
   "action": "RAISE",
   "combo": "83s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -17642,8 +17642,8 @@
  {
   "action": "RAISE",
   "combo": "84o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -17678,8 +17678,8 @@
  {
   "action": "RAISE",
   "combo": "84o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -18074,8 +18074,8 @@
  {
   "action": "RAISE",
   "combo": "84s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -18110,8 +18110,8 @@
  {
   "action": "RAISE",
   "combo": "84s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -18506,8 +18506,8 @@
  {
   "action": "RAISE",
   "combo": "85o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -18542,8 +18542,8 @@
  {
   "action": "RAISE",
   "combo": "85o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -18938,8 +18938,8 @@
  {
   "action": "RAISE",
   "combo": "85s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -18974,8 +18974,8 @@
  {
   "action": "RAISE",
   "combo": "85s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -19370,8 +19370,8 @@
  {
   "action": "RAISE",
   "combo": "86o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -19406,8 +19406,8 @@
  {
   "action": "RAISE",
   "combo": "86o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -19802,8 +19802,8 @@
  {
   "action": "RAISE",
   "combo": "86s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -19838,8 +19838,8 @@
  {
   "action": "RAISE",
   "combo": "86s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -20234,8 +20234,8 @@
  {
   "action": "RAISE",
   "combo": "87o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -20270,8 +20270,8 @@
  {
   "action": "RAISE",
   "combo": "87o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -20666,8 +20666,8 @@
  {
   "action": "RAISE",
   "combo": "87s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -20702,8 +20702,8 @@
  {
   "action": "RAISE",
   "combo": "87s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -21098,8 +21098,8 @@
  {
   "action": "RAISE",
   "combo": "88",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -21134,8 +21134,8 @@
  {
   "action": "RAISE",
   "combo": "88",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -21530,8 +21530,8 @@
  {
   "action": "RAISE",
   "combo": "92o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -21566,8 +21566,8 @@
  {
   "action": "RAISE",
   "combo": "92o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -21962,8 +21962,8 @@
  {
   "action": "RAISE",
   "combo": "92s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -21998,8 +21998,8 @@
  {
   "action": "RAISE",
   "combo": "92s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -22394,8 +22394,8 @@
  {
   "action": "RAISE",
   "combo": "93o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -22430,8 +22430,8 @@
  {
   "action": "RAISE",
   "combo": "93o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -22826,8 +22826,8 @@
  {
   "action": "RAISE",
   "combo": "93s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -22862,8 +22862,8 @@
  {
   "action": "RAISE",
   "combo": "93s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -23258,8 +23258,8 @@
  {
   "action": "RAISE",
   "combo": "94o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -23294,8 +23294,8 @@
  {
   "action": "RAISE",
   "combo": "94o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -23690,8 +23690,8 @@
  {
   "action": "RAISE",
   "combo": "94s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -23726,8 +23726,8 @@
  {
   "action": "RAISE",
   "combo": "94s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -24122,8 +24122,8 @@
  {
   "action": "RAISE",
   "combo": "95o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -24158,8 +24158,8 @@
  {
   "action": "RAISE",
   "combo": "95o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -24554,8 +24554,8 @@
  {
   "action": "RAISE",
   "combo": "95s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -24590,8 +24590,8 @@
  {
   "action": "RAISE",
   "combo": "95s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -24986,8 +24986,8 @@
  {
   "action": "RAISE",
   "combo": "96o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -25022,8 +25022,8 @@
  {
   "action": "RAISE",
   "combo": "96o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -25418,8 +25418,8 @@
  {
   "action": "RAISE",
   "combo": "96s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -25454,8 +25454,8 @@
  {
   "action": "RAISE",
   "combo": "96s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -25850,8 +25850,8 @@
  {
   "action": "RAISE",
   "combo": "97o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -25886,8 +25886,8 @@
  {
   "action": "RAISE",
   "combo": "97o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -26282,8 +26282,8 @@
  {
   "action": "RAISE",
   "combo": "97s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -26318,8 +26318,8 @@
  {
   "action": "RAISE",
   "combo": "97s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -26714,8 +26714,8 @@
  {
   "action": "RAISE",
   "combo": "98o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -26750,8 +26750,8 @@
  {
   "action": "RAISE",
   "combo": "98o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -27146,8 +27146,8 @@
  {
   "action": "RAISE",
   "combo": "98s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -27182,8 +27182,8 @@
  {
   "action": "RAISE",
   "combo": "98s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -27578,8 +27578,8 @@
  {
   "action": "RAISE",
   "combo": "99",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -27614,8 +27614,8 @@
  {
   "action": "RAISE",
   "combo": "99",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -28010,8 +28010,8 @@
  {
   "action": "RAISE",
   "combo": "A2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -28046,8 +28046,8 @@
  {
   "action": "RAISE",
   "combo": "A2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -28442,8 +28442,8 @@
  {
   "action": "RAISE",
   "combo": "A2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -28478,8 +28478,8 @@
  {
   "action": "RAISE",
   "combo": "A2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -28874,8 +28874,8 @@
  {
   "action": "RAISE",
   "combo": "A3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -28910,8 +28910,8 @@
  {
   "action": "RAISE",
   "combo": "A3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -29306,8 +29306,8 @@
  {
   "action": "RAISE",
   "combo": "A3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -29342,8 +29342,8 @@
  {
   "action": "RAISE",
   "combo": "A3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -29738,8 +29738,8 @@
  {
   "action": "RAISE",
   "combo": "A4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -29774,8 +29774,8 @@
  {
   "action": "RAISE",
   "combo": "A4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -30170,8 +30170,8 @@
  {
   "action": "RAISE",
   "combo": "A4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -30206,8 +30206,8 @@
  {
   "action": "RAISE",
   "combo": "A4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -30602,8 +30602,8 @@
  {
   "action": "RAISE",
   "combo": "A5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -30638,8 +30638,8 @@
  {
   "action": "RAISE",
   "combo": "A5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -31034,8 +31034,8 @@
  {
   "action": "RAISE",
   "combo": "A5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -31070,8 +31070,8 @@
  {
   "action": "RAISE",
   "combo": "A5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -31466,8 +31466,8 @@
  {
   "action": "RAISE",
   "combo": "A6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -31502,8 +31502,8 @@
  {
   "action": "RAISE",
   "combo": "A6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -31898,8 +31898,8 @@
  {
   "action": "RAISE",
   "combo": "A6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -31934,8 +31934,8 @@
  {
   "action": "RAISE",
   "combo": "A6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -32330,8 +32330,8 @@
  {
   "action": "RAISE",
   "combo": "A7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -32366,8 +32366,8 @@
  {
   "action": "RAISE",
   "combo": "A7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -32762,8 +32762,8 @@
  {
   "action": "RAISE",
   "combo": "A7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -32798,8 +32798,8 @@
  {
   "action": "RAISE",
   "combo": "A7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -33194,8 +33194,8 @@
  {
   "action": "RAISE",
   "combo": "A8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -33230,8 +33230,8 @@
  {
   "action": "RAISE",
   "combo": "A8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -33626,8 +33626,8 @@
  {
   "action": "RAISE",
   "combo": "A8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -33662,8 +33662,8 @@
  {
   "action": "RAISE",
   "combo": "A8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -34058,8 +34058,8 @@
  {
   "action": "RAISE",
   "combo": "A9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -34094,8 +34094,8 @@
  {
   "action": "RAISE",
   "combo": "A9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -34490,8 +34490,8 @@
  {
   "action": "RAISE",
   "combo": "A9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -34526,8 +34526,8 @@
  {
   "action": "RAISE",
   "combo": "A9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -34922,8 +34922,8 @@
  {
   "action": "RAISE",
   "combo": "AA",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -34958,8 +34958,8 @@
  {
   "action": "RAISE",
   "combo": "AA",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -35354,8 +35354,8 @@
  {
   "action": "RAISE",
   "combo": "AJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -35390,8 +35390,8 @@
  {
   "action": "RAISE",
   "combo": "AJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -35786,8 +35786,8 @@
  {
   "action": "RAISE",
   "combo": "AJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -35822,8 +35822,8 @@
  {
   "action": "RAISE",
   "combo": "AJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -36218,8 +36218,8 @@
  {
   "action": "RAISE",
   "combo": "AKo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -36254,8 +36254,8 @@
  {
   "action": "RAISE",
   "combo": "AKo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -36650,8 +36650,8 @@
  {
   "action": "RAISE",
   "combo": "AKs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -36686,8 +36686,8 @@
  {
   "action": "RAISE",
   "combo": "AKs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -37082,8 +37082,8 @@
  {
   "action": "RAISE",
   "combo": "AQo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -37118,8 +37118,8 @@
  {
   "action": "RAISE",
   "combo": "AQo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -37514,8 +37514,8 @@
  {
   "action": "RAISE",
   "combo": "AQs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -37550,8 +37550,8 @@
  {
   "action": "RAISE",
   "combo": "AQs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -37946,8 +37946,8 @@
  {
   "action": "RAISE",
   "combo": "ATo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -37982,8 +37982,8 @@
  {
   "action": "RAISE",
   "combo": "ATo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -38378,8 +38378,8 @@
  {
   "action": "RAISE",
   "combo": "ATs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -38414,8 +38414,8 @@
  {
   "action": "RAISE",
   "combo": "ATs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -38810,8 +38810,8 @@
  {
   "action": "RAISE",
   "combo": "J2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -38846,8 +38846,8 @@
  {
   "action": "RAISE",
   "combo": "J2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -39242,8 +39242,8 @@
  {
   "action": "RAISE",
   "combo": "J2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -39278,8 +39278,8 @@
  {
   "action": "RAISE",
   "combo": "J2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -39674,8 +39674,8 @@
  {
   "action": "RAISE",
   "combo": "J3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -39710,8 +39710,8 @@
  {
   "action": "RAISE",
   "combo": "J3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -40106,8 +40106,8 @@
  {
   "action": "RAISE",
   "combo": "J3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -40142,8 +40142,8 @@
  {
   "action": "RAISE",
   "combo": "J3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -40538,8 +40538,8 @@
  {
   "action": "RAISE",
   "combo": "J4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -40574,8 +40574,8 @@
  {
   "action": "RAISE",
   "combo": "J4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -40970,8 +40970,8 @@
  {
   "action": "RAISE",
   "combo": "J4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -41006,8 +41006,8 @@
  {
   "action": "RAISE",
   "combo": "J4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -41402,8 +41402,8 @@
  {
   "action": "RAISE",
   "combo": "J5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -41438,8 +41438,8 @@
  {
   "action": "RAISE",
   "combo": "J5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -41834,8 +41834,8 @@
  {
   "action": "RAISE",
   "combo": "J5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -41870,8 +41870,8 @@
  {
   "action": "RAISE",
   "combo": "J5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -42266,8 +42266,8 @@
  {
   "action": "RAISE",
   "combo": "J6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -42302,8 +42302,8 @@
  {
   "action": "RAISE",
   "combo": "J6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -42698,8 +42698,8 @@
  {
   "action": "RAISE",
   "combo": "J6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -42734,8 +42734,8 @@
  {
   "action": "RAISE",
   "combo": "J6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -43130,8 +43130,8 @@
  {
   "action": "RAISE",
   "combo": "J7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -43166,8 +43166,8 @@
  {
   "action": "RAISE",
   "combo": "J7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -43562,8 +43562,8 @@
  {
   "action": "RAISE",
   "combo": "J7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -43598,8 +43598,8 @@
  {
   "action": "RAISE",
   "combo": "J7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -43994,8 +43994,8 @@
  {
   "action": "RAISE",
   "combo": "J8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -44030,8 +44030,8 @@
  {
   "action": "RAISE",
   "combo": "J8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -44426,8 +44426,8 @@
  {
   "action": "RAISE",
   "combo": "J8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -44462,8 +44462,8 @@
  {
   "action": "RAISE",
   "combo": "J8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -44858,8 +44858,8 @@
  {
   "action": "RAISE",
   "combo": "J9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -44894,8 +44894,8 @@
  {
   "action": "RAISE",
   "combo": "J9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -45290,8 +45290,8 @@
  {
   "action": "RAISE",
   "combo": "J9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -45326,8 +45326,8 @@
  {
   "action": "RAISE",
   "combo": "J9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -45722,8 +45722,8 @@
  {
   "action": "RAISE",
   "combo": "JJ",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -45758,8 +45758,8 @@
  {
   "action": "RAISE",
   "combo": "JJ",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -46154,8 +46154,8 @@
  {
   "action": "RAISE",
   "combo": "JTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -46190,8 +46190,8 @@
  {
   "action": "RAISE",
   "combo": "JTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -46586,8 +46586,8 @@
  {
   "action": "RAISE",
   "combo": "JTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -46622,8 +46622,8 @@
  {
   "action": "RAISE",
   "combo": "JTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -47018,8 +47018,8 @@
  {
   "action": "RAISE",
   "combo": "K2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -47054,8 +47054,8 @@
  {
   "action": "RAISE",
   "combo": "K2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -47450,8 +47450,8 @@
  {
   "action": "RAISE",
   "combo": "K2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -47486,8 +47486,8 @@
  {
   "action": "RAISE",
   "combo": "K2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -47882,8 +47882,8 @@
  {
   "action": "RAISE",
   "combo": "K3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -47918,8 +47918,8 @@
  {
   "action": "RAISE",
   "combo": "K3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -48314,8 +48314,8 @@
  {
   "action": "RAISE",
   "combo": "K3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -48350,8 +48350,8 @@
  {
   "action": "RAISE",
   "combo": "K3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -48746,8 +48746,8 @@
  {
   "action": "RAISE",
   "combo": "K4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -48782,8 +48782,8 @@
  {
   "action": "RAISE",
   "combo": "K4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -49178,8 +49178,8 @@
  {
   "action": "RAISE",
   "combo": "K4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -49214,8 +49214,8 @@
  {
   "action": "RAISE",
   "combo": "K4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -49610,8 +49610,8 @@
  {
   "action": "RAISE",
   "combo": "K5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -49646,8 +49646,8 @@
  {
   "action": "RAISE",
   "combo": "K5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -50042,8 +50042,8 @@
  {
   "action": "RAISE",
   "combo": "K5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -50078,8 +50078,8 @@
  {
   "action": "RAISE",
   "combo": "K5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -50474,8 +50474,8 @@
  {
   "action": "RAISE",
   "combo": "K6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -50510,8 +50510,8 @@
  {
   "action": "RAISE",
   "combo": "K6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -50906,8 +50906,8 @@
  {
   "action": "RAISE",
   "combo": "K6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -50942,8 +50942,8 @@
  {
   "action": "RAISE",
   "combo": "K6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -51338,8 +51338,8 @@
  {
   "action": "RAISE",
   "combo": "K7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -51374,8 +51374,8 @@
  {
   "action": "RAISE",
   "combo": "K7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -51770,8 +51770,8 @@
  {
   "action": "RAISE",
   "combo": "K7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -51806,8 +51806,8 @@
  {
   "action": "RAISE",
   "combo": "K7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -52202,8 +52202,8 @@
  {
   "action": "RAISE",
   "combo": "K8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -52238,8 +52238,8 @@
  {
   "action": "RAISE",
   "combo": "K8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -52634,8 +52634,8 @@
  {
   "action": "RAISE",
   "combo": "K8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -52670,8 +52670,8 @@
  {
   "action": "RAISE",
   "combo": "K8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -53066,8 +53066,8 @@
  {
   "action": "RAISE",
   "combo": "K9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -53102,8 +53102,8 @@
  {
   "action": "RAISE",
   "combo": "K9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -53498,8 +53498,8 @@
  {
   "action": "RAISE",
   "combo": "K9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -53534,8 +53534,8 @@
  {
   "action": "RAISE",
   "combo": "K9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -53930,8 +53930,8 @@
  {
   "action": "RAISE",
   "combo": "KJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -53966,8 +53966,8 @@
  {
   "action": "RAISE",
   "combo": "KJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -54362,8 +54362,8 @@
  {
   "action": "RAISE",
   "combo": "KJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -54398,8 +54398,8 @@
  {
   "action": "RAISE",
   "combo": "KJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -54794,8 +54794,8 @@
  {
   "action": "RAISE",
   "combo": "KK",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -54830,8 +54830,8 @@
  {
   "action": "RAISE",
   "combo": "KK",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -55226,8 +55226,8 @@
  {
   "action": "RAISE",
   "combo": "KQo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -55262,8 +55262,8 @@
  {
   "action": "RAISE",
   "combo": "KQo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -55658,8 +55658,8 @@
  {
   "action": "RAISE",
   "combo": "KQs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -55694,8 +55694,8 @@
  {
   "action": "RAISE",
   "combo": "KQs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -56090,8 +56090,8 @@
  {
   "action": "RAISE",
   "combo": "KTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -56126,8 +56126,8 @@
  {
   "action": "RAISE",
   "combo": "KTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -56522,8 +56522,8 @@
  {
   "action": "RAISE",
   "combo": "KTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -56558,8 +56558,8 @@
  {
   "action": "RAISE",
   "combo": "KTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -56954,8 +56954,8 @@
  {
   "action": "RAISE",
   "combo": "Q2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -56990,8 +56990,8 @@
  {
   "action": "RAISE",
   "combo": "Q2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -57386,8 +57386,8 @@
  {
   "action": "RAISE",
   "combo": "Q2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -57422,8 +57422,8 @@
  {
   "action": "RAISE",
   "combo": "Q2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -57818,8 +57818,8 @@
  {
   "action": "RAISE",
   "combo": "Q3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -57854,8 +57854,8 @@
  {
   "action": "RAISE",
   "combo": "Q3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -58250,8 +58250,8 @@
  {
   "action": "RAISE",
   "combo": "Q3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -58286,8 +58286,8 @@
  {
   "action": "RAISE",
   "combo": "Q3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -58682,8 +58682,8 @@
  {
   "action": "RAISE",
   "combo": "Q4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -58718,8 +58718,8 @@
  {
   "action": "RAISE",
   "combo": "Q4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -59114,8 +59114,8 @@
  {
   "action": "RAISE",
   "combo": "Q4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -59150,8 +59150,8 @@
  {
   "action": "RAISE",
   "combo": "Q4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -59546,8 +59546,8 @@
  {
   "action": "RAISE",
   "combo": "Q5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -59582,8 +59582,8 @@
  {
   "action": "RAISE",
   "combo": "Q5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -59978,8 +59978,8 @@
  {
   "action": "RAISE",
   "combo": "Q5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -60014,8 +60014,8 @@
  {
   "action": "RAISE",
   "combo": "Q5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -60410,8 +60410,8 @@
  {
   "action": "RAISE",
   "combo": "Q6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -60446,8 +60446,8 @@
  {
   "action": "RAISE",
   "combo": "Q6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -60842,8 +60842,8 @@
  {
   "action": "RAISE",
   "combo": "Q6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -60878,8 +60878,8 @@
  {
   "action": "RAISE",
   "combo": "Q6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -61274,8 +61274,8 @@
  {
   "action": "RAISE",
   "combo": "Q7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -61310,8 +61310,8 @@
  {
   "action": "RAISE",
   "combo": "Q7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -61706,8 +61706,8 @@
  {
   "action": "RAISE",
   "combo": "Q7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -61742,8 +61742,8 @@
  {
   "action": "RAISE",
   "combo": "Q7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -62138,8 +62138,8 @@
  {
   "action": "RAISE",
   "combo": "Q8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -62174,8 +62174,8 @@
  {
   "action": "RAISE",
   "combo": "Q8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -62570,8 +62570,8 @@
  {
   "action": "RAISE",
   "combo": "Q8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -62606,8 +62606,8 @@
  {
   "action": "RAISE",
   "combo": "Q8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -63002,8 +63002,8 @@
  {
   "action": "RAISE",
   "combo": "Q9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -63038,8 +63038,8 @@
  {
   "action": "RAISE",
   "combo": "Q9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -63434,8 +63434,8 @@
  {
   "action": "RAISE",
   "combo": "Q9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -63470,8 +63470,8 @@
  {
   "action": "RAISE",
   "combo": "Q9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -63866,8 +63866,8 @@
  {
   "action": "RAISE",
   "combo": "QJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -63902,8 +63902,8 @@
  {
   "action": "RAISE",
   "combo": "QJo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -64298,8 +64298,8 @@
  {
   "action": "RAISE",
   "combo": "QJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -64334,8 +64334,8 @@
  {
   "action": "RAISE",
   "combo": "QJs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -64730,8 +64730,8 @@
  {
   "action": "RAISE",
   "combo": "QQ",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -64766,8 +64766,8 @@
  {
   "action": "RAISE",
   "combo": "QQ",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -65162,8 +65162,8 @@
  {
   "action": "RAISE",
   "combo": "QTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -65198,8 +65198,8 @@
  {
   "action": "RAISE",
   "combo": "QTo",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -65594,8 +65594,8 @@
  {
   "action": "RAISE",
   "combo": "QTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -65630,8 +65630,8 @@
  {
   "action": "RAISE",
   "combo": "QTs",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -66026,8 +66026,8 @@
  {
   "action": "RAISE",
   "combo": "T2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -66062,8 +66062,8 @@
  {
   "action": "RAISE",
   "combo": "T2o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -66458,8 +66458,8 @@
  {
   "action": "RAISE",
   "combo": "T2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -66494,8 +66494,8 @@
  {
   "action": "RAISE",
   "combo": "T2s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -66890,8 +66890,8 @@
  {
   "action": "RAISE",
   "combo": "T3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -66926,8 +66926,8 @@
  {
   "action": "RAISE",
   "combo": "T3o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -67322,8 +67322,8 @@
  {
   "action": "RAISE",
   "combo": "T3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -67358,8 +67358,8 @@
  {
   "action": "RAISE",
   "combo": "T3s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -67754,8 +67754,8 @@
  {
   "action": "RAISE",
   "combo": "T4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -67790,8 +67790,8 @@
  {
   "action": "RAISE",
   "combo": "T4o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -68186,8 +68186,8 @@
  {
   "action": "RAISE",
   "combo": "T4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -68222,8 +68222,8 @@
  {
   "action": "RAISE",
   "combo": "T4s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -68618,8 +68618,8 @@
  {
   "action": "RAISE",
   "combo": "T5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -68654,8 +68654,8 @@
  {
   "action": "RAISE",
   "combo": "T5o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -69050,8 +69050,8 @@
  {
   "action": "RAISE",
   "combo": "T5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -69086,8 +69086,8 @@
  {
   "action": "RAISE",
   "combo": "T5s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -69482,8 +69482,8 @@
  {
   "action": "RAISE",
   "combo": "T6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -69518,8 +69518,8 @@
  {
   "action": "RAISE",
   "combo": "T6o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -69914,8 +69914,8 @@
  {
   "action": "RAISE",
   "combo": "T6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -69950,8 +69950,8 @@
  {
   "action": "RAISE",
   "combo": "T6s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -70346,8 +70346,8 @@
  {
   "action": "RAISE",
   "combo": "T7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -70382,8 +70382,8 @@
  {
   "action": "RAISE",
   "combo": "T7o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -70778,8 +70778,8 @@
  {
   "action": "RAISE",
   "combo": "T7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -70814,8 +70814,8 @@
  {
   "action": "RAISE",
   "combo": "T7s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -71210,8 +71210,8 @@
  {
   "action": "RAISE",
   "combo": "T8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -71246,8 +71246,8 @@
  {
   "action": "RAISE",
   "combo": "T8o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -71642,8 +71642,8 @@
  {
   "action": "RAISE",
   "combo": "T8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -71678,8 +71678,8 @@
  {
   "action": "RAISE",
   "combo": "T8s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◎",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -72074,8 +72074,8 @@
  {
   "action": "RAISE",
   "combo": "T9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -72110,8 +72110,8 @@
  {
   "action": "RAISE",
   "combo": "T9o",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -72506,8 +72506,8 @@
  {
   "action": "RAISE",
   "combo": "T9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -72542,8 +72542,8 @@
  {
   "action": "RAISE",
   "combo": "T9s",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"
@@ -72938,8 +72938,8 @@
  {
   "action": "RAISE",
   "combo": "TT",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": false,
   "pos": "BB"
@@ -72974,8 +72974,8 @@
  {
   "action": "RAISE",
   "combo": "TT",
-  "decision": "fold",
-  "evaluation": "×",
+  "decision": "final",
+  "evaluation": "◯",
   "facing_bet": 0.0,
   "is_3bet_pot": true,
   "pos": "BB"

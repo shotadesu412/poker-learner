@@ -22,6 +22,17 @@
   const hasRange = (m) => m instanceof Map && m.size > 0;         // Python の `if range_dict:`
   // Python の dict.get(key, default): キーが「存在しない」ときだけ default（空でも default にしない）
   const getOr = (m, key, dflt) => (m && m.has(key) ? m.get(key) : dflt);
+  // レンジが全ハンドの何%か（重み換算のコンボ数 / 1326。ペア6・スーテッド4・オフスート12）
+  const rangePct = (m) => {
+    let n = 0;
+    for (const [c, w] of (m || new Map())) n += (c.length === 2 ? 6 : c.endsWith('s') ? 4 : 12) * Math.min(1, w);
+    return n / 1326 * 100;
+  };
+  const unionRange = (a, b) => {
+    const u = new Map(a || []);
+    for (const [c, w] of (b || new Map())) u.set(c, Math.min(1, (u.get(c) || 0) + w));
+    return u;
+  };
 
   const Evaluator = {
     CALL_IMPLIED_ODDS_THRESHOLD: 0.9,
@@ -165,52 +176,162 @@
       return ch1 + ch2 + (s1 === s2 ? 's' : 'o');
     },
 
-    // 戻り値: [decision('play'|'mix'|'fold'), 評価記号, 解説文]
-    // openerPos（省略可）: BB でオープンに対応するとき、オープンした位置ごとのコールレンジを使う（2026/11/17〜）
-    evaluatePreflopActionGto(cards, actionTaken, heroPos, is3betPot, facingBet, openerPos = null) {
-      const { Ranges, BetSizing: B } = root;
+    // プリフロップの場面と、その場面でこのハンドに推奨されるアクションの頻度（レンジ表の重み）。
+    // spot（省略可）: { openerPos, villainPos, pot, raises, ip }。文字列ならオープンした位置（以前の呼び方）
+    //   - open    : 最初に参加する（レイズかフォールド。リンプのレンジは持たない）
+    //   - vs_limp : BB で SB のリンプに対して（チェックかレイズ）
+    //   - vs_open : 相手のオープンに対して（コール/3ベット/フォールド）
+    //   - vs_3bet : 3ベット（4ベット）に対して
+    // 判定は 6人卓の理論（レンジ表）を優先する。このアプリは2人の勝負だが、例えば SB は後ろの BB に
+    // スクイーズされる前提で「3ベットかフォールド」と判定し、その理由を解説に書く（2026/11/18 shota 指定）
+    preflopSpot(cards, heroPos, is3betPot, facingBet, spot = null) {
+      const { Ranges } = root;
+      const sp = typeof spot === 'string' ? { openerPos: spot } : (spot || {});
       const posRanges = Ranges.RANGES.get(heroPos) || new Map();
       const empty = new Map();
-      let callRange, raiseRange, foldMsg;
-      if (facingBet === 0) {
-        // ファーストイン。レンジ内はレイズで入るのが正解で、リンプ（コール）のレンジは持たない
+      let kind, callRange, raiseRange;
+      if (facingBet === 0 && heroPos === 'BB') {
+        kind = 'vs_limp';
+        callRange = empty;
+        // BB のリンプ対応の表は無いので、3ベットする強さのハンドを「レイズすべき手」とする（それ以外のレイズも ◯）
+        raiseRange = getOr(posRanges, 'vs_open_3bet', empty);
+      } else if (facingBet === 0) {
+        kind = 'open';
         callRange = empty;
         raiseRange = getOr(posRanges, 'open', empty);
-        foldMsg = t('preflop.foldmsg.open');
       } else if (!is3betPot) {
-        // BB のコールレンジを相手の位置で変えるデータは無いので共通の vs_open_call を使う
+        kind = 'vs_open';
         callRange = getOr(posRanges, 'vs_open_call', empty);
-        if (openerPos && posRanges.has('vs_open_call_vs_' + openerPos)) callRange = posRanges.get('vs_open_call_vs_' + openerPos);
+        // BB はオープンした位置ごとのコールレンジ（ポットオッズ × 実現率で作成）。
+        // SB にも同じ作りのレンジがあるが、それは CPU がコールするとき用。判定は理論どおり 3ベットかフォールド
+        if (sp.openerPos && heroPos !== 'SB' && posRanges.has('vs_open_call_vs_' + sp.openerPos)) {
+          callRange = posRanges.get('vs_open_call_vs_' + sp.openerPos);
+        }
         raiseRange = getOr(posRanges, 'vs_open_3bet', getOr(posRanges, '3bet', empty));
-        foldMsg = t('preflop.foldmsg.vs_open');
       } else {
+        kind = 'vs_3bet';
         callRange = getOr(posRanges, 'vs_3bet_call', empty);
         raiseRange = getOr(posRanges, 'vs_3bet_4bet', getOr(posRanges, '4bet_bluff', empty));
-        foldMsg = t('preflop.foldmsg.vs_3bet');
       }
-
       const comboStr = Evaluator.getComboStr(cards, Ranges.ALL_HANDS_DICT);
-      const reason = Ranges.getHandReason(comboStr);
-      const callWeight = getOr(callRange, comboStr, 0.0);
-      const raiseWeight = getOr(raiseRange, comboStr, 0.0);
+      const callWeight = Math.min(1, getOr(callRange, comboStr, 0.0));
+      const raiseWeight = Math.min(1, getOr(raiseRange, comboStr, 0.0));
+      return { kind, sp, comboStr, callRange, raiseRange, callWeight, raiseWeight };
+    },
 
+    // 場面の解説（推奨の頻度・場面の考え方・ハンドの特徴）。判定の1行目は含まない
+    preflopExplain(info, heroPos, facingBet) {
+      const { Ranges } = root;
+      const { kind, sp, comboStr, callWeight: wc, raiseWeight: wr } = info;
+      const disp = (p) => (p === 'LJ' ? 'UTG' : p);
+      const pos = disp(heroPos);
+      const pct = (m) => rangePct(m);
+      const lines = [];
+      const raiseName = Evaluator.preflopRaiseName(kind, sp);
+      // 推奨の頻度（混ぜるハンドのときだけ）
+      const wf = Math.max(0, 1 - wc - wr);
+      if ((wc > 0 && wc < 1) || (wr > 0 && wr < 1)) {
+        const parts = [];
+        if (wr > 0) parts.push(t('preflop.freq.item', { act: raiseName, p: wr * 100 }));
+        if (wc > 0) parts.push(t('preflop.freq.item', { act: t('preflop.act.call'), p: wc * 100 }));
+        if (wf > 0.001) parts.push(t('preflop.freq.item', { act: kind === 'vs_limp' ? t('preflop.act.check') : t('preflop.act.fold'), p: wf * 100 }));
+        lines.push(t('preflop.freq', { list: parts.join(t('preflop.freq.sep')) }));
+      }
+      // 場面の考え方
+      const opener = sp.openerPos ? disp(sp.openerPos) : null;
+      const behind = { UTG: 5, LJ: 5, HJ: 4, CO: 3, BTN: 2, SB: 1, BB: 0 }[heroPos] ?? 0;
+      if (kind === 'open') {
+        const open = pct(info.raiseRange);
+        if (heroPos === 'BTN') lines.push(t('preflop.why.open_btn', { pct: open }));
+        else if (heroPos === 'SB') lines.push(t('preflop.why.open_sb', { pct: open }));
+        else lines.push(t('preflop.why.open', { pos, n: String(behind), pct: open }));
+      } else if (kind === 'vs_limp') {
+        lines.push(t('preflop.why.vs_limp', { pct: pct(info.raiseRange) }));
+      } else if (kind === 'vs_open') {
+        const openPct = opener ? pct(Ranges.getRangeByCategory(sp.openerPos, 'open')) : null;
+        const pot = sp.pot || 0;
+        const req = pot > 0 ? facingBet / (pot + facingBet) * 100 : null;
+        if (heroPos === 'BB') {
+          const def = rangePct(unionRange(info.callRange, info.raiseRange));
+          if (opener && req !== null) lines.push(t('preflop.why.vs_open_bb', { opener, open: openPct, req, def }));
+          else lines.push(t('preflop.why.vs_open_bb_generic', { def }));
+          if (sp.openerPos === 'SB') lines.push(t('preflop.why.vs_open_bb_sb'));
+        } else if (heroPos === 'SB') {
+          lines.push(t('preflop.why.vs_open_sb', { raise: pct(info.raiseRange) }));
+        } else {
+          lines.push(t('preflop.why.vs_open_ip', { pos, n: String(behind), tot: rangePct(unionRange(info.callRange, info.raiseRange)) }));
+          if (heroPos === 'BTN') lines.push(t('preflop.why.vs_open_btn'));
+        }
+      } else {
+        const four = (sp.raises || 0) >= 3;
+        const open = pct(Ranges.RANGES.get(heroPos) && Ranges.RANGES.get(heroPos).get('open'));
+        if (four) lines.push(t('preflop.why.vs_4bet'));
+        else if (open > 0) lines.push(t('preflop.why.vs_3bet', { tot: rangePct(unionRange(info.callRange, info.raiseRange)) / open * 100 }));
+        else lines.push(t('preflop.why.vs_3bet_generic', { tot: rangePct(unionRange(info.callRange, info.raiseRange)) }));
+        if (!four && sp.ip === true) lines.push(t('preflop.why.vs_3bet_ip'));
+        if (!four && sp.ip === false) lines.push(t('preflop.why.vs_3bet_oop'));
+      }
+      // ハンドの一般的な特徴（「投機的なハンド」等）は 2026/11/18 に外した（解説が長くなるため）
+      return lines;
+    },
+
+    preflopRaiseName(kind, sp = {}) {
+      if (kind === 'open') return t('preflop.act.open');
+      if (kind === 'vs_limp') return t('preflop.act.raise');
+      if (kind === 'vs_open') return t('preflop.act.3bet');
+      return (sp.raises || 0) >= 3 ? t('preflop.act.5bet') : t('preflop.act.4bet');
+    },
+
+    preflopSpotName(kind, heroPos, sp = {}) {
+      const disp = (p) => (p === 'LJ' ? 'UTG' : p);
+      const pos = disp(heroPos);
+      if (kind === 'open') return t('preflop.spot.open', { pos });
+      if (kind === 'vs_limp') return t('preflop.spot.vs_limp');
+      if (kind === 'vs_open') {
+        return sp.openerPos ? t('preflop.spot.vs_open', { pos, opener: disp(sp.openerPos) }) : t('preflop.spot.vs_open_generic', { pos });
+      }
+      const v = sp.villainPos ? disp(sp.villainPos) : null;
+      if ((sp.raises || 0) >= 3) return v ? t('preflop.spot.vs_4bet', { pos, villain: v }) : t('preflop.spot.vs_4bet_generic', { pos });
+      return v ? t('preflop.spot.vs_3bet', { pos, villain: v }) : t('preflop.spot.vs_3bet_generic', { pos });
+    },
+
+    // 戻り値: [decision('play'|'mix'|'fold'|'final'), 評価記号, 解説文, { verdict, plain, detail }]
+    //   play  … 表の上では参加する手。呼び出し側が勝率で評価を続ける（plain + detail を後ろに付ける）
+    //   それ以外 … この判定で確定
+    evaluatePreflopActionGto(cards, actionTaken, heroPos, is3betPot, facingBet, spot = null) {
+      const { BetSizing: B } = root;
+      const info = Evaluator.preflopSpot(cards, heroPos, is3betPot, facingBet, spot);
+      const { kind, sp, comboStr, callWeight, raiseWeight } = info;
+      const detail = Evaluator.preflopExplain(info, heroPos, facingBet);
+      const kw = { hand: comboStr, spot: Evaluator.preflopSpotName(kind, heroPos, sp), raise: Evaluator.preflopRaiseName(kind, sp) };
+      const out = (decision, ev, key, plainKey = null) => {
+        const verdict = t(key, kw);
+        const lines = [verdict].concat(kind === 'open' && actionTaken === 'CALL' ? [t('preflop.why.no_limp')] : [], detail);
+        return [decision, ev, lines.join('\n'), { verdict, plain: plainKey ? t(plainKey, kw) : verdict, detail: detail.join('\n') }];
+      };
+
+      if (kind === 'vs_limp') {
+        // チェックは無料でフロップを見られるので基本。強い手はレイズでバリュー
+        if (actionTaken === 'CHECK') return raiseWeight > 0 ? out('final', B.EVAL_GOOD, 'preflop.limp.check_strong') : out('final', B.EVAL_OPTIMAL, 'preflop.limp.check');
+        if (actionTaken === 'RAISE') return raiseWeight > 0 ? out('final', B.EVAL_OPTIMAL, 'preflop.limp.raise_value') : out('final', B.EVAL_GOOD, 'preflop.limp.raise_other');
+      }
       if (actionTaken === 'CALL') {
-        if (callWeight > 0) return ['play', B.EVAL_GOOD, t('preflop.call.good', { reason })];
-        if (raiseWeight > 0) return ['fold', B.EVAL_BAD, t('preflop.call.should_raise', { reason })];
-        return ['fold', B.EVAL_BAD, t('preflop.call.out_of_range', { fold_msg: foldMsg, reason })];
+        if (callWeight > 0) return out('play', B.EVAL_GOOD, 'preflop.call.good', 'preflop.call.plain');
+        if (raiseWeight > 0) return out('fold', B.EVAL_BAD, 'preflop.call.should_raise');
+        return out('fold', B.EVAL_BAD, 'preflop.call.out_of_range');
       }
       if (actionTaken === 'RAISE') {
-        if (raiseWeight > 0) return ['play', B.EVAL_OPTIMAL, t('preflop.raise.optimal', { reason })];
-        if (callWeight > 0) return ['mix', B.EVAL_MARGINAL, t('preflop.raise.should_call', { reason })];
-        return ['fold', B.EVAL_BAD, t('preflop.raise.out_of_range', { fold_msg: foldMsg, reason })];
+        if (raiseWeight > 0) return out('play', B.EVAL_OPTIMAL, 'preflop.raise.optimal', 'preflop.raise.plain');
+        if (callWeight > 0) return out('mix', B.EVAL_MARGINAL, 'preflop.raise.should_call');
+        return out('fold', B.EVAL_BAD, 'preflop.raise.out_of_range');
       }
       if (actionTaken === 'FOLD') {
-        if (raiseWeight > 0.5) return ['mix', B.EVAL_BAD, t('preflop.fold.too_strong', { reason })];
-        if (callWeight > 0.5) return ['mix', B.EVAL_BAD, t('preflop.fold.callable', { reason })];
-        if (raiseWeight > 0 || callWeight > 0) return ['play', B.EVAL_MARGINAL, t('preflop.fold.slightly_tight', { reason })];
-        return ['play', B.EVAL_OPTIMAL, t('preflop.fold.optimal', { fold_msg: foldMsg })];
+        if (raiseWeight > 0.5) return out('mix', B.EVAL_BAD, 'preflop.fold.too_strong');
+        if (callWeight > 0.5) return out('mix', B.EVAL_BAD, 'preflop.fold.callable');
+        if (raiseWeight > 0 || callWeight > 0) return out('play', B.EVAL_MARGINAL, 'preflop.fold.slightly_tight', 'preflop.fold.slightly_tight');
+        return out('play', B.EVAL_OPTIMAL, 'preflop.fold.optimal');
       }
-      return ['play', B.EVAL_GOOD, reason];
+      return ['play', B.EVAL_GOOD, detail.join('\n'), { verdict: '', plain: '', detail: detail.join('\n') }];
     },
 
     // ファーストイン（誰も参加していない場面）の判定で置き換える。ev は呼び出し元の値を保つ
@@ -226,13 +347,15 @@
       if (callAmount === 0) {
         return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: B.EVAL_OPTIMAL, reason: t('call.free_check') };
       }
-      let preflopPrefix = '';
+      // プリフロップ: 表の外なら表で確定。表の中なら勝率で評価し、表の解説を後ろに付ける
+      let preflopSuffix = '';
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'CALL', heroPos, is3betPot, callAmount, openerPos);
-        preflopPrefix = eReason + '\n';
-        if (decision === 'fold' || decision === 'mix') {
-          return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: preflopPrefix };
+        const [decision, eEval, eReason, parts] = Evaluator.evaluatePreflopActionGto(cards, 'CALL', heroPos, is3betPot, callAmount, openerPos);
+        if (decision !== 'play') {
+          return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: eReason };
         }
+        // 表の中のコール: 勝率の行のあとに場面の考え方だけ付ける（「コールするハンドです」は勝率の行と重なるので省く）
+        preflopSuffix = parts.detail ? '\n' + parts.detail : '';
       }
 
       const eReq = Evaluator.calculateRequiredEquity(callAmount, potSize);
@@ -245,20 +368,21 @@
       const isIp = IP_POSITIONS.includes(heroPos);
       const evCallVal = Evaluator.evCall(realized, potSize, callAmount, spr, category, isIp);
 
-      let evaluation, reason = preflopPrefix;
-      const eq = realized * 100;
+      let evaluation, reason = '';
+      const kw = { eq: realized * 100, req: eReq * 100 };
       if (realized >= eReq * Evaluator.CALL_OPTIMAL_THRESHOLD) {
-        evaluation = B.EVAL_OPTIMAL; reason += t('call.optimal', { eq });
+        evaluation = B.EVAL_OPTIMAL; reason += t('call.optimal', kw);
       } else if (realized >= eReq) {
-        evaluation = B.EVAL_GOOD; reason += t('call.good', { eq });
+        evaluation = B.EVAL_GOOD; reason += t('call.good', kw);
       } else if (realized >= eReq * Evaluator.CALL_MARGINAL_THRESHOLD) {
-        if (evCallVal > 0) { evaluation = B.EVAL_GOOD; reason += t('call.implied_good', { eq }); }
-        else { evaluation = B.EVAL_MARGINAL; reason += t('call.marginal', { eq }); }
+        if (evCallVal > 0) { evaluation = B.EVAL_GOOD; reason += t('call.implied_good', kw); }
+        else { evaluation = B.EVAL_MARGINAL; reason += t('call.marginal', kw); }
       } else if (evCallVal > 0) {
-        evaluation = B.EVAL_MARGINAL; reason += t('call.implied_marginal', { eq });
+        evaluation = B.EVAL_MARGINAL; reason += t('call.implied_marginal', kw);
       } else {
-        evaluation = B.EVAL_BAD; reason += t('call.bad');
+        evaluation = B.EVAL_BAD; reason += t('call.bad', kw);
       }
+      reason += preflopSuffix;
       return { ev: evCallVal, req_eq: eReq, realized_eq: realized, evaluation, reason };
     },
 
@@ -268,14 +392,17 @@
       if (opponentBetSize === 0) {
         return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: B.EVAL_BAD, reason: t('fold.no_bet') };
       }
+      let preflopSuffix = '';
       if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'FOLD', heroPos, is3betPot, opponentBetSize, openerPos);
-        if (decision === 'mix') {
+        const [decision, eEval, eReason, parts] = Evaluator.evaluatePreflopActionGto(cards, 'FOLD', heroPos, is3betPot, opponentBetSize, openerPos);
+        if (decision === 'mix' || decision === 'final') {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: eReason };
         }
         if (decision === 'play' && eEval === B.EVAL_OPTIMAL) {
           return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: B.EVAL_OPTIMAL, reason: eReason };
         }
+        // 表では一部の頻度だけ参加する手: 勝率で評価し、表の解説を後ろに付ける
+        preflopSuffix = '\n' + [parts.plain, parts.detail].filter(Boolean).join('\n');
       }
 
       const eReq = Evaluator.calculateRequiredEquity(opponentBetSize, potSize);
@@ -292,6 +419,7 @@
       else if (realized >= eReq * 1.15) { evaluation = B.EVAL_MARGINAL; reason = t('fold.tight', kw); }
       else if (realized >= eReq * 0.85) { evaluation = B.EVAL_GOOD; reason = t('fold.bluffcatcher', kw); }
       else { evaluation = B.EVAL_OPTIMAL; reason = t('fold.optimal', kw); }
+      reason += preflopSuffix;
 
       return { ev: 0.0, req_eq: eReq, mdf: root.Py.round(mdf, 3), realized_eq: realized, evaluation, reason };
     },
@@ -379,15 +507,7 @@
     evaluateRaise(equity, raiseAmount, opponentBetSize, potSize, heroPos = 'BTN', cards = null, board = null,
                   rangeAdv = 0.5, heroRange = null, effectiveStack = 0.0, street = null, cpuRange = null, is3betPot = false, openerPos = null) {
       const { BetSizing: B, HandClassifier: HC } = root;
-      let prefix = '';
-      if (!hasCards(board)) {
-        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, is3betPot, opponentBetSize, openerPos);
-        prefix = eReason + '\n';
-        if (decision === 'fold' || decision === 'mix') {
-          return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: prefix };
-        }
-      }
-
+      const prefix = '';   // 以前はプリフロップの表の解説を前に付けていた
       let marginPct;
       if (street === 'RIVER') marginPct = 0.15;
       else if (street === 'TURN') marginPct = 0.10;
@@ -403,6 +523,14 @@
       const evRaising = Evaluator.evBet(realized, totalPot, raiseAmount, foldEquity);
       const evCalling = Evaluator.evCall(realized, potSize, opponentBetSize);
 
+      if (!hasCards(board)) {
+        // プリフロップのレイズはレンジ表（6人卓の理論）で確定する。以前は表の中の 3ベットでも
+        // 「コールされたときの勝率」で採点し直していて、A5s のようなブラフの 3ベットが × になることがあった。
+        // ev（統計の平均損失に使う）は以前と同じ計算のまま
+        const [decision, eEval, eReason] = Evaluator.evaluatePreflopActionGto(cards, 'RAISE', heroPos, is3betPot, opponentBetSize, openerPos);
+        if (decision !== 'play') return { ev: 0.0, req_eq: 0.0, realized_eq: equity, evaluation: eEval, reason: eReason };
+        return { ev: evRaising, req_eq: 0.0, realized_eq: realized, evaluation: eEval, reason: eReason };
+      }
       const eqCalled = Evaluator.equityVsCallingRange(cards, board, heroRange, cpuRange, raiseAmount, totalPot);
       const draw = (hasCards(cards) && hasCards(board)) ? HC.detectDrawStrength(cards, board) : 'NONE';
 

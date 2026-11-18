@@ -137,7 +137,11 @@
       }
 
       // オープンした位置（BB のコールレンジがオープンした位置で変わる）
-      const openerPos = eng.preflopRaiseCount === 1 && eng.aggressor === 'CPU' ? eng.cpuPosition : null;
+      // プリフロップの場面（判定の解説に使う）。openerPos は BB のコールレンジがオープンした位置で変わるため
+      const openerPos = {
+        openerPos: eng.preflopRaiseCount === 1 && eng.aggressor === 'CPU' ? eng.cpuPosition : null,
+        villainPos: eng.cpuPosition, pot: eng.potSize, raises: eng.preflopRaiseCount, ip: eng.isHeroIp,
+      };
       const [heroEq, cpuEq] = this._equity(1000);
       const heroRangeAdv = Equity.calcRangeAdvantage(eng.heroHand, eng.board, eng.heroRange, eng.cpuRange,
         isPreflop, 400, this.rngFn);
@@ -205,8 +209,16 @@
       } else if (action === 'CHECK') {
         eng.updateRangeDict('HERO', 'CHECK', 0);
         eng.recordAction('HERO', 'CHECK', 0, realizedEquity, eng.potSize);
-        const evalDict = Ev.evaluateCheck(heroEq, eng.potSize, eng.heroPosition, eng.aggressor === 'HERO', eng.isHeroIp,
-          eng.heroHand, eng.board, heroRangeAdv, effectiveStack, eng.street, eng.heroRange, eng.cpuRange);
+        // プリフロップのチェックは BB が SB のリンプに対してだけ。レンジ表の考え方で判定する
+        //（以前はポストフロップ用の判定に回っていて、72o のチェックが「ブラフの機会損失」で × になっていた）
+        let evalDict;
+        if (isPreflop) {
+          const [, evaluation, reason] = Ev.evaluatePreflopActionGto(eng.heroHand, 'CHECK', eng.heroPosition, false, 0, openerPos);
+          evalDict = { ev: Ev.evCheck(heroEq, eng.potSize), evaluation, reason };
+        } else {
+          evalDict = Ev.evaluateCheck(heroEq, eng.potSize, eng.heroPosition, eng.aggressor === 'HERO', eng.isHeroIp,
+            eng.heroHand, eng.board, heroRangeAdv, effectiveStack, eng.street, eng.heroRange, eng.cpuRange);
+        }
         evalResult = evalDict.evaluation;
         evalReason = evalDict.reason;
         const evCheckVal = evalDict.ev ?? 0.0;
@@ -237,6 +249,7 @@
       const firstCheckOop = action === 'CHECK' && eng.aggressor !== 'HERO' && !eng.isHeroIp;
       if (firstCheckOop && (evaluation === B.EVAL_MARGINAL || evaluation === B.EVAL_BAD) && pf.loss_pct <= 0.15) {
         evaluation = B.EVAL_GOOD;
+        reason += '\n' + root.Messages.t('pf.note.oop_check');
       }
       // ドンクベット（OOP で主導権の無い側が先に打つ）は ◎ にしない（以前からの仕様）
       const isDonk = action === 'BET' && eng.aggressor !== 'HERO' && !eng.isHeroIp
@@ -381,6 +394,9 @@
               cpuMsg += ` | Next street CPU ${cpuAction2}S ${Py.floatStr(Py.round(cpuAmount2, 1))}bb`;
               cpuActions.push({ street: eng.street, action: cpuAction2, amount: Py.round(cpuAmount2, 1), allIn: eng.isAllIn('CPU') });
             } else {
+              // 先に動いた CPU のチェックもレンジ推定に使う（2026/11/18 修正）。以前はここだけ更新しておらず、
+              // ベットするはずの強い手がレンジに残って、リバーで相手を強く見積もりすぎていた（勝率が10ポイント前後低く出た）
+              eng.updateRangeDict('CPU', 'CHECK', 0);
               eng.recordAction('CPU', 'CHECK', 0, cpuEqNext, eng.potSize);
               cpuMsg += ' | Next street CPU CHECKS';
               cpuActions.push({ street: eng.street, action: 'CHECK', amount: 0, allIn: false });

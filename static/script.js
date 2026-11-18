@@ -725,8 +725,9 @@ function closeCoachArea() {
 }
 
 async function requestCoachExplanation() {
-    // 3回ごとに広告/プレミアムの選択ゲート。広告を見ずに閉じたら続行しない
-    if (!(await coachGate())) return;
+    // 3回ごとに広告/プレミアムの選択ゲート。広告を見ずに閉じたら続行しない。
+    // 同じハンドの相談を開き直すだけ（もう回答がある）ときは回数を使わない
+    if (coachMessages.length === 0 && !(await coachGate())) return;
 
     el('ai-coach-area').classList.remove('hidden');
     setTimeout(() => {
@@ -749,6 +750,7 @@ async function requestCoachExplanation() {
         } catch (e) {
             coachMessages.pop();
             coachMessages.push({ role: "assistant", content: t('coach.connect_failed') });
+            refundCoachUseOnError();
         }
 
         renderCoachChat();
@@ -774,6 +776,12 @@ async function fetchCoachWithRetry(messages, retries = 2) {
             clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
+            if (data.error) {
+                // サーバー側の失敗（API キー・OpenAI の障害など）。同じ失敗になるので再試行しない
+                const err = new Error('coach api error');
+                err.noRetry = true;
+                throw err;
+            }
             if (data.reply) {
                 // 最初の相談だけ履歴に残す（サーバーの save_ai_feedback と同じ条件）
                 if (messages.length === 1) GameApi.saveCoachFeedback(data.hand_context, data.reply, handState);
@@ -781,7 +789,7 @@ async function fetchCoachWithRetry(messages, retries = 2) {
             }
             throw new Error('empty reply');
         } catch (e) {
-            if (attempt === retries) throw e;
+            if (attempt === retries || e.noRetry) throw e;
             await new Promise(r => setTimeout(r, 1500 * (attempt + 1))); // 指数バックオフ
         }
     }
@@ -810,6 +818,7 @@ async function sendCoachMessage() {
     } catch (e) {
         coachMessages.pop();
         coachMessages.push({ role: "assistant", content: t('coach.send_failed') });
+        refundCoachUseOnError();
     }
 
     input.disabled = false;
@@ -849,6 +858,7 @@ async function watchAdForCoach() {
         // 視聴完了 → ロック解除、また無料分を付与
         coachLocked = false;
         coachFreeUsesLeft = AD_COACH_INTERVAL;
+        saveCoachFreeUses();
         if (_coachGateResolve) { _coachGateResolve(true); _coachGateResolve = null; }
     } else {
         if (earned === 'unavailable') {
@@ -1127,8 +1137,31 @@ function closeRangeModal() {
 // ============================================
 const AD_COACH_INTERVAL = 3;    // 無料で使えるAIコーチ回数（これを超えたらゲート）
 const AD_HAND_INTERVAL = 30;    // 30ハンドごとに自動インタースティシャル広告
-let coachFreeUsesLeft = AD_COACH_INTERVAL;  // 残り無料コーチ回数
-let coachLocked = false;        // ゲート未消化ロック（広告視聴 or 加入で解除）
+// 残りの無料回数は端末に保存する（2026/11/18〜）。以前はメモリだけで、ページの読み込み直し（分析ページから戻る・
+// アプリを開き直す）で3回に戻っていた。AIコーチは API 費用がかかるので、使い切ったら広告を見るか加入するまで戻らない
+const COACH_FREE_KEY = "poker_coach_free_left";
+let coachFreeUsesLeft = loadCoachFreeUses();  // 残り無料コーチ回数
+let coachLocked = coachFreeUsesLeft <= 0;     // ゲート未消化ロック（広告視聴 or 加入で解除）
+function loadCoachFreeUses() {
+    try {
+        const v = localStorage.getItem(COACH_FREE_KEY);
+        if (v === null) return AD_COACH_INTERVAL;   // 初回
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? Math.max(0, Math.min(AD_COACH_INTERVAL, n)) : AD_COACH_INTERVAL;
+    } catch (e) { return AD_COACH_INTERVAL; }
+}
+// 直前のゲートで無料分を1回使ったか。回答を取れなかったら戻す（通信エラーで回数だけ減らないように）
+let _coachUseConsumed = false;
+function refundCoachUseOnError() {
+    if (!_coachUseConsumed) return;
+    _coachUseConsumed = false;
+    coachFreeUsesLeft = Math.min(AD_COACH_INTERVAL, coachFreeUsesLeft + 1);
+    coachLocked = false;
+    saveCoachFreeUses();
+}
+function saveCoachFreeUses() {
+    try { localStorage.setItem(COACH_FREE_KEY, String(coachFreeUsesLeft)); } catch (e) { /* 保存できなくても進行は止めない */ }
+}
 let handPlayCount = 0;          // ハンド数
 let _coachGateResolve = null;   // コーチゲートのPromise解決用
 
@@ -1231,6 +1264,7 @@ function requestAppReview() {
 // 続行してよいか(Promise<bool>)を返す。premiumは常にtrue。
 // 無料分を使い切るとロックされ、広告を最後まで見るか加入するまで使えない。
 function coachGate() {
+    _coachUseConsumed = false;
     if (isPremium) return Promise.resolve(true);
 
     // ロック中 or 無料分を使い切り → 消化するまで毎回ゲートを出す
@@ -1243,6 +1277,8 @@ function coachGate() {
     }
 
     coachFreeUsesLeft--;
+    saveCoachFreeUses();
+    _coachUseConsumed = true;
     return Promise.resolve(true);
 }
 

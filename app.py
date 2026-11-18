@@ -235,7 +235,9 @@ def ai_coach(req: AICoachRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"reply": t("api.coach.error", error=str(e))}
+        # error: true で返す。端末側はこれを失敗として扱い（無料回数を戻す・相談履歴に残さない）、
+        # 内部のエラー文はユーザーに見せない（2026/11/18〜。以前はエラー文を回答として返していた）
+        return {"reply": t("api.coach.error", error=str(e)), "error": True}
 
 
 @app.get("/stats")

@@ -175,8 +175,10 @@
       const sizeOnly = aggr(chosen) && aggr(best);
       const slowplay = !aggr(chosen) && aggr(best) && chosen.ev > 0 && ctx.eq >= 0.6 && chosen.action !== 'FOLD';
       const k = sizeOnly || slowplay ? 1.5 : 1.0;
-      let evaluation = lossPct <= GRADE.optimal * k ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * k ? B.EVAL_GOOD
-        : lossPct <= GRADE.marginal * k ? B.EVAL_MARGINAL : B.EVAL_BAD;
+      const gradeOf = (kk) => (lossPct <= GRADE.optimal * kk ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * kk ? B.EVAL_GOOD
+        : lossPct <= GRADE.marginal * kk ? B.EVAL_MARGINAL : B.EVAL_BAD);
+      let evaluation = gradeOf(k);
+      const softened = evaluation !== gradeOf(1.0);   // 緩めたことで記号が変わった（解説で断る）
 
       const name = (o) => PostflopEV.actionName(o, ctx);
       const lines = [];
@@ -187,31 +189,68 @@
       else if (evaluation === B.EVAL_MARGINAL) lines.push(t('pf.verdict.inaccuracy', kw));
       else lines.push(t('pf.verdict.mistake', kw));
 
-      // 根拠
+      // 根拠: 数字はコールの判断に要るもの（勝率と必要勝率）だけ
       if (facing > 0.01) {
         const req = facing / (ctx.pot + facing);
-        if (ctx.street === 'RIVER') lines.push(t('pf.basis.facing_river', { eq: ctx.eq * 100, req: req * 100 }));
-        else {
-          const R = PostflopEV.realization('call', ctx.street, ctx.ip, heroHand, board, ctx.eq);
-          lines.push(t('pf.basis.facing', { eq: ctx.eq * 100, real: Math.min(1, R * ctx.eq) * 100, req: req * 100 }));
-        }
-      } else {
-        lines.push(t('pf.basis.check', { eq: ctx.eq * 100 }));
+        lines.push(t(ctx.street === 'RIVER' ? 'pf.basis.facing_river' : 'pf.basis.facing', { eq: ctx.eq * 100, req: req * 100 }));
       }
-      const agg = (chosen.action === 'BET' || chosen.action === 'RAISE') ? chosen
-        : ((best.action === 'BET' || best.action === 'RAISE') ? best : null);
-      if (agg) lines.push(t('pf.basis.bet', { act: name(agg), fe: agg.fe * 100, eqc: agg.eqC * 100 }));
-      const fmt = (v) => (v >= 0 ? '+' : '') + Py.formatFixed(v, 1);
-      lines.push(t('pf.ev_list', {
-        list: opts.slice().sort((a, b) => b.ev - a.ev)
-          .map((o) => `・${name(o)} ${fmt(o.ev)}bb${o === chosen ? ' ' + t('pf.you') : ''}`).join('\n'),
-      }));
+      // 考え方（なぜその手が最善か）
+      const why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board });
+      for (const w of why) lines.push(w);
+      if (!(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));
       return {
         evaluation, reason: lines.join('\n'), ev: chosen.ev, ev_loss: loss, loss_pct: lossPct,
         req_eq: facing > 0.01 ? facing / (ctx.pot + facing) : 0, realized_eq: ctx.eq,
         best: { action: best.action, amount: best.amount },
         options: opts.map((o) => ({ action: o.action, amount: Py.round(o.amount, 2), ev: Py.round(o.ev, 3) })),
       };
+    },
+
+    // 判定の「考え方」の文。勝率の帯（強い手 / 中くらい / 弱い手）と、最善手・選んだ手の種類で選ぶ
+    //   強い手（60%以上）: バリュー。中くらい（35〜60%）: ショーダウンを目指す・ポットを小さく。弱い手: ブラフかあきらめる
+    explain(ctx, chosen, best, o) {
+      const aggr = (x) => x.action === 'BET' || x.action === 'RAISE';
+      const eq = ctx.eq;
+      const strong = eq >= 0.6, weak = eq < 0.35;
+      const isBest = best === chosen || o.lossPct <= 0.005;
+      const lines = [];
+      const P = (x) => x * 100;
+      const req = o.facing > 0.01 ? o.facing / (ctx.pot + o.facing) : 0;
+      const real = o.facing > 0.01 && ctx.street !== 'RIVER'
+        ? Math.min(1, PostflopEV.realization('call', ctx.street, ctx.ip, o.heroHand, o.board, eq) * eq) : eq;
+      const mdf = o.facing > 0.01 ? Math.max(0, (ctx.pot - o.facing) / ctx.pot) : 0;
+      const allIn = (x) => aggr(x) && Math.abs(x.amount - ctx.maxBet) < 0.06;
+      const target = isBest ? chosen : best;   // 説明する手（最善手）
+      if (!isBest && aggr(chosen) && aggr(best)) {
+        lines.push(allIn(best) ? t('pf.why.allin', { best: o.name(best) }) : t('pf.why.size', { best: o.name(best) }));
+        if (o.softened) lines.push(t('pf.why.soft_size'));
+        return lines;
+      }
+      if (aggr(target)) {
+        const kw = { act: o.name(target), alt: o.name(chosen), fe: P(target.fe), eqc: P(target.eqC), eq: P(eq) };
+        if (strong) lines.push(t(isBest ? 'pf.why.value' : 'pf.why.missed_value', kw));
+        else if (weak) lines.push(t(isBest ? 'pf.why.bluff' : 'pf.why.missed_bluff', kw));
+        else lines.push(t(isBest ? 'pf.why.protect' : 'pf.why.missed_protect', kw));
+        if (!isBest && o.softened) lines.push(t('pf.why.soft_slowplay'));
+        return lines;
+      }
+      // 最善手がチェック・コール・フォールド
+      if (!isBest && aggr(chosen)) {
+        const kw = { act: o.name(chosen), best: o.name(best), fe: P(chosen.fe), eqc: P(chosen.eqC), eq: P(eq) };
+        if (strong) lines.push(t('pf.why.trap_better', kw));
+        else if (weak) lines.push(t('pf.why.bad_bluff', kw));
+        else lines.push(t('pf.why.pot_control', kw));
+        return lines;
+      }
+      const kw = { eq: P(eq), real: P(real), req: P(req), mdf: P(mdf) };
+      if (target.action === 'CALL') lines.push(t(isBest ? 'pf.why.call' : 'pf.why.overfold', kw));
+      else if (target.action === 'FOLD') lines.push(t(isBest ? 'pf.why.fold' : 'pf.why.overcall', kw));
+      else if (target.action === 'CHECK') {
+        if (strong) lines.push(t('pf.why.check_strong', kw));
+        else if (weak) lines.push(t('pf.why.check_weak', kw));
+        else lines.push(t('pf.why.check_medium', kw));
+      }
+      return lines;
     },
 
     actionName(o, ctx) {

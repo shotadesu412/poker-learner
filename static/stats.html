@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title data-i18n="stats.page_title">プレイ分析 | ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/stats.css?v=5">
+    <link rel="stylesheet" href="/static/stats.css?v=6">
     <script src="/static/i18n.js?v=7"></script>
 </head>
 
@@ -76,10 +76,10 @@
         <section class="section-card">
             <div class="section-title" data-i18n="stats.section.personal_range">マイ プリフロップ レンジ表</div>
             <div class="pr-legend">
-                <span><span class="pr-dot" style="background:#10b981"></span><span data-i18n="stats.pr.open">オープン</span></span>
-                <span><span class="pr-dot" style="background:#8b5cf6"></span><span data-i18n="stats.pr.3bet">3Bet</span></span>
-                <span><span class="pr-dot" style="background:#3b82f6"></span><span data-i18n="stats.pr.call">コール</span></span>
-                <span><span class="pr-dot" style="background:#374151"></span><span data-i18n="stats.pr.unplayed">未プレイ</span></span>
+                <span><span class="pr-dot" style="background:var(--good)"></span><span data-i18n="stats.pr.open">オープン</span></span>
+                <span><span class="pr-dot" style="background:var(--text)"></span><span data-i18n="stats.pr.3bet">3Bet</span></span>
+                <span><span class="pr-dot" style="background:var(--muted)"></span><span data-i18n="stats.pr.call">コール</span></span>
+                <span><span class="pr-dot" style="background:var(--track)"></span><span data-i18n="stats.pr.unplayed">未プレイ</span></span>
             </div>
             <div id="personal-range-grid" class="personal-range-grid">
                 <div class="loading" data-i18n="common.loading">読み込み中...</div>
@@ -147,8 +147,8 @@
 
     </main>
 
-    <script src="/static/game_api.js?v=7"></script>
-    <script src="/static/stats.js?v=6"></script>
+    <script src="/static/game_api.js?v=8"></script>
+    <script src="/static/stats.js?v=7"></script>
 </body>
 
 </html>

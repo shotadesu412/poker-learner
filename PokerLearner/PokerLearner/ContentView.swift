@@ -5,7 +5,21 @@ import UIKit
 import WebKit
 import Network
 
-private let renderURL = URL(string: "https://poker-learner.onrender.com/")!
+private let productionURL = URL(string: "https://poker-learner.onrender.com/")!
+
+// 表示するページ。Release（App Store に出すビルド）は必ず本番。
+// Debug ビルドだけ、ビルド時に DEV_SERVER_URL を渡すと Mac のローカルサーバーを表示する（push 前の確認用。2026/11/18〜）:
+//   xcodebuild ... -configuration Debug DEV_SERVER_URL=http://192.168.x.x:8765/ build
+// 渡さなければ Debug でも本番を表示する（Info.plist の DevServerURL が空になる）
+private let renderURL: URL = {
+    #if DEBUG
+    if let s = Bundle.main.object(forInfoDictionaryKey: "DevServerURL") as? String,
+       !s.isEmpty, let url = URL(string: s) {
+        return url
+    }
+    #endif
+    return productionURL
+}()
 
 @MainActor
 final class WebViewModel: ObservableObject {

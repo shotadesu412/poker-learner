@@ -18,9 +18,17 @@
 **直近の流れ**: 11/15 にフェーズ7（サーバーを AIコーチ専念にする移行）を完了。永続ディスクも削除済み。
 続いて 1.0.8 (14) をアーカイブし、マーケティング分析（下の「マーケティングの現状」）を実施した。
 
-### 未 push（2026/11/17 時点。shota の確認待ち）
-- `270eab1`（CPU に実際の手札・透視の解消）と、その後の「ポストフロップの判定を期待値比較に / レンジのベイズ更新 /
-  BB のコールレンジ / CPU の防衛の下限」のコミット。判定が厳しくなり統計が不連続になるので、iPhone で触ってから push するか確認する
+### 2026/11/18 に push したもの（判定・CPU の作り直し一式）
+- `270eab1` 以降の「CPU に実際の手札 / ポストフロップの判定を期待値比較に / レンジのベイズ更新 / BB のコールレンジ / 防衛の下限」、
+  「6人卓の理論優先（SB は 3ベットかフォールド）・BB のリンプ対応・解説の総ざらいと短縮」、「CPU が先にチェックしたときもレンジを更新」、
+  「分析ページの見た目の作り直し」「AIコーチの無料回数を端末に保存」。shota が開発用アプリ（下の「動作確認のやり方」）で確認済み
+- **勝率の正確さ（2026/11/18 実測）**: 判定に使う勝率（推定レンジに対する勝率）と CPU の実際の手札に対する勝率の差は、フロップ・ターン・リバーとも
+  ほぼ 0〜2 ポイント。以前は CPU が新しいストリートで先にチェックしたときにレンジを更新しておらず、リバーで 10〜13 ポイント低く出ていた
+- 残っている弱点（監査で確認・急がない）: 先に動く場面の強い手で、モデルは「ベット > チェック」と見るが実際はチェックが良いことが多い（ターンは以前から）。
+  判定はスロープレイの緩めで × になりにくくしてある
+- 要相談（データの出典が要る）: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
+  SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジも相手の位置で変わらない。
+  プリフロップのオープン/3ベットのサイズを1つに絞る案（UTG〜BTN 2.5倍・SB 3倍・3ベット IP 3倍/OOP 4倍）も shota の判断待ち
 
 ### shota 待ち（ここから再開）
 1. **Apple の規約（PLA）に同意する**: developer.apple.com/account と App Store Connect の「ビジネス」の両方。
@@ -55,6 +63,9 @@
      プレミアムセクション（ポジション別/リーク/ハンド履歴）解放
 2. **リワード広告**: AIコーチは無料3回まで。以降は「広告を見て続ける」か加入の2択
    モーダル（`coach-limit-modal`）。広告を最後まで見ると無料分3回が回復
+   - **無料の残り回数は端末（localStorage `poker_coach_free_left`）に保存**（2026/11/18〜）。以前はメモリだけで、読み込み直しや
+     アプリの開き直しで3回に戻っていた（API 費用がかかるため shota 指定で修正）。回答を取れなかったとき（通信エラー・サーバーの
+     `error: true`）は1回分戻す。同じハンドの相談を開き直すだけでは減らない
 3. **インタースティシャル広告**: 30ハンドごとに自動表示（プレミアムは免除）
 
 ### 確定済みポリシー（覆す場合はユーザーに確認）
@@ -335,9 +346,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=15` / `script.js?v=32` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=5` / `stats.js?v=6` / `i18n.js?v=7` / `game_api.js?v=7`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 6）で一括管理
+   現在値: `style.css?v=15` / `script.js?v=35` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=6` / `stats.js?v=7` / `i18n.js?v=7` / `game_api.js?v=8`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 7）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -357,6 +368,10 @@ poker-learner/
 - チームID: `7Z2ZRB6V2J` / Bundle ID: `com.shota.pokerlearner`
 
 ### 動作確認のやり方
+- **iPhone のアプリで push 前の版を見る**（2026/11/18〜）: Debug ビルドに `DEV_SERVER_URL` を渡すと、そのアプリは Mac のサーバーを表示する
+  （ContentView.swift の `renderURL`。Release は常に本番。ATS はローカルネットワークだけ例外）:
+  `xcodebuild -project PokerLearner/PokerLearner.xcodeproj -scheme PokerLearner -configuration Debug -destination "id=<端末のUDID>" DEV_SERVER_URL=http://<MacのIP>:8765/ -allowProvisioningUpdates build`
+  → `xcrun devicectl device install app --device <devicectl の Identifier> <ビルドした .app>`。App Store 版を置き換えるので、戻すときは App Store から入れ直す（削除すると統計が消える）
 - ロジックは `node tools/golden/check_js.js`、画面は `tools/e2e/local_engine.js`（Playwright）。
   サーバーは `OPENAI_API_KEY=dummy python3 -m uvicorn app:app --port 8765`（uvicorn は入っている）。
   `--host 0.0.0.0` で起動すれば同じ Wi-Fi の iPhone の Safari から `http://<MacのIP>:8765/play` で確認できる
@@ -427,11 +442,21 @@ poker-learner/
   （MDF = ベット前のポット ÷ ベット後のポット。Chen & Ankenman『The Mathematics of Poker』）。
   これが無いと、あなたのベットレンジをバリュー寄りに見積もったときに降りすぎる（リバーの33%ベットに44%フォールドしていた）。
   3ベットへの対応は表（4ベット/コール）+ 値段（勝率×実現率 ≥ 必要勝率）+ 防衛の下限（MDF × 0.8）（`_vs3betProbs`）
-- **BB と SB のコールレンジはオープンした位置ごと**（`ranges.json` の `vs_open_call_vs_<位置>`。`tools/ranges/gen_blind_defend.js` で生成）。
-  ポットオッズ × エクイティ実現率で作った（Janda『Applications of No-Limit Hold'em』の考え方）。以前の BB は全ハンドの約21%で位置にかかわらず共通、
-  SB は 6人卓の標準どおり「3ベットかフォールド」だった。このアプリは2人の勝負で BB はすでに降りている（ブラインドは死に金）ので、
-  SB がフラットしてもスクイーズされない。コール+3ベットで BB: UTG 29% / HJ 31% / CO 42% / SB 53%（BB が IP）/ BTN 57%、
-  SB: UTG 14% / HJ 16% / CO 21% / BTN 28%。公開されている 6max 100bb の解析は BB vs BTN で 45〜70%。CPU が守るときも同じレンジ
+- **判定は 6人卓の理論を優先し、直感に反するところは解説で補う**（2026/11/18 shota 指定）。このアプリは2人の勝負だが、
+  「このゲームの仕組みならこうなる」ではなく実戦の6人卓の基準で判定する。例: SB はオープンに対して「3ベットかフォールド」
+  （後ろの BB にスクイーズされ、ずっと OOP のため）。BB はすでに降りているが、判定はそのまま理論どおりにして、理由を解説に書く
+- **BB のコールレンジはオープンした位置ごと**（`ranges.json` の `vs_open_call_vs_<位置>`。`tools/ranges/gen_blind_defend.js` で生成）。
+  ポットオッズ × エクイティ実現率で作った（Janda『Applications of No-Limit Hold'em』の考え方）。以前の BB は全ハンドの約21%で位置にかかわらず共通だった。
+  コール+3ベットで BB: UTG 29% / HJ 31% / CO 42% / SB 53%（BB が IP）/ BTN 57%。公開されている 6max 100bb の解析は BB vs BTN で 45〜70%。
+  **SB にも同じ作りの `vs_open_call_vs_<位置>` があるが、CPU が SB でコールするとき（仕様で降りない）の手札と、あなたが SB でコールしたときの
+  レンジ推定にだけ使う**。あなたの判定には使わない（evaluator.js の `preflopSpot`）
+- **プリフロップの解説**（evaluator.js の `preflopSpot` / `preflopExplain`）: 1行目に「このハンドはこの場面で何をするハンドか」、
+  混ぜるハンドは推奨の頻度、場面の考え方（後ろの人数・ポジション・必要勝率・相手のオープンの広さ・守る割合など、数字は ranges.json から計算）、
+  ハンドの特徴。プリフロップのレイズはレンジ表で確定する（以前は表の中の 3ベットでも勝率で採点し直して × になることがあった）。
+  BB が SB のリンプに対応する場面（チェック/レイズ）は専用の判定（以前はオープンの表やポストフロップの判定に回っていて、AA のレイズや 72o のチェックが × だった）。
+  BB のリンプ対応の表は無いので、3ベットする強さの手を「レイズしたい手」とし、それ以外のレイズも ◯
+- **ポストフロップの解説**（postflop_ev.js の `explain`）: 判定・勝率に加えて「考え方」の1文（バリュー / ブラフ / ポットを守る / ポットを小さく /
+  降りすぎ（MDF）/ コールしすぎ / サイズ / オールイン）。判定を緩めたことで記号が変わったときだけ、緩めたことを書く
 - 実測の目安（2026/11/17、`tools/audit/cpu_stats.js`）: CPU のフォールド率 33%ベットに 10〜27% / 55〜85%に 22〜41% / ポット以上に 37〜47%
   （理論上の上限 = 1 − 0.9×MDF の範囲内）、フロップのチェックレイズ 6% / ターン 8%、ドンク 12〜14%、Cベット IP 54% / OOP 44%、
   3ベットへのフォールド 30〜47%（アプリの 3ベットは 2.2〜3倍と小さめなので、理論上もこの程度守る）、ショーダウン率 35%。
