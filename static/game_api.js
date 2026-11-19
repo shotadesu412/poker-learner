@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 7;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 8;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -66,6 +66,28 @@ const GameApi = {
     // このアクションであなたが追加で出せる上限（自分のスタックと、相手がコールできる額の小さい方）
     heroMaxBet() {
         return this.game.engine.maxAdditionalBet("HERO");
+    },
+
+    // プリフロップのレイズは場面ごとに1サイズ（2026/11/19 shota 指定。判定のレンジ表はこの標準サイズが前提）
+    //   オープン: UTG〜BTN 2.5bb / SB 3bb（合計）  BB で SB のリンプに: 4bb
+    //   3ベット: オープン額の 3倍（IP）/ 4倍（OOP）  4ベット: 3ベット額の 2.2倍（IP）/ 2.5倍（OOP）  それ以上: オールイン
+    // 戻り値 { kind: "open"|"iso"|"3bet"|"4bet"|"allin", total: レイズ後の合計, add: 追加で出す額, mult }
+    preflopRaise() {
+        const e = this.game.engine;
+        const raises = e.preflopRaiseCount;
+        const ip = e.isHeroIp;
+        let kind, total, mult = null;
+        if (raises === 0) {
+            if (e.heroPosition === "BB") { kind = "iso"; total = 4.0; }
+            else { kind = "open"; total = e.heroPosition === "SB" ? 3.0 : 2.5; }
+        } else if (raises === 1) { kind = "3bet"; mult = ip ? 3 : 4; total = e.currentBet * mult; }
+        else if (raises === 2) { kind = "4bet"; mult = ip ? 2.2 : 2.5; total = e.currentBet * mult; }
+        else { kind = "allin"; total = Infinity; }
+        const max = e.maxAdditionalBet("HERO");
+        let add = Math.min(max, Math.max(0, total - e.heroInvested));
+        add = Math.round(add * 10) / 10;
+        if (add >= max - 0.05) return { kind: "allin", total: e.heroInvested + max, add: max, mult };
+        return { kind, total: Math.round(total * 10) / 10, add, mult };
     },
 
     // ページを離れるとハンドは消える（新しいハンドから始まる）

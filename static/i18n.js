@@ -88,6 +88,10 @@ const I18N = {
         "bet.size_medium_x": "中 Medium ({mult}x)",
         "bet.size_large_x": "大 Large ({mult}x)",
         "bet.size_allin": "オールイン All-in",
+        "bet.pf_open": "オープン（合計 {total}bb）",
+        "bet.pf_iso": "レイズ（合計 {total}bb）",
+        "bet.pf_3bet": "3ベット（{mult}倍・合計 {total}bb）",
+        "bet.pf_4bet": "4ベット（{mult}倍・合計 {total}bb）",
         "action.call_allin": "コール ({amount}bb・オールイン)",
 
         // --- AIコーチ ---
@@ -322,6 +326,10 @@ const I18N = {
         "bet.size_medium_x": "Medium ({mult}x)",
         "bet.size_large_x": "Large ({mult}x)",
         "bet.size_allin": "All-in",
+        "bet.pf_open": "Open (to {total}bb)",
+        "bet.pf_iso": "Raise (to {total}bb)",
+        "bet.pf_3bet": "3-bet ({mult}x, to {total}bb)",
+        "bet.pf_4bet": "4-bet ({mult}x, to {total}bb)",
         "action.call_allin": "Call ({amount}bb, all-in)",
 
         // --- AI coach ---

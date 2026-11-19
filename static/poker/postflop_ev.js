@@ -96,8 +96,16 @@
       const { pot, facing, eq, street, ip, heroHand, board } = ctx;
       if (action === 'FOLD') return { ev: 0 };
       if (action === 'CHECK') {
+        // 先に動く（相手がまだ動いていない）チェックは、相手のベットまで読む（2026/11/19〜）
         const R = PostflopEV.realization('check', street, ip, heroHand, board, eq);
-        return { ev: R * eq * pot };
+        const simple = R * eq * pot;
+        // 新しい計算は「相手のベットから取れる分」を足すためのもの。弱い手では「ベットされたら降りる」としか見ないので
+        // 以前の計算を下回ることがあり（監査でターンの弱い手のチェックを厳しく見すぎた）、大きい方を使う
+        if (ctx.firstToAct && ctx.table) {
+          const r = PostflopEV.checkFirstEv(ctx);
+          return { ev: Math.max(simple, r.ev), pBet: r.pBet };
+        }
+        return { ev: simple };
       }
       if (action === 'CALL') {
         const c = amount;
@@ -110,6 +118,83 @@
       const R = PostflopEV.realization('aggressor', street, ip, heroHand, board);
       const ev = resp.fe * pot + (1 - resp.fe) * (Math.min(1, R * resp.eqC) * (pot + amount + oppCall) - amount);
       return { ev, fe: resp.fe, eqC: resp.eqC };
+    },
+
+    // 先に動いてチェックしたときの EV。相手は行動モデル（CPU が実際に使う確率）でチェックかベットを選び、
+    //   チェックで返されたら → その手への勝率分を回収（ターン以前は実現率を掛ける）
+    //   ベットされたら      → コールとフォールドの得な方（チェックレイズは入れない＝チェックを低めに見る近似）
+    // 以前は「勝率 × 実現率 × ポット」だけで、相手がベットしてきたときに取れる分（ブラフや弱い手からのコール分）を
+    // 入れていなかった。監査で、ターン・リバーで先に動く勝率80%以上の手は、モデルが「ベットが上」と見る一方、
+    // 実際はチェックの方がポットの約2割得だった（tools/audit。2026/11/19）
+    checkFirstEv(ctx) {
+      const RM = root.RangeModel;
+      const { table, cpuVec, heroVec, cpuVecPublic, eHero, heroCtx, eng, pot, street, heroHand, board } = ctx;
+      const heroAfter = RM.posterior(table, heroVec, cpuVecPublic, heroCtx, 'CHECK', 0, false);
+      const eCpu = table.equityVector(cpuVecPublic, heroAfter);
+      const texture = eng.classifyBoardTexture(board);
+      const stack = eng.cpuStack;
+      const base = {
+        street, facing: 0, pot, stack, ip: !ctx.ip, wasAggressor: eng.aggressor === 'CPU', opponentChecked: true, texture,
+      };
+      // 相手の各コンボがチェックで返す/ベットする確率
+      let wSum = 0, wX = 0, eX = 0;
+      const bets = new Map();   // ベット額 → { w, e, idx: [[i, 重み]] }
+      for (let i = 0; i < RM.N; i++) {
+        const w = cpuVec[i];
+        if (!(w > 0) || Number.isNaN(eCpu[i]) || Number.isNaN(eHero[i])) continue;
+        const dist = RM.ActionModel.probs({ ...base, e: eCpu[i], made: table.nowRank[i] <= 6185, draw: table.draw(i) });
+        wSum += w;
+        for (const o of dist) {
+          if (!(o.p > 0)) continue;
+          if (o.action === 'CHECK') { wX += w * o.p; eX += w * o.p * eHero[i]; continue; }
+          const k = Math.round(o.amount * 100) / 100;
+          const g = bets.get(k) || { w: 0, e: 0, idx: [] };
+          g.w += w * o.p; g.e += w * o.p * eHero[i]; g.idx.push([i, w * o.p]);
+          bets.set(k, g);
+        }
+      }
+      if (wSum <= 0) {
+        const R = PostflopEV.realization('check', street, ctx.ip, heroHand, board, ctx.eq);
+        return { ev: R * ctx.eq * pot };
+      }
+      let ev = 0;
+      if (wX > 0) {
+        const eq = eX / wX;
+        const R = PostflopEV.realization('call', street, ctx.ip, heroHand, board, eq);
+        ev += (wX / wSum) * Math.min(1, R * eq) * pot;
+      }
+      const heroMax = eng.maxAdditionalBet('HERO');
+      for (const [b, g] of bets) {
+        // ベットされたら: フォールド（0）/ コール / チェックレイズ（ベットの3倍）の得な方
+        const eqB = g.e / g.w;
+        const Rc = PostflopEV.realization('call', street, ctx.ip, heroHand, board, eqB);
+        const callEv = Math.min(1, Rc * eqB) * (pot + 2 * b) - b;
+        let raiseEv = -Infinity;
+        const r = Math.min(heroMax, b * 3);
+        if (r > b + 0.05) {
+          const heroCtx2 = { ...heroCtx, facing: b, pot: pot + b, opponentChecked: false };
+          const heroRaise = RM.posterior(table, heroAfter, cpuVecPublic, heroCtx2, 'RAISE', r, false);
+          const eCpu2 = table.equityVector(cpuVecPublic, heroRaise);
+          const s2 = { street, facing: r - b, pot: pot + b + r, stack: Math.max(0, stack - b), ip: !ctx.ip,
+            wasAggressor: true, opponentChecked: false, texture };
+          // 相手の防衛の下限は、このサイズでベットしてきたレンジで計算する
+          const betVec = new Float64Array(RM.N);
+          for (const [i, w] of g.idx) betVec[i] = w;
+          s2.mdfE = RM.mdfEdge(eCpu2, betVec, s2);
+          const Ra = PostflopEV.realization('aggressor', street, ctx.ip, heroHand, board);
+          let acc = 0;
+          for (const [i, w] of g.idx) {
+            if (Number.isNaN(eCpu2[i])) continue;
+            const d = RM.ActionModel.probs({ ...s2, e: eCpu2[i], made: table.nowRank[i] <= 6185, draw: table.draw(i) });
+            let pf = 0;
+            for (const o of d) if (o.action === 'FOLD') pf += o.p;
+            acc += w * (pf * (pot + b) + (1 - pf) * (Math.min(1, Ra * eHero[i]) * (pot + 2 * r) - r));
+          }
+          raiseEv = acc / g.w;
+        }
+        ev += (g.w / wSum) * Math.max(0, callEv, raiseEv);
+      }
+      return { ev, pBet: 1 - wX / wSum };
     },
 
     // あなたが amount を打ったときの相手の反応（行動モデル）。fe = 降りる割合、eqC = 続けてくる手に対する勝率
@@ -155,6 +240,9 @@
         pot: eng.potSize, facing, eq: ws > 0 ? es / ws : 0.5, street: eng.street,
         ip: eng.isHeroIp, heroHand, board, maxBet: eng.maxAdditionalBet('HERO'),
         table, cpuVec, cpuVecPublic, heroVec: RM.toVec(eng.heroRange), eHero, heroCtx: eng._modelContext('HERO'), eng,
+        // 先に動く = OOP で、このストリートで相手がまだ動いていない（チェックしても相手の番が来る）
+        // フロップは以前の計算の方が監査の実測に合っていたので、ターン・リバーだけに使う
+        firstToAct: eng.street !== 'FLOP' && !eng.isHeroIp && !eng.actionHistory.some((a) => a.street === eng.street && a.actor === 'CPU'),
       };
       if (action === 'CALL') amount = Math.min(facing, eng.heroStack);
       const opts = PostflopEV.options(eng).map(([a, x]) => ({ action: a, amount: x, ...PostflopEV.actionEv(ctx, a, x) }));

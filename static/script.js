@@ -364,27 +364,13 @@ function getActionSizes(actionType) {
     const facing = currentState.facingBet;
 
     if (street === "PREFLOP") {
-        if (actionType === "BET") { // Open raise
-            options = [
-                { label: "Small (2.0bb)", amount: 2.0 },
-                { label: "Medium (2.5bb)", amount: 2.5 },
-                { label: "Large (3.0bb)", amount: 3.0 }
-            ];
-        } else { // 3bet+
-            if (facing <= 4.0) { // arbitrary threshold for standard 3bet
-                options = [
-                    { label: "Small (2.7x)", amount: facing * 2.7 },
-                    { label: "Medium (3.0x)", amount: facing * 3.0 },
-                    { label: "Large (3.5x)", amount: facing * 3.5 }
-                ];
-            } else { // 4bet+
-                options = [
-                    { label: "Small (2.2x)", amount: facing * 2.2 },
-                    { label: "Medium (2.5x)", amount: facing * 2.5 },
-                    { label: "Large (2.8x)", amount: facing * 2.8 }
-                ];
-            }
-        }
+        // 場面ごとに1サイズ（GameApi.preflopRaise）。表示は「合計いくらにするか」
+        const r = GameApi.preflopRaise();
+        if (r.kind === "allin") return [{ label: t('bet.size_allin'), amount: r.add, allIn: true }];
+        const label = r.mult
+            ? t('bet.pf_' + r.kind, { total: r.total.toFixed(1), mult: String(r.mult) })
+            : t('bet.pf_' + r.kind, { total: r.total.toFixed(1) });
+        return [{ label, amount: r.add, preflop: true }];
     } else { // POSTFLOP
         if (actionType === "BET") {
             let mults = [0.33, 0.55, 0.85]; // FLOP
@@ -463,7 +449,8 @@ function openBetPanel(actionType) {
         btn.style.fontSize = '1.2rem';
         btn.style.marginBottom = '10px';
         btn.style.borderRadius = '8px';
-        btn.innerText = s.label + ` (${s.amount.toFixed(1)} bb)`;
+        // プリフロップは合計額をラベルに入れているので、追加額は付けない
+        btn.innerText = s.preflop ? s.label : s.label + ` (${s.amount.toFixed(1)} bb)`;
         btn.onclick = () => {
             closeBetPanel();
             takeAction(actionType, s.amount);

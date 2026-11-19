@@ -24,11 +24,15 @@
   「分析ページの見た目の作り直し」「AIコーチの無料回数を端末に保存」。shota が開発用アプリ（下の「動作確認のやり方」）で確認済み
 - **勝率の正確さ（2026/11/18 実測）**: 判定に使う勝率（推定レンジに対する勝率）と CPU の実際の手札に対する勝率の差は、フロップ・ターン・リバーとも
   ほぼ 0〜2 ポイント。以前は CPU が新しいストリートで先にチェックしたときにレンジを更新しておらず、リバーで 10〜13 ポイント低く出ていた
-- 残っている弱点（監査で確認・急がない）: 先に動く場面の強い手で、モデルは「ベット > チェック」と見るが実際はチェックが良いことが多い（ターンは以前から）。
-  判定はスロープレイの緩めで × になりにくくしてある
+- **先に動くチェックの計算（2026/11/19）**: ターン・リバーで OOP が先にチェックするとき、相手が行動モデルでベットしてくる確率と、
+  そのときのコール/チェックレイズの損得まで読む（postflop_ev.js の `checkFirstEv`。以前の「勝率×実現率×ポット」との大きい方）。
+  監査で、強い手は先にチェックした方がポットの約2割得なのに、モデルは「ベットが上」と見ていた。修正後は予測と実際が一致し、
+  先に動く場面の判定の正しさはリバー +2.5→+3.2bb・ターン +1.1→+1.4bb。フロップは以前の計算の方が合っていたのでそのまま。
+  残り: 中くらいの手はまだずれがある（ターンで実際はベットが +16% 良いのに予測は −3%）
+- **プリフロップのレイズは場面ごとに1サイズ**（2026/11/19 shota 指定。`GameApi.preflopRaise`）: オープン UTG〜BTN 2.5bb・SB 3bb（合計）/
+  BB で SB のリンプに 4bb / 3ベット IP 3倍・OOP 4倍 / 4ベット IP 2.2倍・OOP 2.5倍 / それ以上はオールイン。判定はサイズを見ない（レンジ表の前提サイズ）
 - 要相談（データの出典が要る）: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
-  SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジも相手の位置で変わらない。
-  プリフロップのオープン/3ベットのサイズを1つに絞る案（UTG〜BTN 2.5倍・SB 3倍・3ベット IP 3倍/OOP 4倍）も shota の判断待ち
+  SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジも相手の位置で変わらない
 
 ### shota 待ち（ここから再開）
 1. **Apple の規約（PLA）に同意する**: developer.apple.com/account と App Store Connect の「ビジネス」の両方。
@@ -346,9 +350,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=15` / `script.js?v=35` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=6` / `stats.js?v=7` / `i18n.js?v=7` / `game_api.js?v=8`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 7）で一括管理
+   現在値: `style.css?v=15` / `script.js?v=36` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=6` / `stats.js?v=7` / `i18n.js?v=8` / `game_api.js?v=9`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 8）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
