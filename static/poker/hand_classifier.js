@@ -50,7 +50,8 @@
       let isFlushDraw = false, isBackdoorFlush = false;
       for (const [s, cnt] of suitTotal) {
         if (cnt === 4 && holeHas(s)) isFlushDraw = true;
-        if (cnt === 3 && holeHas(s)) isBackdoorFlush = true;
+        // バックドア（あと2枚同じスートが要る）はフロップだけ。ターンは残り1枚なので成り立たない（監査 #10。2026/11/19 修正）
+        if (cnt === 3 && holeHas(s) && board.length === 3) isBackdoorFlush = true;
       }
 
       const boardRanks = new Set(board.map(Card.getRankInt));
