@@ -30,8 +30,9 @@ function applyPremiumGates() {
 async function loadAll(period) {
     showLoading(true);
     try {
-        const { overview, streets } = await StatsApi.loadPrimary(period);
+        const { overview, streets, style } = await StatsApi.loadPrimary(period);
         renderOverview(overview);
+        renderStyle(style);
         renderStreets(streets);
 
         const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(period);
@@ -53,8 +54,6 @@ function renderOverview(data) {
     const rate = data.gto_match_rate ?? 0;
     document.getElementById("gto-score").textContent = rate + "%";
     document.getElementById("gauge-bar").style.width = rate + "%";
-    document.getElementById("stat-vpip").textContent = data.vpip + "%";
-    document.getElementById("stat-pfr").textContent = data.pfr + "%";
     document.getElementById("stat-actions").textContent = data.total_actions;
     document.getElementById("stat-ev-loss").textContent = (data.avg_ev_loss ?? 0).toFixed(2) + " bb";
 }
@@ -77,6 +76,24 @@ function renderPosition(rows) {
             <td><span class="gto-chip ${gtoClass}">${r.gto_rate}%</span></td>
         </tr>`;
     }).join("");
+}
+
+// ==============================
+// プレイの傾向（4タイプ）
+// ==============================
+function renderStyle(st) {
+    const cells = document.querySelectorAll("#style-grid .style-cell");
+    cells.forEach(c => c.classList.toggle("active", !!st && st.ready && c.dataset.type === st.type));
+    const box = document.getElementById("style-result");
+    if (!st || !st.ready) {
+        box.innerHTML = `<div class="style-desc">${t("stats.style.need", { n: String((st && st.need) || 30) })}</div>`;
+        return;
+    }
+    const sign = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(1);
+    const balanced = Math.abs(st.loose_diff) < 2 && Math.abs(st.aggr_diff) < 2;
+    box.innerHTML = `<div class="style-name">${t("stats.style.name." + st.type)}</div>
+        <div class="style-desc">${balanced ? t("stats.style.balanced") : t("stats.style.desc." + st.type)}</div>
+        <div class="style-diff">${t("stats.style.diff", { loose: sign(st.loose_diff), aggr: sign(st.aggr_diff) })}</div>`;
 }
 
 // ==============================

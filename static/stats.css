@@ -679,3 +679,53 @@ body {
     font-size: 0.78rem;
     min-width: 72px;
 }
+
+/* プレイの傾向（2×2）。自分のタイプのマスだけ濃く */
+.style-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.style-cell {
+    background: var(--bg);
+    color: var(--faint);
+    font-size: 0.8rem;
+    padding: 18px 8px;
+    text-align: center;
+}
+
+.style-cell.active {
+    background: var(--track);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.style-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.style-desc {
+    font-size: 0.88rem;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.style-diff {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.style-note {
+    font-size: 0.75rem;
+    color: var(--faint);
+    margin-top: 10px;
+}

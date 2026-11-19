@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title data-i18n="stats.page_title">プレイ分析 | ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/stats.css?v=6">
+    <link rel="stylesheet" href="/static/stats.css?v=7">
     <script src="/static/i18n.js?v=8"></script>
 </head>
 
@@ -40,14 +40,6 @@
             </div>
             <div class="stat-badges">
                 <div class="stat-badge">
-                    <div class="stat-badge-value" id="stat-vpip">—</div>
-                    <div class="stat-badge-label" data-i18n="stats.badge.vpip">参加率</div>
-                </div>
-                <div class="stat-badge">
-                    <div class="stat-badge-value" id="stat-pfr">—</div>
-                    <div class="stat-badge-label" data-i18n="stats.badge.pfr">レイズ率</div>
-                </div>
-                <div class="stat-badge">
                     <div class="stat-badge-value" id="stat-actions">—</div>
                     <div class="stat-badge-label" data-i18n="stats.badge.hands">練習回数</div>
                 </div>
@@ -56,6 +48,19 @@
                     <div class="stat-badge-label" data-i18n="stats.badge.avg_loss">平均損失 (bb)</div>
                 </div>
             </div>
+        </section>
+
+        <!-- プレイの傾向（無料）: 推奨と比べて参加の広さ（タイト/ルース）と攻める回数（アグレッシブ/パッシブ）で4タイプ -->
+        <section class="section-card">
+            <div class="section-title" data-i18n="stats.section.style">プレイの傾向</div>
+            <div class="style-grid" id="style-grid">
+                <div class="style-cell" data-type="tight_aggressive" data-i18n="stats.style.name.tight_aggressive">タイト・アグレッシブ</div>
+                <div class="style-cell" data-type="loose_aggressive" data-i18n="stats.style.name.loose_aggressive">ルース・アグレッシブ</div>
+                <div class="style-cell" data-type="tight_passive" data-i18n="stats.style.name.tight_passive">タイト・パッシブ</div>
+                <div class="style-cell" data-type="loose_passive" data-i18n="stats.style.name.loose_passive">ルース・パッシブ</div>
+            </div>
+            <div class="style-result" id="style-result"></div>
+            <div class="style-note" data-i18n="stats.style.note">6人卓の理論（推奨）と比べて、参加の広さと攻める回数がどちらに寄っているかで分けています。</div>
         </section>
 
         <!-- ストリート別分布（無料） -->
@@ -147,8 +152,8 @@
 
     </main>
 
-    <script src="/static/game_api.js?v=9"></script>
-    <script src="/static/stats.js?v=7"></script>
+    <script src="/static/game_api.js?v=10"></script>
+    <script src="/static/stats.js?v=8"></script>
 </body>
 
 </html>

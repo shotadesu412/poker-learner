@@ -115,6 +115,31 @@
     };
   }
 
+  // プレイの傾向を4タイプに分ける（2026/11/19〜。分析ページの「参加率・レイズ率」の置き換え）。
+  // 軸は理論（推奨）との差: 6人卓の理論より広く参加しているか（ルース/タイト）、多く攻めているか（アグレッシブ/パッシブ）。
+  //   参加の差 = 降りる選択肢があった場面で「参加した割合 − 推奨の参加確率」
+  //   攻めの差 = レイズできた場面で「攻めた割合 − 推奨の攻める確率」
+  // 推奨はプリフロップがレンジ表の頻度、ポストフロップが最善手。判定が ◎ の手は推奨どおりとして数える（game.js の _tendency）
+  const STYLE_MIN = 30;   // 各軸でこれだけの判断が溜まったらタイプを出す
+  function getPlayStyle(data, period = 'all', now = nowIso()) {
+    const inPeriod = periodPredicate(data.actions, period, now);
+    const rows = heroActions(data).filter(inPeriod).filter((a) => a.tendency);
+    let nf = 0, dp = 0, nc = 0, da = 0;
+    for (const a of rows) {
+      const t = a.tendency;
+      if (t.f) { nf++; dp += t.p - t.rp; }
+      if (t.c) { nc++; da += t.a - t.ra; }
+    }
+    const loose = nf ? dp / nf * 100 : 0;
+    const aggr = nc ? da / nc * 100 : 0;
+    const ready = nf >= STYLE_MIN && nc >= STYLE_MIN;
+    const type = !ready ? null : (loose > 0 ? 'loose' : 'tight') + '_' + (aggr > 0 ? 'aggressive' : 'passive');
+    return {
+      ready, type, need: Math.max(0, STYLE_MIN - Math.min(nf, nc)),
+      loose_diff: Py.round(loose, 1), aggr_diff: Py.round(aggr, 1), n_fold_spots: nf, n_raise_spots: nc,
+    };
+  }
+
   function getPositionStats(data) {
     const hero = heroActions(data);
     // ゲームは UTG と記録する（6-max では LJ と同じ席）。以前は 'LJ' で集計していたため UTG のハンドが常に0件だった
@@ -307,7 +332,7 @@
   const StatsCalc = {
     formatIso, parseIso, nowIso, sqlAvg,
     getOverview, getPositionStats, getStreetEvalDist, getLeaks,
-    getSavedHands, getHandHistory, getPersonalRangeStats,
+    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle,
   };
   root.StatsCalc = StatsCalc;
   if (typeof module !== 'undefined') module.exports = StatsCalc;

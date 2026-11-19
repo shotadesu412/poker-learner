@@ -87,6 +87,8 @@
         pot_size: fields.pot_size ?? 0.0, hero_pos: fields.hero_pos ?? '', evaluation: fields.evaluation ?? '',
         ev_loss: fields.ev_loss ?? 0.0, user_id: '',
       };
+      // プレイの傾向（推奨との比較）。2026/11/19 以降の記録だけにある
+      if (fields.tendency) row.tendency = fields.tendency;
       return enqueue(() => run(['actions'], 'readwrite', ({ actions }) => { actions.add(row); }));
     },
 

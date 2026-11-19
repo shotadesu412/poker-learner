@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 8;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 9;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -159,7 +159,7 @@ const StatsApi = {
     async loadPrimary(period) {
         await this.init();
         const d = await StatsStore.loadAll();
-        return detach({ overview: StatsCalc.getOverview(d, period), streets: StatsCalc.getStreetEvalDist(d) });
+        return detach({ overview: StatsCalc.getOverview(d, period), streets: StatsCalc.getStreetEvalDist(d), style: StatsCalc.getPlayStyle(d, period) });
     },
 
     async loadSecondary(period) {

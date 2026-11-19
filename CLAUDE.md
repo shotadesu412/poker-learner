@@ -351,8 +351,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=36` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=6` / `stats.js?v=7` / `i18n.js?v=8` / `game_api.js?v=9`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 8）で一括管理
+   `stats.css?v=7` / `stats.js?v=8` / `i18n.js?v=8` / `game_api.js?v=10`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 9）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -459,6 +459,10 @@ poker-learner/
   ハンドの特徴。プリフロップのレイズはレンジ表で確定する（以前は表の中の 3ベットでも勝率で採点し直して × になることがあった）。
   BB が SB のリンプに対応する場面（チェック/レイズ）は専用の判定（以前はオープンの表やポストフロップの判定に回っていて、AA のレイズや 72o のチェックが × だった）。
   BB のリンプ対応の表は無いので、3ベットする強さの手を「レイズしたい手」とし、それ以外のレイズも ◯
+- **分析ページの「プレイの傾向」**（2026/11/19〜。参加率・レイズ率の置き換え）: 6人卓の理論（推奨）と比べて、参加の広さ（タイト/ルース）と
+  攻める回数（アグレッシブ/パッシブ）で4タイプに分ける。各アクションに「推奨ならどうしていたか」を `tendency` として記録し
+  （game.js の `_tendency`。プリフロップはレンジ表の頻度、ポストフロップは最善手、◎ の手は推奨どおり扱い）、`StatsCalc.getPlayStyle` で集計。
+  各軸 30 判断から表示。11/19 より前の記録には無いので数えない
 - **ポストフロップの解説**（postflop_ev.js の `explain`）: 判定・勝率に加えて「考え方」の1文（バリュー / ブラフ / ポットを守る / ポットを小さく /
   降りすぎ（MDF）/ コールしすぎ / サイズ / オールイン）。判定を緩めたことで記号が変わったときだけ、緩めたことを書く
 - 実測の目安（2026/11/17、`tools/audit/cpu_stats.js`）: CPU のフォールド率 33%ベットに 10〜27% / 55〜85%に 22〜41% / ポット以上に 37〜47%

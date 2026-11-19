@@ -109,6 +109,19 @@
       this.hooks.logAction({ session_id: this.sessionId, ...fields });
     }
 
+    // プレイの傾向（分析ページの4タイプ）用に、「推奨ならどうしていたか」と実際の選択を記録する（2026/11/19〜）。
+    //   f = 降りる選択肢があった / p, rp = 参加した（コール・レイズ）と推奨の参加確率
+    //   c = レイズできた / a, ra = 攻めた（ベット・レイズ）と推奨の攻める確率
+    // 判定が ◎ の手は推奨どおりとして扱う（混ぜる場面や僅差の場面を「ずれ」に数えないため）
+    _tendency(rec, action, evaluation) {
+      if (!rec) return null;
+      const p = ['CALL', 'BET', 'RAISE'].includes(action) ? 1 : 0;
+      const a = action === 'BET' || action === 'RAISE' ? 1 : 0;
+      const ok = evaluation === '◎';
+      const r2 = (x) => Math.round(x * 100) / 100;
+      return { f: rec.canFold ? 1 : 0, p, rp: ok ? p : r2(rec.rp), c: rec.canRaise ? 1 : 0, a, ra: ok ? a : r2(rec.ra) };
+    }
+
     // /api/action
     action({ action, amount = 0.0 }) {
       this._bindRng();
@@ -142,6 +155,13 @@
         openerPos: eng.preflopRaiseCount === 1 && eng.aggressor === 'CPU' ? eng.cpuPosition : null,
         villainPos: eng.cpuPosition, pot: eng.potSize, raises: eng.preflopRaiseCount, ip: eng.isHeroIp,
       };
+      // 傾向の記録用: この場面のレンジ表の推奨（参加する確率・レイズする確率）
+      const pfInfo = Ev.preflopSpot(eng.heroHand, eng.heroPosition, is3betPot, eng.currentBet - eng.heroInvested, openerPos);
+      const tendRec = {
+        canFold: eng.currentBet - eng.heroInvested > 0.01,
+        canRaise: eng.maxAdditionalBet('HERO') > eng.currentBet - eng.heroInvested + 0.05,
+        rp: Math.min(1, pfInfo.callWeight + pfInfo.raiseWeight), ra: pfInfo.raiseWeight,
+      };
       const [heroEq, cpuEq] = this._equity(1000);
       const heroRangeAdv = Equity.calcRangeAdvantage(eng.heroHand, eng.board, eng.heroRange, eng.cpuRange,
         isPreflop, 400, this.rngFn);
@@ -164,7 +184,7 @@
         const evFold = evalDict.ev ?? 0.0;
         const evCallAlt = heroFacing > 0 ? Ev.evCall(heroEq, eng.potSize, heroFacing) : 0.0;
         const evLossFold = Math.max(0.0, evCallAlt - evFold);
-        this._log({ ...common, action: 'FOLD', amount: 0.0, pot_size: eng.potSize, evaluation: evalDict.evaluation, ev_loss: evLossFold });
+        this._log({ ...common, action: 'FOLD', amount: 0.0, pot_size: eng.potSize, evaluation: evalDict.evaluation, ev_loss: evLossFold, tendency: this._tendency(tendRec, 'FOLD', evalDict.evaluation) });
         eng.handFinished = true;
         // プリフロップのフォールドでは CPU のハンドを公開しない
         const state = this.gameState({ finished: true, showCpuHand: eng.street !== 'PREFLOP' });
@@ -184,7 +204,7 @@
         eng.updateRangeDict('HERO', 'CALL', callAmount);
         eng.recordAction('HERO', 'CALL', callAmount, realizedEquity, eng.potSize);
         eng.placeBet('HERO', callAmount);
-        this._log({ ...common, action: 'CALL', amount: callAmount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss });
+        this._log({ ...common, action: 'CALL', amount: callAmount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CALL', evalResult) });
       } else if (action === 'BET' || action === 'RAISE') {
         let evalDict;
         if (action === 'RAISE') {
@@ -205,7 +225,7 @@
         eng.updateRangeDict('HERO', action, amount);
         eng.recordAction('HERO', action, amount, realizedEquity, eng.potSize);
         eng.placeBet('HERO', amount);
-        this._log({ ...common, action, amount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss });
+        this._log({ ...common, action, amount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, action, evalResult) });
       } else if (action === 'CHECK') {
         eng.updateRangeDict('HERO', 'CHECK', 0);
         eng.recordAction('HERO', 'CHECK', 0, realizedEquity, eng.potSize);
@@ -224,7 +244,7 @@
         const evCheckVal = evalDict.ev ?? 0.0;
         const evBetAlt = Ev.evBet(heroEq, eng.potSize, eng.potSize * 0.66, 0.3);
         const evLoss = evBetAlt > evCheckVal ? Math.max(0.0, evBetAlt - evCheckVal) : 0.0;
-        this._log({ ...common, action: 'CHECK', amount: 0.0, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss });
+        this._log({ ...common, action: 'CHECK', amount: 0.0, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CHECK', evalResult) });
       } else {
         throw new Error('Invalid action');
       }
@@ -260,6 +280,13 @@
       }
       const eq = pf.realized_eq;
       const common = { street: eng.street, actor: 'HERO', equity: eq, hero_pos: eng.heroPosition };
+      // 傾向の記録用: 最善手が参加（コール・レイズ）/ 攻め（ベット・レイズ）か
+      const bestA = pf.best.action;
+      common.tendency = this._tendency({
+        canFold: heroFacing > 0.01,
+        canRaise: (pf.options || []).some((o) => o.action === 'BET' || o.action === 'RAISE'),
+        rp: ['CALL', 'RAISE'].includes(bestA) ? 1 : 0, ra: bestA === 'BET' || bestA === 'RAISE' ? 1 : 0,
+      }, action, evaluation);
       const evLoss = pf.ev_loss;
 
       if (action === 'FOLD') {
