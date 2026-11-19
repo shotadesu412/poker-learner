@@ -42,8 +42,8 @@
 - **1.0.8 の提出前に、ストアの見た目を練習アプリ寄りに作り直す**（アプリ名・サブタイトル・キーワード・スクショ1〜3枚目）。
   名前やスクショは新しいバージョンの提出時しか変えられないので、1.0.8 にまとめる。案は「マーケティングの現状」参照。
   順位が一時的に動くトレードオフは説明済み。**提案段階で shota の承認はまだ**
-- **`2f4e392`（エラー文言の多言語化）を push する**。1.0.8 公開前に出ていればよい。push は shota の依頼を待つ
-- 提出用の「このバージョンの新機能」（作成済み）:
+- `2f4e392`（エラー文言の多言語化）は 2026/11/18 の push で本番に出ている
+- 提出用の「このバージョンの新機能」（11/15 作成。**11/18 の判定の作り直しを反映していないので提出前に書き直す**）:
   - en: More accurate preflop feedback: open-raising, limping and 3-bet spots are now judged more precisely /
     Faster gameplay: hands are now calculated on your device / Error and ad-loading messages now display properly /
     Bug fixes and stability improvements
@@ -371,7 +371,7 @@ poker-learner/
 - **iPhone のアプリで push 前の版を見る**（2026/11/18〜）: Debug ビルドに `DEV_SERVER_URL` を渡すと、そのアプリは Mac のサーバーを表示する
   （ContentView.swift の `renderURL`。Release は常に本番。ATS はローカルネットワークだけ例外）:
   `xcodebuild -project PokerLearner/PokerLearner.xcodeproj -scheme PokerLearner -configuration Debug -destination "id=<端末のUDID>" DEV_SERVER_URL=http://<MacのIP>:8765/ -allowProvisioningUpdates build`
-  → `xcrun devicectl device install app --device <devicectl の Identifier> <ビルドした .app>`。App Store 版を置き換えるので、戻すときは App Store から入れ直す（削除すると統計が消える）
+  → `xcrun devicectl device install app --device <devicectl の Identifier> <ビルドした .app>`。App Store 版を置き換える。**入れたビルドのバージョンが App Store の公開版より新しいと、App Store からは入れ直せない**（2026/11/19 に発生）。戻すときは `DEV_SERVER_URL` を渡さずに同じ手順でビルドして上から入れる（本番を表示。データは残る）。**アプリを削除すると端末内の統計が消える**ので削除しない。念のためのバックアップは `xcrun devicectl device copy from --device <Identifier> --domain-type appDataContainer --domain-identifier com.shota.pokerlearner --source Library --destination <保存先>`
 - ロジックは `node tools/golden/check_js.js`、画面は `tools/e2e/local_engine.js`（Playwright）。
   サーバーは `OPENAI_API_KEY=dummy python3 -m uvicorn app:app --port 8765`（uvicorn は入っている）。
   `--host 0.0.0.0` で起動すれば同じ Wi-Fi の iPhone の Safari から `http://<MacのIP>:8765/play` で確認できる
