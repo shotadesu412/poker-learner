@@ -28,7 +28,8 @@
   そのときのコール/チェックレイズの損得まで読む（postflop_ev.js の `checkFirstEv`。以前の「勝率×実現率×ポット」との大きい方）。
   監査で、強い手は先にチェックした方がポットの約2割得なのに、モデルは「ベットが上」と見ていた。修正後は予測と実際が一致し、
   先に動く場面の判定の正しさはリバー +2.5→+3.2bb・ターン +1.1→+1.4bb。フロップは以前の計算の方が合っていたのでそのまま。
-  残り: 中くらいの手はまだずれがある（ターンで実際はベットが +16% 良いのに予測は −3%）
+  残り: 中くらいの手はまだずれがある（ターンで実際はベットが +16% 良いのに予測は −3%）。ただし監査のロールアウトはあなた役が簡易ルールなので、
+  後の判断が多いチェックの線ほど不利に出る。ここに合わせるとルールの弱点を正解として取り込むので、2026/11/19 時点では直していない
 - **プリフロップのレイズは場面ごとに1サイズ**（2026/11/19 shota 指定。`GameApi.preflopRaise`）: オープン UTG〜BTN 2.5bb・SB 3bb（合計）/
   BB で SB のリンプに 4bb / 3ベット IP 3倍・OOP 4倍 / 4ベット IP 2.2倍・OOP 2.5倍 / それ以上はオールイン。判定はサイズを見ない（レンジ表の前提サイズ）
 - 要相談（データの出典が要る）: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
@@ -47,12 +48,15 @@
   名前やスクショは新しいバージョンの提出時しか変えられないので、1.0.8 にまとめる。案は「マーケティングの現状」参照。
   順位が一時的に動くトレードオフは説明済み。**提案段階で shota の承認はまだ**
 - `2f4e392`（エラー文言の多言語化）は 2026/11/18 の push で本番に出ている
-- 提出用の「このバージョンの新機能」（11/15 作成。**11/18 の判定の作り直しを反映していないので提出前に書き直す**）:
-  - en: More accurate preflop feedback: open-raising, limping and 3-bet spots are now judged more precisely /
-    Faster gameplay: hands are now calculated on your device / Error and ad-loading messages now display properly /
+- 提出用の「このバージョンの新機能」（2026/11/19 書き直し。11/18〜19 の判定の作り直し・分析ページを反映）:
+  - ja: 判定を大幅に改善：選べるアクションの期待値を比べて ◎◯△× を判定し、相手のレンジもアクションごとに正確に絞り込むように /
+    解説を一新：なぜその手が良いのかを短く、理論に沿って説明 / CPU が実際の手札で考え、ブラフもバリューも理論に近い打ち方に /
+    分析ページを刷新：あなたのプレイの傾向（タイト・ルース × アグレッシブ・パッシブ）を表示 / 動作を高速化：計算を端末内で行うように /
+    不具合の修正と安定性の向上
+  - en: Much more accurate feedback: every option is compared by expected value, and opponent ranges are narrowed after each action /
+    Clearer explanations: short reasons for why a play is right, based on poker theory / The CPU now plays its real cards with theory-based bluffs and value bets /
+    Redesigned stats page: see your play style (tight or loose, aggressive or passive) / Faster gameplay: hands are now calculated on your device /
     Bug fixes and stability improvements
-  - ja: プリフロップの判定をより正確に：オープン・リンプ・3ベットの場面の評価を改善 / 動作を高速化：ハンドの計算を端末内で行うように /
-    エラーや広告読み込み時のメッセージが正しく表示されるように / 不具合の修正と安定性の向上
 
 ### 後回し（急がない）
 - Render の Account Settings → SSH Public Keys から `shota-mac` を削除（もう使わない）
