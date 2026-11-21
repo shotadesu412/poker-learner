@@ -626,5 +626,17 @@
  "pf.ev_diff": {
   "ja": "期待値の差: {bb:.1f}bb",
   "en": "EV difference: {bb:.1f}bb"
+ },
+ "pf.why.size_worse": {
+  "ja": "このサイズで打つより、{passive}の方が得です。打つなら{best}です。",
+  "en": "{passive} beats betting this size. If you bet, use {best}."
+ },
+ "pf.why.size_worse_close": {
+  "ja": "このサイズで打つより、{passive}の方が得です。{best}ならわずかに上回りますが、{passive}とほぼ同じです。",
+  "en": "{passive} beats betting this size. {best} is only slightly better than {passive}."
+ },
+ "pf.why.raise_vs_small": {
+  "ja": "相手のベットはポットの約{pct:.0f}%と小さいので、何倍にするかより、ポットに対して大きく返す方が多く取れます。",
+  "en": "Their bet is small (about {pct:.0f}% of the pot), so raise big relative to the pot rather than by a multiple of their bet."
  }
 }

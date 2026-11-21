@@ -260,7 +260,11 @@
       //   - 強い手（勝率60%以上）でのスロープレイ（ベット/レイズの代わりにチェック/コール。EV はプラス）:
       //     後のストリートで取れる分の見積もりが粗く、ソルバーでも混ぜることが多い
       const aggr = (o) => o.action === 'BET' || o.action === 'RAISE';
-      const sizeOnly = aggr(chosen) && aggr(best);
+      // チェック/コールのうち良い方（「このサイズで打つくらいならチェック」を見分けるため）
+      const passive = opts.filter((o) => o.action === 'CHECK' || o.action === 'CALL').reduce((a, b) => (!a || b.ev > a.ev ? b : a), null);
+      // サイズだけの違いとして緩めるのは、選んだサイズがチェック/コールより得なときだけ（2026/11/21 修正）。
+      // 以前はベット同士なら一律に緩めていて、チェックの方が良い大きすぎるベットまで ◯ になっていた
+      const sizeOnly = aggr(chosen) && aggr(best) && (!passive || chosen.ev >= passive.ev);
       const slowplay = !aggr(chosen) && aggr(best) && chosen.ev > 0 && ctx.eq >= 0.6 && chosen.action !== 'FOLD';
       const k = sizeOnly || slowplay ? 1.5 : 1.0;
       const gradeOf = (kk) => (lossPct <= GRADE.optimal * kk ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * kk ? B.EVAL_GOOD
@@ -283,7 +287,7 @@
         lines.push(t(ctx.street === 'RIVER' ? 'pf.basis.facing_river' : 'pf.basis.facing', { eq: ctx.eq * 100, req: req * 100 }));
       }
       // 考え方（なぜその手が最善か）
-      const why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board });
+      const why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive });
       for (const w of why) lines.push(w);
       if (!(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));
       return {
@@ -310,7 +314,19 @@
       const allIn = (x) => aggr(x) && Math.abs(x.amount - ctx.maxBet) < 0.06;
       const target = isBest ? chosen : best;   // 説明する手（最善手）
       if (!isBest && aggr(chosen) && aggr(best)) {
+        const pas = o.passive;
+        if (pas && chosen.ev < pas.ev) {
+          // 選んだサイズはチェック/コールより悪い: 「サイズだけ」ではなく、このサイズなら打たない方が良い
+          const close = (best.ev - pas.ev) / Math.max(0.5, ctx.pot) < 0.02;
+          lines.push(t(close ? 'pf.why.size_worse_close' : 'pf.why.size_worse', { passive: o.name(pas), best: o.name(best) }));
+          return lines;
+        }
         lines.push(allIn(best) ? t('pf.why.allin', { best: o.name(best) }) : t('pf.why.size', { best: o.name(best) }));
+        // 小さいベットへのレイズ: 倍率より、ポットに対してどれだけ大きく返すか
+        const before = ctx.pot - o.facing;
+        if (chosen.action === 'RAISE' && strong && o.facing > 0.01 && before > 0 && o.facing / before < 0.25 && best.amount > chosen.amount) {
+          lines.push(t('pf.why.raise_vs_small', { pct: P(o.facing / before) }));
+        }
         if (o.softened) lines.push(t('pf.why.soft_size'));
         return lines;
       }

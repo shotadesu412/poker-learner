@@ -355,8 +355,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=36` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=7` / `stats.js?v=8` / `i18n.js?v=8` / `game_api.js?v=10`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 9）で一括管理
+   `stats.css?v=7` / `stats.js?v=8` / `i18n.js?v=8` / `game_api.js?v=11`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 10）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
