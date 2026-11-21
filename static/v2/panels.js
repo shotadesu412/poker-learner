@@ -67,8 +67,11 @@ function renderRangePanel(st) {
         }
     }
     let caption;
-    if (before) {
+    if (before && Math.abs(rangeWidth(before) - nowW) >= 0.5) {
         caption = t('panel.range_after', { act: rangeTrack.actionLabel, from: rangeWidth(before).toFixed(0), to: nowW.toFixed(0) });
+    } else if (before) {
+        // 範囲が変わっていないときは「絞られた」と言わない（プリフロップのコールは、最初からその範囲の手が配られている）
+        caption = t('panel.range_same', { act: rangeTrack.actionLabel, pct: nowW.toFixed(0) });
     } else {
         caption = t('panel.range_now', { pct: nowW.toFixed(0) });
     }
