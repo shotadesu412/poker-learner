@@ -79,7 +79,6 @@ const openTotal = (op) => BetSizing.PREFLOP_OPENS[op] + (op === 'SB' ? 0.5 : 0);
 let k = 0;
 for (const defender of ['BB', 'SB']) {
   const chartCall = Ranges.getRangeByCategory(defender, 'vs_open_call');
-  const chart3 = Ranges.getRangeByCategory(defender, 'vs_open_3bet');
   // SB の vs_open_call は空で、getRangeByCategory が call ∪ 3bet に合成する。表のコールは無いものとして扱う
   const callChart = defender === 'SB' ? new Map() : chartCall;
   for (const op of OPENERS) {
@@ -91,12 +90,14 @@ for (const defender of ['BB', 'SB']) {
     const dead = defender === 'BB' ? (op === 'SB' ? 0 : 0.5) : 1.0;   // 降りた側のブラインド
     const req = (size - posted) / (size * 2 + dead);
     const eqs = classEquities(Ranges.getRangeByCategory(op, 'open'), 20261117 + k++);
+    // 3ベットの表はオープンした位置ごと（2026/11/21〜。gen_3bet.js）。3ベットに入る手はコールにしない
+    const chart3 = Ranges.getRangeByCategory(defender, 'vs_open_3bet', op);
     const call = {};
     let combos = 0;
     for (const cls of Ranges.ALL_HANDS_DICT.keys()) {
       const inCall = (callChart.get(cls) || 0) > 0;
       const in3 = (chart3.get(cls) || 0) > 0;
-      if (inCall) call[cls] = callChart.get(cls);
+      if (inCall && !in3) call[cls] = callChart.get(cls);
       // BB vs SB だけはポストフロップで BB が後に動く（IP）。IP の実現率は OOP より約0.15高い（上限1.0）
       const R = defender === 'BB' && op === 'SB' ? Math.min(1.0, realization(cls) + 0.15) : realization(cls);
       if (!inCall && !in3 && eqs.get(cls) * R >= req) call[cls] = 1.0;

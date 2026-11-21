@@ -220,6 +220,9 @@
       const base = {
         street: ctx.street, facing: Math.max(0.01, amount - ctx.facing), pot: ctx.pot + amount,
         stack: eng.cpuStack, ip: !ctx.ip, wasAggressor: false, opponentChecked: false, texture: '',
+        // あなたが主導権の無い側で先に打つ（ドンク）なら、CPU はドンクへの返し方で反応する（engine の _modelContext と同じ）
+        vsDonk: ctx.facing <= 0.01 && action === 'BET' && eng.streetStartAggressor === 'CPU'
+          && !eng.actionHistory.some((a) => a.street === eng.street),
       };
       base.mdfE = RM.mdfEdge(eCpuPub, cpuVecPublic, base);
       let wSum = 0, wFold = 0, wCont = 0, eqCont = 0;

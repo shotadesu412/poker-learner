@@ -520,16 +520,16 @@
   "en": "The BTN has position, so calling is also an option."
  },
  "preflop.why.vs_3bet": {
-  "ja": "3ベットに対しては、オープンした手の上位約{tot:.0f}%だけで続けます。",
-  "en": "Against a 3-bet, continue with only the top {tot:.0f}% or so of your opens."
+  "ja": "3ベットはオープンの2.5〜3倍と小さいので、オープンした手の約{tot:.0f}%は続けます。降りすぎると、相手の3ベットのブラフが得をします。",
+  "en": "A 3-bet of 2.5–3x the open is small, so continue with about {tot:.0f}% of your opening range. Folding too much lets their 3-bet bluffs profit."
  },
  "preflop.why.vs_3bet_ip": {
-  "ja": "ポジションがあるので、コールも使えます。",
-  "en": "With position, calling is also an option."
+  "ja": "ポジションがあるので、コールで続けやすい場面です。",
+  "en": "With position, calling to continue works well here."
  },
  "preflop.why.vs_3bet_oop": {
-  "ja": "ポジション不利なので、4ベットかフォールドに寄せます。",
-  "en": "Out of position, lean toward 4-bet or fold."
+  "ja": "ポジション不利ですが、強い手と扱いやすい手はコールで続け、一番強い手とブロッカーのある手で4ベットします。",
+  "en": "Out of position, still call with strong and playable hands, and 4-bet the very strongest plus some blocker hands."
  },
  "preflop.why.vs_4bet": {
   "ja": "4ベットに対しては、ごく一部の強い手だけで続けます。",

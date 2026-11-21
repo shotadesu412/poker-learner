@@ -35,7 +35,7 @@ if (G.PostflopEV) {
   const origPF = G.PostflopEV.evaluate;
   origPFEval = (...a) => origPF.apply(G.PostflopEV, a);
   G.PostflopEV.evaluate = function (...a) {
-    if (FAST) return { evaluation: '-', reason: '', ev: 0, ev_loss: 0, loss_pct: 0, realized_eq: 0.5 };
+    if (FAST) return { evaluation: '-', reason: '', ev: 0, ev_loss: 0, loss_pct: 0, realized_eq: 0.5, best: { action: 'CHECK', amount: 0 }, options: [] };
     return origPF.apply(this, a);
   };
 }

@@ -98,6 +98,10 @@
       if (action === 'vs_open_call' && openerPos && posData.has('vs_open_call_vs_' + openerPos)) {
         result = posData.get('vs_open_call_vs_' + openerPos);
       }
+      // 3ベットの表もオープンした位置ごと（2026/11/21〜。tools/ranges/gen_3bet.js）
+      if (action === 'vs_open_3bet' && openerPos && posData.has('vs_open_3bet_vs_' + openerPos)) {
+        result = posData.get('vs_open_3bet_vs_' + openerPos);
+      }
       const empty = (r) => !r || r.size === 0;
 
       if (empty(result) && action === 'open' && category === 'UTG') {

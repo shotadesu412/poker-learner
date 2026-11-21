@@ -230,6 +230,9 @@
     P: {
       raiseValueThr: { FLOP: 0.75, TURN: 0.78, RIVER: 0.85 },
       raiseValueP: 0.6, semiBluffRaiseP: 0.3, riverBluffRaiseP: 0.04, riverBluffRaiseMaxE: 0.12,
+      // ドンク（主導権の無い相手が先に打ってきた）への返し（2026/11/21〜）。理論では受けた側はバリュー・強いドロー・
+      // 一部の弱い手でレイズを返す。以前はふつうのベットと同じ扱いで、フロップの小さいドンクにレイズ 3%・フォールド 24% だった
+      vsDonkValueShift: 0.08, vsDonkValueP: 0.7, vsDonkDrawP: 0.5, vsDonkAirP: 0.12, vsDonkAirMaxE: 0.40,
       realizeIp: 0.92, realizeOop: 0.80, realizeAirMult: 0.80, drawNeedBonus: 0.04,
       looseCallP: 0.25, looseCallBand: 0.9,
       riverCallPenalty: 0.0,
@@ -256,6 +259,12 @@
           if (!isRiver && strongDraw) other = P.semiBluffRaiseP;
           else if (isRiver) other = P.riverBluffRaiseP * sig(P.riverBluffRaiseMaxE - s.e, SOFT / 2);
           pRaise = isValue * P.raiseValueP + (1 - isValue) * other;
+          if (s.vsDonk && !isRiver) {
+            // ドンクへの返し: バリューの基準を少し下げ、強いドローと一部の弱い手もレイズする
+            const v2 = sig(s.e - (vThr - P.vsDonkValueShift), SOFT / 2);
+            const o2 = strongDraw ? P.vsDonkDrawP : (s.e < P.vsDonkAirMaxE ? P.vsDonkAirP : 0);
+            pRaise = v2 * P.vsDonkValueP + (1 - v2) * o2;
+          }
         }
         let realize = 1.0;
         if (!isRiver) {

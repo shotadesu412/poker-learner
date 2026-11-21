@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 14;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 15;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -70,7 +70,7 @@ const GameApi = {
 
     // プリフロップのレイズは場面ごとに1サイズ（2026/11/19 shota 指定。判定のレンジ表はこの標準サイズが前提）
     //   オープン: UTG〜BTN 2.5bb / SB 3bb（合計）  BB で SB のリンプに: 4bb
-    //   3ベット: オープン額の 3倍（IP）/ 4倍（OOP）  4ベット: 3ベット額の 2.2倍（IP）/ 2.5倍（OOP）  それ以上: オールイン
+    //   3ベット: オープン額の 2.5倍（HJ・CO・BTN）/ 3倍（SB・BB）  4ベット: 3ベット額の 2.2倍（IP）/ 2.5倍（OOP）  それ以上: オールイン
     // 戻り値 { kind: "open"|"iso"|"3bet"|"4bet"|"allin", total: レイズ後の合計, add: 追加で出す額, mult }
     preflopRaise() {
         const e = this.game.engine;
@@ -80,7 +80,10 @@ const GameApi = {
         if (raises === 0) {
             if (e.heroPosition === "BB") { kind = "iso"; total = 4.0; }
             else { kind = "open"; total = e.heroPosition === "SB" ? 3.0 : 2.5; }
-        } else if (raises === 1) { kind = "3bet"; mult = ip ? 3 : 4; total = e.currentBet * mult; }
+        } else if (raises === 1) {
+            // 3ベット: IP の席（HJ・CO・BTN）は 2.5倍、ブラインドは 3倍（6人卓 100bb の解析と同じ。2026/11/21〜。以前は IP 3倍 / OOP 4倍）
+            kind = "3bet"; mult = (e.heroPosition === "SB" || e.heroPosition === "BB") ? 3 : 2.5; total = e.currentBet * mult;
+        }
         else if (raises === 2) { kind = "4bet"; mult = ip ? 2.2 : 2.5; total = e.currentBet * mult; }
         else { kind = "allin"; total = Infinity; }
         const max = e.maxAdditionalBet("HERO");

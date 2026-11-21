@@ -208,10 +208,19 @@
           callRange = posRanges.get('vs_open_call_vs_' + sp.openerPos);
         }
         raiseRange = getOr(posRanges, 'vs_open_3bet', getOr(posRanges, '3bet', empty));
+        // オープンした位置ごとの 3ベットの表（2026/11/21〜）
+        if (sp.openerPos && posRanges.has('vs_open_3bet_vs_' + sp.openerPos)) raiseRange = posRanges.get('vs_open_3bet_vs_' + sp.openerPos);
       } else {
         kind = 'vs_3bet';
         callRange = getOr(posRanges, 'vs_3bet_call', empty);
         raiseRange = getOr(posRanges, 'vs_3bet_4bet', getOr(posRanges, '4bet_bluff', empty));
+        // 3ベットした位置ごとの表（2026/11/21〜。tools/ranges/gen_vs3bet.js。値は「オープンしていたときにその行動を取る割合」）。
+        // 4ベットされた場面（raises >= 3）は以前の表のまま
+        const v = sp.villainPos;
+        if ((sp.raises || 2) === 2 && v && posRanges.has('vs_3bet_call_vs_' + v)) {
+          callRange = posRanges.get('vs_3bet_call_vs_' + v);
+          raiseRange = posRanges.get('vs_3bet_4bet_vs_' + v) || empty;
+        }
       }
       const comboStr = Evaluator.getComboStr(cards, Ranges.ALL_HANDS_DICT);
       const callWeight = Math.min(1, getOr(callRange, comboStr, 0.0));

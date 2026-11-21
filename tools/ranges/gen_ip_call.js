@@ -79,8 +79,9 @@ const result = {};
 let k = 0;
 for (const defender of Object.keys(TARGET)) {
   result[defender] = {};
-  const three = Ranges.getRangeByCategory(defender, 'vs_open_3bet');
   for (const op of Object.keys(TARGET[defender])) {
+    // 3ベットの表はオープンした位置ごと（gen_3bet.js。先に作っておく）
+    const three = Ranges.getRangeByCategory(defender, 'vs_open_3bet', op);
     const eqs = classEquities(Ranges.getRangeByCategory(op, 'open'), 20261121 + k++);
     const cands = [...Ranges.ALL_HANDS_DICT.keys()]
       .filter((c) => !((three.get(c) || 0) > 0))

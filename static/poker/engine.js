@@ -216,6 +216,8 @@
 
     advanceStreet(streetName) {
       this.street = streetName;
+      // このストリートが始まった時点で主導権を持っていた側（ドンクを受けたかの判定に使う。2026/11/21〜）
+      this.streetStartAggressor = this.aggressor;
       this.currentBet = 0.0;
       this.heroInvested = 0.0;
       this.cpuInvested = 0.0;
@@ -268,9 +270,22 @@
 
       if (this.street === 'PREFLOP') {
         const numRaises = this.actionHistory.filter((a) => a.action === 'BET' || a.action === 'RAISE').length;
-        if (action === 'BET' || action === 'RAISE') {
-          const cat = numRaises === 0 ? 'open' : numRaises === 1 ? '3bet' : '4bet_bluff';
-          updated = new Map(Ranges.getRangeByCategory(pos, cat));
+        const per3 = (kind) => {
+          // 3ベットされた後の行動: 3ベットした位置ごとの表（「その手でオープンしていたときの割合」）を今のレンジに掛ける
+          const tb = actor === 'HERO' ? this.cpuPosition : this.heroPosition;
+          const m = (Ranges.RANGES.get(pos) || new Map()).get('vs_3bet_' + kind + '_vs_' + tb);
+          if (!m) return null;
+          return new Map([...current.entries()].map(([c, w0]) => [c, w0 * Math.min(1, m.get(c) || 0)]));
+        };
+        if ((action === 'BET' || action === 'RAISE') && numRaises === 2 && per3('4bet')) {
+          updated = per3('4bet');
+        } else if (action === 'CALL' && numRaises === 2 && actor === 'HERO' && per3('call')) {
+          updated = per3('call');
+        } else if (action === 'BET' || action === 'RAISE') {
+          const cat = numRaises === 0 ? 'open' : numRaises === 1 ? 'vs_open_3bet' : '4bet_bluff';
+          // 3ベットはオープンした位置ごとの表（2026/11/21〜。以前は位置によらない '3bet'）
+          const opener = actor === 'HERO' ? this.cpuPosition : this.heroPosition;
+          updated = new Map(Ranges.getRangeByCategory(pos, cat, numRaises === 1 ? opener : null));
         } else if (actor === 'CPU' && numRaises === 2 && this.aggressor === 'HERO' && (action === 'CALL' || action === 'FOLD')) {
           // CPU が 3ベットにコール/フォールド: 実際に使った確率（_vs3betProbs）でベイズ更新
           const RM = root.RangeModel;
@@ -417,12 +432,14 @@
 
       if (raises === 1 && !this.cpuHand.length) {
         // あなたのオープンに対して: フォールドなし・95%コール・5%3ベット（練習機会を増やすための仕様）
-        const raiseMult = cpuIsIp ? 3.0 : 3.5;
+        // 3ベットは「オープン額の何倍に」: IP の席 2.5倍、ブラインド 3倍（あなたのボタンと同じ。6人卓 100bb の解析。2026/11/21〜）
+        const raiseMult = (pos === 'SB' || pos === 'BB') ? 3.0 : 2.5;
+        const raiseAdd = Math.max(0, this.currentBet * raiseMult - this.cpuInvested);
         if (rng.random() < 0.05) {
-          const r3 = Ranges.getRangeByCategory(pos, 'vs_open_3bet');
+          const r3 = Ranges.getRangeByCategory(pos, 'vs_open_3bet', this.heroPosition);
           this._assignCpuHand(r3 !== Ranges.ALL_HANDS_DICT ? r3 : Ranges.getRangeByCategory(pos, '3bet'));
           this.cpuLastActionIntent = 'VALUE';
-          return ['RAISE', Math.min(this.cpuStack, Math.max(facing * raiseMult, facing + 2.0))];
+          return ['RAISE', Math.min(this.cpuStack, Math.max(raiseAdd, facing + 2.0))];
         }
         this._assignCpuHand(Ranges.getRangeByCategory(pos, 'vs_open_call', this.heroPosition));
         this.cpuLastActionIntent = 'CALL';
@@ -479,6 +496,15 @@
       const R = root.Ranges;
       const pos = this.cpuPosition;
       const w = (cat) => { const m = R.getRangeByCategory(pos, cat); return m === R.ALL_HANDS_DICT ? 0 : (m.get(cls) || 0); };
+      // 3ベットした位置ごとの表があれば、その割合どおりに行動する（2026/11/21〜。あなたの判定と同じ表。
+      // 解析の「3ベットされたときの続ける割合」に合わせて作ってあるので、値段や防衛の下限で広げない）
+      const posData = R.RANGES.get(pos);
+      const per = posData && posData.get('vs_3bet_call_vs_' + this.heroPosition);
+      if (per) {
+        const r4 = Math.min(1, (posData.get('vs_3bet_4bet_vs_' + this.heroPosition) || new Map()).get(cls) || 0);
+        const c = Math.min(1 - r4, per.get(cls) || 0);
+        return { RAISE: r4, value: r4, CALL: c, FOLD: Math.max(0, 1 - r4 - c) };
+      }
       const w4 = w('vs_3bet_4bet'), wb = w('4bet_bluff'), wc = w('vs_3bet_call');
       const value = Math.min(1, w4);
       const bluff = (1 - value) * Math.min(1, wb) * 0.5;
@@ -508,6 +534,11 @@
         wasAggressor: this.aggressor === actor,
         ip: isHero ? this.isHeroIp : !this.isHeroIp,
         opponentChecked: this.actionHistory.some((a) => a.street === this.street && a.actor === other && a.action === 'CHECK'),
+        // ドンクを受けた: このストリートの主導権はこちらにあったのに、相手が先に打ってきた（2026/11/21〜）
+        vsDonk: this.street !== 'PREFLOP' && this.streetStartAggressor === actor && (() => {
+          const first = this.actionHistory.find((a) => a.street === this.street);
+          return !!first && first.actor === other && first.action === 'BET';
+        })(),
         texture: this.classifyBoardTexture(this.board),
       };
     }
