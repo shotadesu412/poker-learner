@@ -37,7 +37,7 @@
 - **プリフロップのレイズは場面ごとに1サイズ**（2026/11/19 shota 指定。`GameApi.preflopRaise`）: オープン UTG〜BTN 2.5bb・SB 3bb（合計）/
   BB で SB のリンプに 4bb / 3ベット IP 3倍・OOP 4倍 / 4ベット IP 2.2倍・OOP 2.5倍 / それ以上はオールイン。判定はサイズを見ない（レンジ表の前提サイズ）
 - **保留（2026/11/19 shota 指定で止めている）**: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
-  SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジも相手の位置で変わらない
+  SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジは 11/21 に位置別に直した
 
 ### 新しい UI（`static/v2/`。開発者モードのときだけ開く。shota が納得するまで今の画面は変えない）
 - 下のタブ（練習・振り返り・分析・設定）の1ページ化、練習画面のアクション履歴を左右スワイプで3枚（履歴・相手のレンジ・楕円のテーブル）。
@@ -370,8 +370,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=12` / `game_api.js?v=14`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 13）で一括管理
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=12` / `game_api.js?v=15`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 14）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -474,6 +474,10 @@ poker-learner/
 - **判定は 6人卓の理論を優先し、直感に反するところは解説で補う**（2026/11/18 shota 指定）。このアプリは2人の勝負だが、
   「このゲームの仕組みならこうなる」ではなく実戦の6人卓の基準で判定する。例: SB はオープンに対して「3ベットかフォールド」
   （後ろの BB にスクイーズされ、ずっと OOP のため）。BB はすでに降りているが、判定はそのまま理論どおりにして、理由を解説に書く
+- **HJ・CO・BTN のコールレンジもオープンした位置ごと**（2026/11/21〜。`tools/ranges/gen_ip_call.js`）: コールする割合は 6人卓 100bb の解析
+  （beyondgto.com の Defense。HJ vs UTG 4% / CO vs UTG・HJ 5% / BTN vs UTG 7%・HJ 8%・CO 9%）に合わせ、どの手かは
+  「オープンレンジに対する勝率 × IP の実現率」の高い順（3ベットの表の手は除く）。IP の実現率はスーテッドを 1 超え・オフスートは下げた目安。
+  以前は3席とも共通の約6%。3ベットの表（解析では 7〜10%）は保留のまま（今の表は 2〜4%）。CPU が同じ席でコールするときも同じレンジ
 - **BB のコールレンジはオープンした位置ごと**（`ranges.json` の `vs_open_call_vs_<位置>`。`tools/ranges/gen_blind_defend.js` で生成）。
   ポットオッズ × エクイティ実現率で作った（Janda『Applications of No-Limit Hold'em』の考え方）。以前の BB は全ハンドの約21%で位置にかかわらず共通だった。
   コール+3ベットで BB: UTG 29% / HJ 31% / CO 42% / SB 53%（BB が IP）/ BTN 57%。公開されている 6max 100bb の解析は BB vs BTN で 45〜70%。
