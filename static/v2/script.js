@@ -23,6 +23,7 @@ let isPremium = false;
 let isSpotMode = false;
 let spotPosition = "";        // スポット練習: 固定ポジション（""=ランダム）
 let spotParticipatedOnly = false;  // スポット練習: 参加ハンドのみ
+let spotHands = "range";      // スポット練習で配るハンド: "range"（参加するハンドだけ）| "random"（2026/11/22〜）
 
 // プレミアム状態の正は StoreKit。起動時の onEntitlementStatus が届くまでは前回の値で描画する
 function loadSubscriptionStatus() {
@@ -250,7 +251,8 @@ async function startHand() {
 
     try {
         // サーバー/端末エンジンの切り替えは game_api.js の GameApi が行う
-        currentState = await GameApi.startHand(isSpotMode, spotPosition);
+        // スポット練習で「ランダム」のハンドなら、ポジションだけ固定して普通に配る
+        currentState = await GameApi.startHand(isSpotMode && spotHands === 'range', isSpotMode ? spotPosition : '');
         updateUI();
 
         // 30ハンドごとに自動でインタースティシャル広告
@@ -1545,10 +1547,18 @@ function goHome() {
     showTab('home');
 }
 
+// ゲーム画面の上: スポット練習のときだけ設定を出す（通常は戻るボタンだけ）
 function updatePlayTitle() {
     const title = el('play-title');
     if (!title) return;
-    title.textContent = isSpotMode ? t('home2.spot_title', { pos: spotPosition || t('game.spot_random') }) : t('home2.normal_title');
+    title.textContent = isSpotMode
+        ? t('home2.spot_title', { pos: (spotPosition || t('game.spot_random')) + ' · ' + (spotHands === 'range' ? t('home2.hands_range') : t('game.spot_random')) })
+        : '';
+}
+
+function setSpotHands(v) {
+    spotHands = v;
+    document.querySelectorAll('.spot-hand-btn').forEach(b => b.classList.toggle('active', b.dataset.hands === v));
 }
 
 // ホームの表示を今の状態に合わせる（進行中のハンドがあれば「続きから」）

@@ -80,7 +80,7 @@ async function loadAll(period) {
         renderStyle(style);
         renderStreets(streets);
 
-        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(period);
+        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(period, REVIEW_MAX_HANDS);
         renderPosition(position);
         renderLeaks(leaks);
         renderAiHistory(aiHistory);
@@ -254,13 +254,57 @@ function renderActionRows(history) {
     }).join("");
 }
 
+// ==============================
+// 振り返り: 上のタブ（ハンド履歴 / AIコーチ）と 20件ずつのページ送り（2026/11/22〜）
+// ==============================
+const REVIEW_PAGE = 20;
+const REVIEW_MAX_HANDS = 500;   // ハンド履歴はこの件数まで（新しい順）
+const reviewData = { hands: [], coach: [] };
+const reviewPage = { hands: 0, coach: 0 };
+
+function showReview(name) {
+    document.querySelectorAll('.rv-tab').forEach(b => b.classList.toggle('active', b.dataset.rv === name));
+    document.querySelectorAll('.rv-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'rv-' + name));
+}
+
+function renderPager(kind) {
+    const box = document.getElementById('pager-' + kind);
+    if (!box) return;
+    const total = reviewData[kind].length;
+    if (total <= REVIEW_PAGE) { box.innerHTML = ''; return; }
+    const last = Math.ceil(total / REVIEW_PAGE) - 1;
+    const p = reviewPage[kind];
+    box.innerHTML = `<button onclick="goReviewPage('${kind}', -1)" ${p <= 0 ? 'disabled' : ''}>‹ ${t('review.prev')}</button>
+        <span>${t('review.page', { from: p * REVIEW_PAGE + 1, to: Math.min(total, (p + 1) * REVIEW_PAGE), total })}</span>
+        <button onclick="goReviewPage('${kind}', 1)" ${p >= last ? 'disabled' : ''}>${t('review.next')} ›</button>`;
+}
+
+function goReviewPage(kind, d) {
+    const last = Math.max(0, Math.ceil(reviewData[kind].length / REVIEW_PAGE) - 1);
+    reviewPage[kind] = Math.max(0, Math.min(last, reviewPage[kind] + d));
+    if (kind === 'hands') renderHandHistoryPage(); else renderAiHistoryPage();
+    const view = document.getElementById('view-review');
+    if (view) view.scrollTop = 0;
+}
+
 function renderAiHistory(historyData) {
+    reviewData.coach = historyData || [];
+    reviewPage.coach = 0;
+    renderPager('coach');
+    renderAiHistoryPage();
+}
+
+function renderAiHistoryPage() {
+    const historyData = reviewData.coach;
     const container = document.getElementById("ai-history-list");
     if (!historyData || historyData.length === 0) {
         container.innerHTML = `<div class="no-data">${t("stats.no_coach_history")}</div>`;
         return;
     }
-    container.innerHTML = historyData.map((h, i) => {
+    const off = reviewPage.coach * REVIEW_PAGE;
+    renderPager('coach');
+    container.innerHTML = historyData.slice(off, off + REVIEW_PAGE).map((h, j) => {
+        const i = off + j;
         const dt = new Date(h.timestamp);
         const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const st = h.hand_state || parseLegacyHandContext(h.hand_context);
@@ -309,6 +353,14 @@ function formatCards(cardsStr) {
 }
 
 function renderHandHistory(hands) {
+    reviewData.hands = hands || [];
+    reviewPage.hands = 0;
+    renderPager('hands');
+    renderHandHistoryPage();
+}
+
+function renderHandHistoryPage() {
+    const hands = reviewData.hands;
     const container = document.getElementById("hand-history-list");
     if (!hands || hands.length === 0) {
         container.innerHTML = `<div class="no-data">${t("stats.no_hand_history")}</div>`;
@@ -325,7 +377,10 @@ function renderHandHistory(hands) {
 
     const dev = statsDevMode();
     _devHands = hands;
-    container.innerHTML = hands.map((h, i) => {
+    const off = reviewPage.hands * REVIEW_PAGE;
+    renderPager('hands');
+    container.innerHTML = hands.slice(off, off + REVIEW_PAGE).map((h, j) => {
+        const i = off + j;
         const dt = new Date(h.date);
         const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const cards = formatCards(h.hole_cards) || "??";

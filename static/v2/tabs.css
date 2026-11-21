@@ -139,32 +139,32 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     cursor: pointer;
 }
 
-/* ===== ホーム（練習タブ） ===== */
+/* ===== ホーム（練習タブ）: ボタンと最低限の設定だけ、画面の真ん中に ===== */
 #view-home.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-.hm-header {
-    padding: max(env(safe-area-inset-top, 0px), 14px) 16px 10px;
-    border-bottom: 1px solid var(--border-color);
+.hm-body {
+    margin: auto 0;          /* 縦の真ん中（はみ出すときはスクロール） */
+    padding: max(env(safe-area-inset-top, 0px), 20px) 20px 24px;
+    width: 100%;
+    max-width: 480px;
+    align-self: center;
 }
 
-.hm-header h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; }
-
-.hm-body { padding: 8px 16px 32px; }
-
-.hm-block { padding: 18px 0; border-bottom: 1px solid var(--border-color); }
-.hm-block:last-child { border-bottom: none; }
+.hm-spot { margin-top: 36px; }
 
 .hm-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-main);
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-bottom: 12px;
 }
 
 .hm-badge {
@@ -176,35 +176,52 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     padding: 1px 5px;
 }
 
-.hm-desc { font-size: 0.8rem; color: var(--text-muted); margin: 6px 0 14px; line-height: 1.5; }
+.hm-label { font-size: 0.72rem; color: var(--text-muted); margin: 0 0 6px; }
 
-.hm-label { font-size: 0.74rem; color: var(--text-muted); margin-bottom: 6px; }
+/* 選択肢（ポジション・配るハンド）: 1行に並べ、文字は折り返さない */
+.hm-seg { display: flex; gap: 4px; margin-bottom: 14px; }
 
-.hm-pos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.hm-seg button {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    padding: 8px 4px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.hm-seg button.active { background: #2b332e; border-color: #10b981; color: var(--text-main); }
+.hm-pos button:first-child { flex: 1.6 1 auto; }
 
 .hm-check {
     display: flex;
     gap: 8px;
-    align-items: flex-start;
-    font-size: 0.78rem;
+    align-items: center;
+    font-size: 0.76rem;
     color: var(--text-muted);
-    margin-bottom: 14px;
-    line-height: 1.4;
+    margin-bottom: 16px;
 }
 
 .hm-start {
     width: 100%;
-    padding: 14px;
+    padding: 16px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #10b981;
     color: #06120c;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 800;
     cursor: pointer;
 }
 
 .hm-start-sub {
+    padding: 13px;
+    font-size: 0.95rem;
     background: transparent;
     color: var(--text-main);
     border: 1px solid #10b981;
@@ -264,22 +281,36 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     display: flex;
 }
 
-.swipe-dots {
+/* 面の名前（今の面を白く）。押しても切り替わる */
+.swipe-tabs {
     display: flex;
     justify-content: center;
-    gap: 6px;
-    padding: 6px 0 0;
+    gap: 2px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .swipe-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 3px;
-    background: #3a423d;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #6b766f;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px 5px;
+    margin-bottom: -1px;
     cursor: pointer;
 }
 
-.swipe-dot.active { background: var(--text-main); }
+.swipe-dot.active { color: var(--text-main); border-bottom-color: #10b981; }
+
+/* 履歴がまだ無いときの案内 */
+.swipe-page .eval-history-inline:empty::before {
+    content: attr(data-empty);
+    color: #6b766f;
+    font-size: 0.76rem;
+    margin: auto;
+}
 
 .panel-title {
     font-size: 0.78rem;
@@ -485,3 +516,51 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 
 .tb-bet i.agg { background: #e5534b; }
+
+/* ===== 振り返り: 上のタブとページ送り（2026/11/22〜） ===== */
+.rv-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rv-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 8px 0;
+    margin-bottom: -1px;
+    cursor: pointer;
+}
+
+.rv-tab.active { color: var(--text-main); border-bottom-color: #10b981; }
+
+.rv-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.rv-pager:empty { display: none; }
+
+.rv-pager button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 7px 14px;
+    cursor: pointer;
+}
+
+.rv-pager button:disabled { opacity: 0.3; cursor: default; }

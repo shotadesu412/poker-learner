@@ -165,14 +165,15 @@ const StatsApi = {
         return detach({ overview: StatsCalc.getOverview(d, period), streets: StatsCalc.getStreetEvalDist(d), style: StatsCalc.getPlayStyle(d, period) });
     },
 
-    async loadSecondary(period) {
+    // handLimit: ハンド履歴の件数（今の分析ページは 30。新しい画面はページ送りするので多めに取る）
+    async loadSecondary(period, handLimit = 30) {
         await this.init();
         const d = await StatsStore.loadAll();
         return detach({
             position: StatsCalc.getPositionStats(d),
             leaks: StatsCalc.getLeaks(d),
             aiHistory: StatsCalc.getSavedHands(d),
-            handHistory: StatsCalc.getHandHistory(d, 30),
+            handHistory: StatsCalc.getHandHistory(d, handLimit),
             personalRange: StatsCalc.getPersonalRangeStats(d, period),
         });
     },

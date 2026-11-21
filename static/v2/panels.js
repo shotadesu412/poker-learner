@@ -1,4 +1,5 @@
 // panels.js — 練習画面の中央を、左右スワイプで切り替える3枚にする（2026/11/19〜。2026/11/21 作り直し）
+//   上に面の名前（レンジ / アクション履歴 / テーブル）を並べ、今の面を示す。押しても切り替わる
 //   0. 推定レンジ（相手 / あなた をタブで切り替え）: 直前のアクションで消えた手を赤く、残っている手を緑の濃さで
 //   1. アクション履歴（最初に出す面。#eval-history）
 //   2. テーブル: 横長の楕円に 6席・カード・このストリートで出した額・ポット
@@ -231,6 +232,9 @@ function initSwipe() {
     const track = el('swipe-track');
     if (!view || !track) return;
     document.querySelectorAll('.swipe-dot').forEach((d, j) => d.addEventListener('click', () => goPanel(j)));
+    // 履歴が空のときの案内（CSS の ::before で出す）
+    const hist = el('eval-history');
+    if (hist) hist.dataset.empty = t('panel.history_empty');
     goPanel(panelIndex, false);
 
     // 横に動かしたときだけスワイプとして扱う（縦は各面の中のスクロール）。CSS の touch-action: pan-y で縦はブラウザに任せる
