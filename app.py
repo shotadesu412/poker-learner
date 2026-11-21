@@ -72,7 +72,9 @@ openai_client = OpenAI(api_key=openai_api_key)
 #   上げないと同じ症状が再発する。
 # 環境変数で上書きできるようにしてあるので、問題があれば Render の
 # 環境変数を変えるだけで再デプロイなしに切り戻せる。
-COACH_MODEL = os.environ.get("COACH_MODEL", "gpt-5.6-luna")
+# ▼ 2026/11/21: gpt-5.6-luna → gpt-6-luna（2026/9/22 リリースの後継。料金は入力 $0.20→$0.10・出力 $1.20→$0.50 / 100万トークン。
+#   Chat Completions・reasoning_effort="none" に対応）。切り戻すときは Render の環境変数 COACH_MODEL=gpt-5.6-luna
+COACH_MODEL = os.environ.get("COACH_MODEL", "gpt-6-luna")
 COACH_REASONING_EFFORT = os.environ.get("COACH_REASONING_EFFORT", "none")
 COACH_MAX_TOKENS = int(os.environ.get("COACH_MAX_TOKENS", "4000"))
 

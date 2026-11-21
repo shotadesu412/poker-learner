@@ -294,7 +294,7 @@ poker-learner/
 ## API ルート（app.py）
 
 - `GET /` ホーム, `GET /play` ゲーム, `GET /stats` 分析, `GET /app-ads.txt`
-- `POST /api/ai_coach` OpenAI 呼び出し（モデル: **`gpt-5.6-luna`**, 2026/8/27〜）
+- `POST /api/ai_coach` OpenAI 呼び出し（モデル: **`gpt-6-luna`**, 2026/11/21〜。それ以前は `gpt-5.6-luna`。切り戻しは Render の環境変数 `COACH_MODEL`）
   - 設定は app.py 冒頭の `COACH_MODEL` / `COACH_REASONING_EFFORT` / `COACH_MAX_TOKENS`。
     いずれも同名の環境変数で上書き可（Renderの環境変数だけで再デプロイなしに切戻せる）
   - 必須項目 `state`（端末エンジンのハンド状態）。相談履歴はサーバーに保存せず、`hand_context` を返して端末に保存させる
