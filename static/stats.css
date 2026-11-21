@@ -729,3 +729,38 @@ body {
     color: var(--faint);
     margin-top: 10px;
 }
+
+/* 開発者モード（判定の解説・コピー） */
+.hh-dev-reason {
+    flex-basis: 100%;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--muted);
+    border-left: 2px solid var(--line);
+    padding: 2px 0 2px 8px;
+    margin: 2px 0 4px;
+}
+
+.hh-dev { margin-top: 10px; }
+
+.hh-dev-copy {
+    background: none;
+    border: 1px solid var(--faint);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.hh-dev-msg { font-size: 0.75rem; color: var(--muted); margin-left: 8px; }
+
+.hh-dev-text {
+    width: 100%;
+    min-height: 120px;
+    margin-top: 8px;
+    background: var(--track);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 0.72rem;
+}

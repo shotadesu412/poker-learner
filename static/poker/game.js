@@ -4,7 +4,7 @@
 // 統計の保存はフック経由（フェーズ6で IndexedDB に繋ぐ）:
 //   hooks.startSession(sessionId, heroPos, heroHandStr)
 //   hooks.logAction({ session_id, street, actor, action, amount, equity, pot_size, hero_pos, evaluation, ev_loss })
-//   hooks.finishHand({ session_id, winner, final_pot, board, cpu_hand, action_log })
+//   hooks.finishHand({ session_id, cpu_pos, winner, final_pot, board, cpu_hand, action_log })
 //
 // ⚠️ 乱数を読む順番（エクイティ計算の回数・順序を含む）は app.py と同じにしてある。
 //
@@ -184,7 +184,7 @@
         const evFold = evalDict.ev ?? 0.0;
         const evCallAlt = heroFacing > 0 ? Ev.evCall(heroEq, eng.potSize, heroFacing) : 0.0;
         const evLossFold = Math.max(0.0, evCallAlt - evFold);
-        this._log({ ...common, action: 'FOLD', amount: 0.0, pot_size: eng.potSize, evaluation: evalDict.evaluation, ev_loss: evLossFold, tendency: this._tendency(tendRec, 'FOLD', evalDict.evaluation) });
+        this._log({ ...common, action: 'FOLD', amount: 0.0, pot_size: eng.potSize, evaluation: evalDict.evaluation, ev_loss: evLossFold, tendency: this._tendency(tendRec, 'FOLD', evalDict.evaluation), reason: evalDict.reason || '' });
         eng.handFinished = true;
         // プリフロップのフォールドでは CPU のハンドを公開しない
         const state = this.gameState({ finished: true, showCpuHand: eng.street !== 'PREFLOP' });
@@ -204,7 +204,7 @@
         eng.updateRangeDict('HERO', 'CALL', callAmount);
         eng.recordAction('HERO', 'CALL', callAmount, realizedEquity, eng.potSize);
         eng.placeBet('HERO', callAmount);
-        this._log({ ...common, action: 'CALL', amount: callAmount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CALL', evalResult) });
+        this._log({ ...common, action: 'CALL', amount: callAmount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CALL', evalResult), reason: evalReason || '' });
       } else if (action === 'BET' || action === 'RAISE') {
         let evalDict;
         if (action === 'RAISE') {
@@ -225,7 +225,7 @@
         eng.updateRangeDict('HERO', action, amount);
         eng.recordAction('HERO', action, amount, realizedEquity, eng.potSize);
         eng.placeBet('HERO', amount);
-        this._log({ ...common, action, amount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, action, evalResult) });
+        this._log({ ...common, action, amount, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, action, evalResult), reason: evalReason || '' });
       } else if (action === 'CHECK') {
         eng.updateRangeDict('HERO', 'CHECK', 0);
         eng.recordAction('HERO', 'CHECK', 0, realizedEquity, eng.potSize);
@@ -244,7 +244,7 @@
         const evCheckVal = evalDict.ev ?? 0.0;
         const evBetAlt = Ev.evBet(heroEq, eng.potSize, eng.potSize * 0.66, 0.3);
         const evLoss = evBetAlt > evCheckVal ? Math.max(0.0, evBetAlt - evCheckVal) : 0.0;
-        this._log({ ...common, action: 'CHECK', amount: 0.0, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CHECK', evalResult) });
+        this._log({ ...common, action: 'CHECK', amount: 0.0, pot_size: eng.potSize, evaluation: evalResult, ev_loss: evLoss, tendency: this._tendency(tendRec, 'CHECK', evalResult), reason: evalReason || '' });
       } else {
         throw new Error('Invalid action');
       }
@@ -279,7 +279,8 @@
         reason = root.Messages.t('bet.donk') + '\n' + reason;
       }
       const eq = pf.realized_eq;
-      const common = { street: eng.street, actor: 'HERO', equity: eq, hero_pos: eng.heroPosition };
+      // reason: 画面に出した判定の解説。開発者モードのハンド履歴で見る（2026/11/21〜）
+      const common = { street: eng.street, actor: 'HERO', equity: eq, hero_pos: eng.heroPosition, reason };
       // 傾向の記録用: 最善手が参加（コール・レイズ）/ 攻め（ベット・レイズ）か
       const bestA = pf.best.action;
       common.tendency = this._tendency({
@@ -448,6 +449,7 @@
         if (!winner) winner = (state.showdownResult || {}).winner || '';
         this.hooks.finishHand({
           session_id: this.sessionId,
+          cpu_pos: eng.cpuPosition,
           winner,
           final_pot: Py.round(eng.potSize, 2),
           board: eng.board.map(Card.toStr).join(','),

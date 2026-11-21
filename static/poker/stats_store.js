@@ -89,11 +89,13 @@
       };
       // プレイの傾向（推奨との比較）。2026/11/19 以降の記録だけにある
       if (fields.tendency) row.tendency = fields.tendency;
+      // 画面に出した判定の解説（2026/11/21〜。開発者モードのハンド履歴で見る）
+      if (fields.reason) row.reason = fields.reason;
       return enqueue(() => run(['actions'], 'readwrite', ({ actions }) => { actions.add(row); }));
     },
 
     // stats_logger.finish_hand
-    finishHand({ session_id, winner, final_pot, board, cpu_hand, action_log }) {
+    finishHand({ session_id, winner, final_pot, board, cpu_hand, action_log, cpu_pos }) {
       return enqueue(() => run(['sessions'], 'readwrite', ({ sessions }) => {
         sessions.get(session_id).onsuccess = (e) => {
           const s = e.target.result;
@@ -101,6 +103,7 @@
           Object.assign(s, {
             winner, final_pot, board, cpu_hand, action_log: JSON.stringify(action_log), result: winner,
           });
+          if (cpu_pos) s.cpu_pos = cpu_pos;   // 2026/11/21〜
           sessions.put(s);
         };
       }));

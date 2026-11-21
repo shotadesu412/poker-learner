@@ -1252,12 +1252,55 @@ function requestAppReview() {
     } catch (e) { /* 旧アプリ・iOSアプリ外では無視 */ }
 }
 
+// --- 開発者モード（2026/11/21〜。shota の確認用） ---
+// 設定の見出し「設定」を7回続けて押すとコードの入力欄が出る。正しいコードで localStorage に poker_dev=1 を保存する。
+// オンの間: AIコーチの回数制限なし・ハンド履歴に判定の解説と「このハンドをコピー」（stats.js）・ハンド履歴のロック解除。
+// コードは平文で置かず SHA-256 だけを置く。AIコーチの回数制限はもともと端末側だけの管理なので、これで危険は増えない
+const DEV_CODE_SHA256 = "53772eb5006ed55acb392faae2febfb4f0bdfa61463972fa4b3d3ac2dbc22ad4";
+function isDevMode() {
+    try { return localStorage.getItem("poker_dev") === "1"; } catch (e) { return false; }
+}
+let _devTaps = 0, _devTapTimer = null;
+function devTitleTap() {
+    _devTaps++;
+    clearTimeout(_devTapTimer);
+    _devTapTimer = setTimeout(() => { _devTaps = 0; }, 1500);
+    if (_devTaps >= 7) { _devTaps = 0; renderDevRow(true); }
+}
+function renderDevRow(showInput) {
+    const row = el('dev-row');
+    if (!row) return;
+    if (isDevMode()) {
+        row.classList.remove('hidden');
+        row.innerHTML = `<span class="settings-row-label">${t('dev.on')}</span><button class="settings-premium-btn" onclick="setDevMode(false)">${t('dev.turn_off')}</button>`;
+    } else if (showInput) {
+        row.classList.remove('hidden');
+        row.innerHTML = `<input id="dev-code" type="password" autocomplete="off" placeholder="${t('dev.code_placeholder')}" style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #555;background:#111;color:#eee;"><button class="settings-premium-btn" style="margin-left:8px" onclick="submitDevCode()">${t('dev.submit')}</button>`;
+    } else {
+        row.classList.add('hidden');
+    }
+}
+async function submitDevCode() {
+    const v = (el('dev-code') || {}).value || '';
+    let hex = '';
+    try {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v.trim()));
+        hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) { /* 計算できない環境ではオンにしない */ }
+    if (hex === DEV_CODE_SHA256) setDevMode(true);
+    else { const i = el('dev-code'); if (i) { i.value = ''; i.placeholder = t('dev.wrong'); } }
+}
+function setDevMode(on) {
+    try { if (on) localStorage.setItem("poker_dev", "1"); else localStorage.removeItem("poker_dev"); } catch (e) { /* 無視 */ }
+    renderDevRow(false);
+}
+
 // --- AIコーチのゲート（広告/プレミアム選択） ---
 // 続行してよいか(Promise<bool>)を返す。premiumは常にtrue。
 // 無料分を使い切るとロックされ、広告を最後まで見るか加入するまで使えない。
 function coachGate() {
     _coachUseConsumed = false;
-    if (isPremium) return Promise.resolve(true);
+    if (isPremium || isDevMode()) return Promise.resolve(true);   // 開発者モードは回数制限なし
 
     // ロック中 or 無料分を使い切り → 消化するまで毎回ゲートを出す
     if (coachLocked || coachFreeUsesLeft <= 0) {
@@ -1421,6 +1464,9 @@ function openSettings() {
         segJa.classList.toggle('active', getLang() === 'ja');
         segEn.classList.toggle('active', getLang() === 'en');
     }
+
+    // 開発者モードの行（オンのときだけ出す）
+    renderDevRow(false);
 
     // プレミアムステータス表示
     const premStatus = el('settings-premium-status');

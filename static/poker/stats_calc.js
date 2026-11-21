@@ -227,6 +227,12 @@
     const sessions = [...data.sessions]
       .sort((x, y) => (x.started_at < y.started_at ? 1 : x.started_at > y.started_at ? -1 : 0))
       .slice(0, limit);
+    const coachBySession = new Map();
+    for (const r of (data.saved_hands || [])) {
+      if (!r.session_id || !r.ai_feedback) continue;
+      if (!coachBySession.has(r.session_id)) coachBySession.set(r.session_id, []);
+      coachBySession.get(r.session_id).push(r.ai_feedback);
+    }
     const heroBySession = new Map();
     for (const a of data.actions) {
       if (a.actor !== HERO) continue;
@@ -244,20 +250,23 @@
         // 全アクション（HERO/CPU）の時系列。HERO には評価を出現順で対応付ける
         let heroI = 0;
         actions = actionLog.map((a) => {
-          let ev = '';
-          if (a.actor === HERO && heroI < heroRows.length) ev = heroRows[heroI++].evaluation;
+          let ev = '', reason = '';
+          if (a.actor === HERO && heroI < heroRows.length) { const h = heroRows[heroI++]; ev = h.evaluation; reason = h.reason || ''; }
           return {
             street: a.street ?? '',
             actor: a.actor ?? '',
             action: a.action ?? '',
             amount: a.amount ?? 0,
             evaluation: ev,
+            // 画面に出した判定の解説（2026/11/21〜の記録だけ。開発者モードで表示）
+            ...(reason ? { reason } : {}),
           };
         });
       } else {
         // 旧データ（action_log 保存前）は HERO のアクションのみ
         actions = heroRows.map((a) => ({
           street: a.street, actor: HERO, action: a.action, amount: a.amount, evaluation: a.evaluation,
+          ...(a.reason ? { reason: a.reason } : {}),
         }));
       }
       return {
@@ -271,6 +280,9 @@
         final_pot: s.final_pot || 0,
         winner: s.winner || '',
         actions,
+        // 2026/11/21〜の記録だけ: 相手のポジションと、このハンドの AIコーチの回答
+        ...(s.cpu_pos ? { cpu_pos: s.cpu_pos } : {}),
+        ...(coachBySession.has(s.session_id) ? { coach: coachBySession.get(s.session_id) } : {}),
       };
     });
   }

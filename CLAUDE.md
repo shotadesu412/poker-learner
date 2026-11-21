@@ -354,9 +354,9 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=15` / `script.js?v=37` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=7` / `stats.js?v=8` / `i18n.js?v=9` / `game_api.js?v=12`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 11）で一括管理
+   現在値: `style.css?v=15` / `script.js?v=38` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=10` / `game_api.js?v=13`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 12）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 
@@ -374,6 +374,12 @@ poker-learner/
 - **アップロードは CLI 不可**（キーチェーンに Distribution 証明書なし、ASC APIキーなし、
   Xcode に Apple ID 未サインイン）。ユーザーが Xcode Organizer → Distribute App で実施
 - チームID: `7Z2ZRB6V2J` / Bundle ID: `com.shota.pokerlearner`
+
+### 開発者モード（2026/11/21〜）
+- 設定の見出し「設定」を7回続けて押す → コードを入力（コードは shota が持っている。script.js には SHA-256 だけ）。localStorage の `poker_dev=1`
+- オンの間: AIコーチの回数制限なし・ハンド履歴のロック解除・各アクションの判定の解説・相手のポジション・AIコーチの回答を表示・「このハンドをコピー」
+  （コピーしたテキストを貼ってもらえば、アプリの判定とコーチの食い違いをこちらで再現・検証できる）
+- 判定の解説（actions の `reason`）と相手のポジション（sessions の `cpu_pos`）は、11/21 以降の全ユーザーの記録に保存している
 
 ### 動作確認のやり方
 - **iPhone のアプリで push 前の版を見る**（2026/11/18〜）: Debug ビルドに `DEV_SERVER_URL` を渡すと、そのアプリは Mac のサーバーを表示する

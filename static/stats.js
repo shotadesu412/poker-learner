@@ -19,12 +19,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
+// 開発者モード（script.js の設定で切り替え。localStorage の poker_dev）
+function statsDevMode() {
+    try { return localStorage.getItem("poker_dev") === "1"; } catch (e) { return false; }
+}
+
 function applyPremiumGates() {
     const lockIds = ["lock-position", "lock-leaks", "lock-hand-history"];
     lockIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.style.display = isPremium ? "none" : "flex";
+        // 開発者モードはハンド履歴を見られるようにする（判定の解説を確かめるため）
+        const open = isPremium || (id === "lock-hand-history" && statsDevMode());
+        if (el) el.style.display = open ? "none" : "flex";
     });
+}
+
+// 開発者モード: ハンドを、判定の解説と AIコーチの回答つきのテキストにする（貼り付けて送る用）
+let _devHands = [];
+function devHandText(h) {
+    const who = (a) => a.actor === "CPU" ? `相手(${h.cpu_pos || "?"})` : `あなた(${h.position || "?"})`;
+    const lines = [];
+    lines.push(`【ハンド】${h.date} / あなた ${h.position || "?"} ${h.hole_cards || "?"} / 相手 ${h.cpu_pos || "?"} ${h.cpu_hand || "?"} / 結果 ${h.winner || "-"} / POT ${Number(h.final_pot || 0).toFixed(1)}bb`);
+    lines.push(`ボード: ${h.board || "-"}`);
+    (h.actions || []).forEach(a => {
+        const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+        lines.push(`[${a.street}] ${who(a)} ${a.action}${amt}${a.evaluation ? " " + a.evaluation : ""}`);
+        if (a.reason) lines.push("  解説: " + a.reason.replace(/\n/g, " / "));
+    });
+    (h.coach || []).forEach(c => { lines.push("【AIコーチ】"); lines.push(c); });
+    return lines.join("\n");
+}
+async function devCopyHand(i) {
+    const text = devHandText(_devHands[i]);
+    const msg = document.getElementById("dev-copy-msg-" + i);
+    try {
+        await navigator.clipboard.writeText(text);
+        if (msg) msg.textContent = t("dev.copied");
+    } catch (e) {
+        // コピーできない環境では、選べる文字として出す
+        if (msg) { msg.textContent = t("dev.copy_failed"); }
+        const box = document.getElementById("dev-copy-text-" + i);
+        if (box) { box.style.display = "block"; box.value = text; box.select(); }
+    }
 }
 
 async function loadAll(period) {
@@ -278,6 +314,8 @@ function renderHandHistory(hands) {
         TIE: '<span class="hh-result hh-tie">TIE</span>',
     };
 
+    const dev = statsDevMode();
+    _devHands = hands;
     container.innerHTML = hands.map((h, i) => {
         const dt = new Date(h.date);
         const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -299,10 +337,19 @@ function renderHandHistory(hands) {
                 const lbl = actionLabel[a.action] || a.action;
                 const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
                 const ev = isHero && a.evaluation ? ` ${a.evaluation}` : "";
-                return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>`;
+                const why = dev && isHero && a.reason
+                    ? `<div class="hh-dev-reason">${escapeHtml(a.reason).replace(/\n/g, "<br>")}</div>` : "";
+                return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>${why}`;
             }).join("");
             return `<div class="hh-street-row"><span class="hh-street">${streetLabel[g.street] || g.street}</span>${chips}</div>`;
         }).join("");
+        const devHtml = dev ? `<div class="hh-dev">
+                ${h.cpu_pos ? `<div class="hh-detail-row"><span class="hh-detail-label">CPU</span>${escapeHtml(h.cpu_pos)}</div>` : ""}
+                ${(h.coach || []).map(c => `<div class="hh-dev-reason">【AIコーチ】<br>${escapeHtml(c).replace(/\n/g, "<br>")}</div>`).join("")}
+                <button class="hh-dev-copy" onclick="devCopyHand(${i})">${t("dev.copy_hand")}</button>
+                <span id="dev-copy-msg-${i}" class="hh-dev-msg"></span>
+                <textarea id="dev-copy-text-${i}" class="hh-dev-text" readonly style="display:none"></textarea>
+            </div>` : "";
 
         const boardHtml = h.board
             ? `<div class="hh-detail-row"><span class="hh-detail-label">${t("stats.board")}</span>${formatCards(h.board)}</div>` : "";
@@ -322,6 +369,7 @@ function renderHandHistory(hands) {
             <div class="hh-body" id="hh-body-${i}">
                 ${boardHtml}${cpuHtml}
                 <div class="hh-streets">${rowsHtml || t("stats.no_actions")}</div>
+                ${devHtml}
             </div>
         </div>`;
     }).join("");
