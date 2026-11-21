@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 開発者モードなら新しい画面（/v2）へ（2026/11/21〜。新バージョンの確認用） -->
+    <script>try { if (localStorage.getItem("poker_dev") === "1") location.replace("/v2" + (location.pathname === "/stats" ? "#stats" : "")); } catch (e) {}</script>
     <title data-i18n="app.name">ポーカーラッシュ</title>
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/home.css?v=10">
-    <script src="/static/i18n.js?v=10"></script>
+    <script src="/static/i18n.js?v=11"></script>
 </head>
 <body>
     <div class="home-container">

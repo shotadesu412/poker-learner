@@ -1,0 +1,778 @@
+/* stats.css — 分析ページ（2026/11/18 作り直し）
+ *
+ * 方針: 色は「緑 = 良い / 琥珀 = △ / 赤 = ミス・損」の3色と灰色の濃淡だけ。青・紫は使わない。
+ * カード（角丸 + 薄い背景 + 枠線 + 影）は使わず、見出しと細い区切り線で区切る。
+ * 角丸は棒グラフ・カード札など小さい部品に 3〜4px だけ。生成AIっぽい見た目の典型
+ * （角丸カードの入れ子、ふちが背景と同系色、片側だけ色付きの太い線、丸いピルの多用）を避ける。
+ */
+/* 2026/11/19〜 すべて .stats-scope の中だけに効く（練習画面と同じページに載せるため。分析・振り返りタブと単独の /stats ページ） */
+.stats-scope {
+    --bg: #1a1e1b;            /* ゲーム画面と同じ */
+    --text: #e2e8e4;
+    --muted: #9aa69f;
+    --faint: #5f6b64;
+    --line: #2f3632;          /* 区切り線 */
+    --track: #262c28;         /* 棒グラフの地 */
+    --good: #10b981;          /* ◎・良い */
+    --good-soft: #5e9b80;     /* ◯（緑の淡い方） */
+    --warn: #d4a72c;          /* △ */
+    --bad: #e5534b;           /* ×・損 */
+
+    /* 旧変数名（stats.html / stats.js の inline style が参照） */
+    --eval-optimal: var(--good);
+    --eval-good: var(--good-soft);
+    --eval-marginal: var(--warn);
+    --eval-bad: var(--bad);
+    --accent-red: var(--bad);
+    --text-muted: var(--muted);
+}
+
+.stats-scope, .stats-scope * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", Roboto, sans-serif;
+}
+
+.stats-scope {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom, 40px);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* ヘッダー */
+.stats-scope .stats-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: max(env(safe-area-inset-top, 0px), 12px) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.stats-scope .stats-header h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.stats-scope .back-btn {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-decoration: none;
+    padding: 6px 0;
+}
+
+/* 期間: 下線のタブ */
+.stats-scope .period-bar {
+    display: flex;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.stats-scope .period-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    padding: 12px 2px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.stats-scope .period-btn.active {
+    color: var(--text);
+    font-weight: 700;
+    border-bottom-color: var(--text);
+}
+
+/* コンテナとセクション */
+.stats-scope .stats-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 16px 24px;
+}
+
+.stats-scope .section-card {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.stats-scope .section-card:last-child {
+    border-bottom: none;
+}
+
+.stats-scope .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+}
+
+/* 総合スコア */
+.stats-scope .gto-gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.stats-scope .gto-score {
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-scope .gto-label {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.stats-scope .gauge-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: var(--track);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.stats-scope .gauge-bar {
+    height: 100%;
+    background: var(--good);
+    transition: width 0.6s ease;
+}
+
+/* 数値の一覧（ラベル左・値右の行） */
+.stats-scope .stat-badges {
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-scope .stat-badge {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+}
+
+.stats-scope .stat-badge-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 平均損失は損の色。stats.html の inline style の色・サイズを上書きして揃える */
+.stats-scope #stat-ev-loss {
+    font-size: 1rem !important;
+    color: var(--bad) !important;
+}
+
+.stats-scope .stat-badge-label {
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+/* ポジション別テーブル */
+.stats-scope .pos-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-scope .pos-table th {
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.stats-scope .pos-table td {
+    text-align: right;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.stats-scope .pos-table th:first-child,
+.stats-scope .pos-table td:first-child {
+    text-align: left;
+}
+
+.stats-scope .pos-table tr:last-child td {
+    border-bottom: none;
+}
+
+.stats-scope .pos-name {
+    font-weight: 700;
+}
+
+.stats-scope .gto-chip {
+    font-weight: 700;
+}
+
+.stats-scope .gto-high { color: var(--good); }
+
+.stats-scope .gto-mid { color: var(--text); }
+
+.stats-scope .gto-low { color: var(--bad); }
+
+/* ストリート別の積み上げ棒 */
+.stats-scope .street-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stats-scope .street-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stats-scope .street-label {
+    width: 76px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.stats-scope .stacked-bar {
+    flex: 1;
+    height: 18px;
+    display: flex;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--track);
+}
+
+.stats-scope .bar-seg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--bg);
+}
+
+.stats-scope .bar-optimal { background: var(--good); }
+
+.stats-scope .bar-good { background: var(--good-soft); }
+
+.stats-scope .bar-marginal { background: var(--warn); }
+
+.stats-scope .bar-bad { background: var(--bad); }
+
+.stats-scope .bar-empty {
+    flex: 1;
+}
+
+.stats-scope .street-total {
+    width: 44px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 凡例 */
+.stats-scope .eval-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.stats-scope .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stats-scope .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+/* よくあるミス: 番号つきの行 */
+.stats-scope .leak-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-scope .leak-item {
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+}
+
+.stats-scope .leak-item:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.stats-scope .leak-desc {
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.stats-scope .leak-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stats-scope .leak-ev-loss {
+    color: var(--bad);
+}
+
+.stats-scope .no-data {
+    color: var(--muted);
+    padding: 16px 0;
+    font-size: 0.9rem;
+}
+
+.stats-scope .loading {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* AIコーチ履歴・ハンド履歴: 区切り線の行。開くと下に詳細 */
+.stats-scope .ai-history-list,
+.stats-scope .hand-history-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-scope .ai-history-item,
+.stats-scope .hh-item {
+    border-top: 1px solid var(--line);
+}
+
+.stats-scope .ai-history-item:first-child,
+.stats-scope .hh-item:first-child {
+    border-top: none;
+}
+
+.stats-scope .ai-history-header {
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.stats-scope .ai-history-date {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+}
+
+.stats-scope .ai-history-toggle {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.stats-scope .ai-history-body {
+    display: none;
+    padding: 0 0 16px;
+}
+
+.stats-scope .ai-history-body.active {
+    display: block;
+}
+
+.stats-scope .ai-hand-box {
+    padding: 0 0 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.stats-scope .ai-hand-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.stats-scope .ai-feedback-box .coach-heading {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--text);
+}
+
+.stats-scope .ai-feedback-box .coach-bullet {
+    color: var(--muted);
+}
+
+.stats-scope .ai-context-box {
+    padding: 0 0 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--muted);
+    white-space: pre-wrap;
+}
+
+.stats-scope .ai-feedback-box {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+/* プレミアムで解放するセクション */
+.stats-scope .premium-section {
+    position: relative;
+}
+
+.stats-scope .premium-lock {
+    position: absolute;
+    top: 60px;   /* 見出しは見せる */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(26, 30, 27, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stats-scope .premium-lock-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-scope .premium-lock-icon {
+    color: var(--muted);
+}
+
+.stats-scope .premium-lock-text {
+    font-size: 0.9rem;
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.stats-scope .pro-badge {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    border: 1px solid var(--faint);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin-left: 6px;
+    vertical-align: 2px;
+}
+
+/* マイ プリフロップ レンジ表 */
+.stats-scope .pr-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.stats-scope .pr-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: 1px;
+}
+
+.stats-scope .personal-range-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 1px;
+    width: 100%;
+    background: var(--bg);
+}
+
+.stats-scope .pr-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.45rem;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: default;
+    position: relative;
+    background: var(--track);
+}
+
+/* 色の付いたマスは文字を濃く（背景が明るいため） */
+.stats-scope .pr-cell.pr-played {
+    color: var(--bg);
+}
+
+.stats-scope .pr-cell:hover .pr-tooltip {
+    display: block;
+}
+
+.stats-scope .pr-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    border-radius: 3px;
+    padding: 3px 7px;
+    font-size: 0.7rem;
+    font-weight: 400;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* ハンド履歴 */
+.stats-scope .hh-header {
+    padding: 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.stats-scope .hh-cards {
+    font-weight: 700;
+    min-width: 60px;
+    white-space: nowrap;
+}
+
+.stats-scope .hh-pos {
+    color: var(--muted);
+    font-weight: 700;
+    min-width: 36px;
+}
+
+.stats-scope .hh-date {
+    color: var(--muted);
+    font-size: 0.78rem;
+    flex: 1;
+}
+
+.stats-scope .hh-toggle {
+    color: var(--faint);
+    font-size: 0.75rem;
+}
+
+.stats-scope .hh-body {
+    display: none;
+    padding: 0 0 14px;
+}
+
+.stats-scope .hh-body.active {
+    display: block;
+}
+
+/* アクションは文字だけ。判定の色だけ付ける（◎ 緑 / ◯ 通常 / △ 琥珀 / × 赤） */
+.stats-scope .hh-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+.stats-scope .hh-action {
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.stats-scope .hh-action.eval-optimal { color: var(--good); }
+
+.stats-scope .hh-action.eval-good { color: var(--text); }
+
+.stats-scope .hh-action.eval-marginal { color: var(--warn); }
+
+.stats-scope .hh-action.eval-bad { color: var(--bad); }
+
+.stats-scope .hh-action.hh-cpu { color: var(--muted); }
+
+.stats-scope .hh-result {
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.stats-scope .hh-win { color: var(--good); }
+
+.stats-scope .hh-lose { color: var(--bad); }
+
+.stats-scope .hh-tie { color: var(--muted); }
+
+.stats-scope .hh-pot {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* カードは白い札のまま（文字ではなくカードとして読めるように） */
+.stats-scope .hh-card {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    padding: 2px 4px;
+    margin-right: 3px;
+    border-radius: 3px;
+    background: #f1f3f2;
+    color: #151816;
+}
+
+.stats-scope .hh-card.card-red { color: #c62828; }
+
+.stats-scope .hh-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.stats-scope .hh-detail-label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    min-width: 48px;
+}
+
+.stats-scope .hh-streets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stats-scope .hh-street-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+
+.stats-scope .hh-street {
+    color: var(--muted);
+    font-size: 0.78rem;
+    min-width: 72px;
+}
+
+/* プレイの傾向（2×2）。自分のタイプのマスだけ濃く */
+.stats-scope .style-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.stats-scope .style-cell {
+    background: var(--bg);
+    color: var(--faint);
+    font-size: 0.8rem;
+    padding: 18px 8px;
+    text-align: center;
+}
+
+.stats-scope .style-cell.active {
+    background: var(--track);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.stats-scope .style-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.stats-scope .style-desc {
+    font-size: 0.88rem;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.stats-scope .style-diff {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-scope .style-note {
+    font-size: 0.75rem;
+    color: var(--faint);
+    margin-top: 10px;
+}
+
+/* 開発者モード（判定の解説・コピー） */
+.stats-scope .hh-dev-reason {
+    flex-basis: 100%;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--muted);
+    border-left: 2px solid var(--line);
+    padding: 2px 0 2px 8px;
+    margin: 2px 0 4px;
+}
+
+.stats-scope .hh-dev { margin-top: 10px; }
+
+.stats-scope .hh-dev-copy {
+    background: none;
+    border: 1px solid var(--faint);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.stats-scope .hh-dev-msg { font-size: 0.75rem; color: var(--muted); margin-left: 8px; }
+
+.stats-scope .hh-dev-text {
+    width: 100%;
+    min-height: 120px;
+    margin-top: 8px;
+    background: var(--track);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 0.72rem;
+}

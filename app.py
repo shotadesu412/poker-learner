@@ -86,6 +86,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def serve_home():
     return FileResponse("static/home.html")
 
+@app.get("/v2")
+def serve_v2():
+    # 新しい画面（作業中）。開発者モードのときだけ / /play /stats からここへ移る（static/v2/。2026/11/21〜）
+    return FileResponse("static/v2/index.html")
+
 @app.get("/play")
 def serve_index():
     return FileResponse("static/index.html")

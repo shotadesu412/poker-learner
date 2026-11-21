@@ -1256,7 +1256,7 @@ function requestAppReview() {
 // 設定の見出し「設定」を7回続けて押すとコードの入力欄が出る。正しいコードで localStorage に poker_dev=1 を保存する。
 // オンの間: AIコーチの回数制限なし・ハンド履歴に判定の解説と「このハンドをコピー」（stats.js）・ハンド履歴のロック解除。
 // コードは平文で置かず SHA-256 だけを置く。AIコーチの回数制限はもともと端末側だけの管理なので、これで危険は増えない
-const DEV_CODE_SHA256 = "53772eb5006ed55acb392faae2febfb4f0bdfa61463972fa4b3d3ac2dbc22ad4";
+const DEV_CODE_SHA256 = "6bd7eac2d26d0ea359985c9f5340e0090e8181d0076e5711a9143a6e2d49caa5";
 function isDevMode() {
     try { return localStorage.getItem("poker_dev") === "1"; } catch (e) { return false; }
 }
@@ -1293,6 +1293,8 @@ async function submitDevCode() {
 function setDevMode(on) {
     try { if (on) localStorage.setItem("poker_dev", "1"); else localStorage.removeItem("poker_dev"); } catch (e) { /* 無視 */ }
     renderDevRow(false);
+    // 開発者モードは新しい画面（/v2）で確認する（2026/11/21〜）
+    if (on) location.href = "/v2";
 }
 
 // --- AIコーチのゲート（広告/プレミアム選択） ---

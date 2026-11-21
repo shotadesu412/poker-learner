@@ -1,0 +1,323 @@
+/* tabs.css — 下のタブで切り替える1ページ構成（2026/11/19〜。ブランチ ui-v2）
+ *
+ * body は style.css で「縦に並べて画面の高さに固定」している。各タブ（.tab-view）はその中で残りの高さを使い、
+ * 表示中の1つだけを出す。練習タブは中身を今までどおり縦に並べ、分析・振り返り・設定はタブの中でスクロールする。
+ * 色は分析ページ（stats.css）と同じ方針: 緑・琥珀・赤と灰色だけ。カードの入れ子や太い枠は使わない。
+ */
+
+.tab-view {
+    display: none;
+    flex: 1;
+    min-height: 0;
+}
+
+.tab-view.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 分析・振り返り・設定はタブの中でスクロール */
+#view-review.active,
+#view-stats.active,
+#view-settings.active {
+    display: block;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* stats.css の body 用の指定（画面の高さいっぱい・下の余白）はタブの中では外す */
+.tab-view.stats-scope {
+    min-height: 0;
+    padding-bottom: 24px;
+}
+
+/* 練習タブの一番下（操作ボタン）は、下にタブがあるのでホームバー分の余白は要らない */
+#view-play .action-area {
+    padding-bottom: 10px;
+}
+
+.top-nav-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* 下のタブ */
+.tab-bar {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--bg-color);
+    border-top: 1px solid var(--border-color);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 60;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #6b766f;
+    padding: 7px 0 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.66rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-btn.active {
+    color: var(--text-main);
+}
+
+.tab-btn.active svg {
+    color: #10b981;
+}
+
+/* 設定タブ（以前の白いシートを、アプリと同じ暗い配色に） */
+.settings-view {
+    background: var(--bg-color);
+}
+
+.settings-view .settings-header {
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: max(env(safe-area-inset-top, 0px), 12px) 16px 12px;
+}
+
+.settings-view .settings-title {
+    color: var(--text-main);
+}
+
+.settings-view .settings-scroll {
+    overflow: visible;
+    padding: 20px 0 32px;
+}
+
+.settings-view .settings-section-label {
+    color: var(--text-muted);
+}
+
+.settings-view .settings-group {
+    background: transparent;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    margin: 0 0 24px;
+}
+
+.settings-view .settings-row {
+    background: transparent;
+}
+
+.settings-view .settings-row-label {
+    color: var(--text-main);
+}
+
+.settings-view .settings-row-value,
+.settings-view .settings-readonly .settings-row-label {
+    color: var(--text-muted);
+}
+
+.settings-view .settings-separator {
+    background: var(--border-color);
+}
+
+/* ===== 練習画面: 履歴・相手のレンジ・テーブルのスワイプ（panels.js） ===== */
+.swipe-wrap {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.swipe-track {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.swipe-track::-webkit-scrollbar { display: none; }
+
+.swipe-page {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* 履歴が空でも面は残す（以前は :empty で消していた） */
+.swipe-page .eval-history-inline:empty {
+    display: flex;
+}
+
+.swipe-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 0 0;
+}
+
+.swipe-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: #3a423d;
+    cursor: pointer;
+}
+
+.swipe-dot.active { background: var(--text-main); }
+
+.panel-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+
+.panel-caption {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+/* 相手のレンジ（13×13） */
+.panel-range { padding: 4px 2px; }
+
+.pr-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 1px;
+}
+
+.pr-c {
+    aspect-ratio: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    color: #4b544f;
+    background: #20251f;
+    border-radius: 2px;
+}
+
+.pr-c.pr-in { color: #0d1a14; }
+
+.pr-c.pr-gone {
+    background: rgba(229, 83, 75, 0.28);
+    color: #e5534b;
+    text-decoration: line-through;
+}
+
+.panel-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.panel-legend i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: 0;
+}
+
+.lg-in { background: rgba(16, 185, 129, 0.8); }
+.lg-gone { background: rgba(229, 83, 75, 0.5); }
+
+/* 楕円のテーブル */
+.panel-table {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.tb-table {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1.25;
+}
+
+.tb-felt {
+    position: absolute;
+    inset: 14% 10%;
+    border-radius: 50%;
+    background: #1f3a2c;
+    border: 6px solid #2c2219;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tb-center { text-align: center; }
+
+.tb-board { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; }
+
+.tb-card {
+    background: #f1f3f2;
+    color: #151816;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 3px;
+}
+
+.tb-card.red { color: #c62828; }
+
+.tb-pot { font-size: 0.8rem; color: #e2e8e4; font-weight: 700; }
+
+.tb-seat {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    min-width: 54px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: #262c28;
+    border: 1px solid #3b423f;
+}
+
+.tb-seat.is-out { opacity: 0.35; }
+.tb-seat.is-hero { border-color: #10b981; }
+.tb-seat.is-cpu { border-color: #9aa69f; }
+
+.tb-pos { font-size: 0.7rem; font-weight: 700; color: var(--text-main); }
+.tb-who { font-size: 0.66rem; color: var(--text-muted); }
+
+.tb-d {
+    display: inline-block;
+    background: #e2e8e4;
+    color: #151816;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    font-size: 0.55rem;
+}
+
+.tb-bet {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #d4a72c;
+}

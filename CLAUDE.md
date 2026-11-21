@@ -35,6 +35,17 @@
 - **保留（2026/11/19 shota 指定で止めている）**: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
   SB の 3ベットは相手の位置に関係なく SB_vs_BTN を使っている（vs UTG の方が vs CO より広い）。HJ/CO/BTN のコールレンジも相手の位置で変わらない
 
+### 新しい UI（`static/v2/`。開発者モードのときだけ開く。shota が納得するまで今の画面は変えない）
+- 下のタブ（練習・振り返り・分析・設定）の1ページ化、練習画面のアクション履歴を左右スワイプで3枚（履歴・相手のレンジ・楕円のテーブル）。
+  コンセプト: 理論が入った相手と打ち合える → 一手ごとに即評価 → 納得いかないハンドは AI に深く解説してもらう
+- **開発者モード（下の節）をオンにすると、`/` `/play` `/stats` を開いたとき `/v2` に移る**（各ページの head の inline script）。オフで今の画面へ戻る。
+  新バージョンの確認はこの経路で shota の実機（本番アプリ）で行う。ユーザーには見えない
+- 今の画面と共通: `static/poker/`・`style.css`・`i18n.js`・`game_api.js`。新しい画面だけの部品: `static/v2/` の index.html・script.js・stats.js・stats.css・tabs.css・panels.js。
+  **共通ファイルを変えるときは両方の画面で確認する**。新しい画面を正式にするときは static/v2/ の中身を今の画面の場所へ移し、振り分けの inline script を消す
+- 作業用ブランチ `ui-v2` は 2026/11/21 に static/v2/ へ移したので使わない
+- サーバー無しの確認用ページ: https://claude.ai/artifact/3B5aPFbmUDcGuRVBEFYxcs （`python3 tools/preview/build_preview.py <出力先>` → 公開し直し。AIコーチは動かない）
+- 残り: 振り返りタブから過去のハンドを AI に相談する（C）。ハンド履歴は今プレミアム限定のまま（課金導線は触らない）
+
 ### shota 待ち（ここから再開）
 1. **Apple の規約（PLA）に同意する**: developer.apple.com/account と App Store Connect の「ビジネス」の両方。
    未同意のせいで Organizer のアップロードが「PLA Update available / No iOS Distribution certificate」で止まっている。
@@ -354,8 +365,8 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=15` / `script.js?v=38` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=10` / `game_api.js?v=13`（index.html, home.html, stats.html 内）
+   現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=11` / `game_api.js?v=13`（index.html, home.html, stats.html 内）
    `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 12）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
@@ -376,7 +387,7 @@ poker-learner/
 - チームID: `7Z2ZRB6V2J` / Bundle ID: `com.shota.pokerlearner`
 
 ### 開発者モード（2026/11/21〜）
-- 設定の見出し「設定」を7回続けて押す → コードを入力（コードは shota が持っている。script.js には SHA-256 だけ）。localStorage の `poker_dev=1`
+- 設定の見出し「設定」を7回続けて押す → コードを入力（コードは shota が持っている。script.js と static/v2/script.js には SHA-256 だけ）。localStorage の `poker_dev=1`。オンにすると新しい画面（/v2）が開く
 - オンの間: AIコーチの回数制限なし・ハンド履歴のロック解除・各アクションの判定の解説・相手のポジション・AIコーチの回答を表示・「このハンドをコピー」
   （コピーしたテキストを貼ってもらえば、アプリの判定とコーチの食い違いをこちらで再現・検証できる）
 - 判定の解説（actions の `reason`）と相手のポジション（sessions の `cpu_pos`）は、11/21 以降の全ユーザーの記録に保存している

@@ -1,0 +1,458 @@
+// stats.js — 分析ページのデータ取得とUI描画ロジック
+let currentPeriod = "all";
+let statsIsPremium = false;   // script.js（練習画面）の isPremium と同じページに載るので別名にしている
+
+// 単独の /stats ページでも、練習画面と同じページの「分析」「振り返り」タブでも使う（2026/11/19〜）。
+// タブのときは script.js がタブを開くたびに StatsPage.load() を呼ぶ
+const StatsPage = {
+    _bound: false,
+    load() {
+        statsIsPremium = localStorage.getItem("poker_is_premium") === "true";
+        applyPremiumGates();
+        if (!this._bound) {
+            this._bound = true;
+            document.querySelectorAll(".period-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    currentPeriod = btn.dataset.period;
+                    document.querySelectorAll(".period-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    loadAll(currentPeriod);
+                });
+            });
+        }
+        return loadAll(currentPeriod);
+    },
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.body.dataset.page === "stats") StatsPage.load();
+});
+
+// 開発者モード（script.js の設定で切り替え。localStorage の poker_dev）
+function statsDevMode() {
+    try { return localStorage.getItem("poker_dev") === "1"; } catch (e) { return false; }
+}
+
+function applyPremiumGates() {
+    const lockIds = ["lock-position", "lock-leaks", "lock-hand-history"];
+    lockIds.forEach(id => {
+        const el = document.getElementById(id);
+        // 開発者モードはハンド履歴を見られるようにする（判定の解説を確かめるため）
+        const open = statsIsPremium || (id === "lock-hand-history" && statsDevMode());
+        if (el) el.style.display = open ? "none" : "flex";
+    });
+}
+
+// 開発者モード: ハンドを、判定の解説と AIコーチの回答つきのテキストにする（貼り付けて送る用）
+let _devHands = [];
+function devHandText(h) {
+    const who = (a) => a.actor === "CPU" ? `相手(${h.cpu_pos || "?"})` : `あなた(${h.position || "?"})`;
+    const lines = [];
+    lines.push(`【ハンド】${h.date} / あなた ${h.position || "?"} ${h.hole_cards || "?"} / 相手 ${h.cpu_pos || "?"} ${h.cpu_hand || "?"} / 結果 ${h.winner || "-"} / POT ${Number(h.final_pot || 0).toFixed(1)}bb`);
+    lines.push(`ボード: ${h.board || "-"}`);
+    (h.actions || []).forEach(a => {
+        const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+        lines.push(`[${a.street}] ${who(a)} ${a.action}${amt}${a.evaluation ? " " + a.evaluation : ""}`);
+        if (a.reason) lines.push("  解説: " + a.reason.replace(/\n/g, " / "));
+    });
+    (h.coach || []).forEach(c => { lines.push("【AIコーチ】"); lines.push(c); });
+    return lines.join("\n");
+}
+async function devCopyHand(i) {
+    const text = devHandText(_devHands[i]);
+    const msg = document.getElementById("dev-copy-msg-" + i);
+    try {
+        await navigator.clipboard.writeText(text);
+        if (msg) msg.textContent = t("dev.copied");
+    } catch (e) {
+        // コピーできない環境では、選べる文字として出す
+        if (msg) { msg.textContent = t("dev.copy_failed"); }
+        const box = document.getElementById("dev-copy-text-" + i);
+        if (box) { box.style.display = "block"; box.value = text; box.select(); }
+    }
+}
+
+async function loadAll(period) {
+    showLoading(true);
+    try {
+        const { overview, streets, style } = await StatsApi.loadPrimary(period);
+        renderOverview(overview);
+        renderStyle(style);
+        renderStreets(streets);
+
+        const { position, leaks, aiHistory, handHistory, personalRange } = await StatsApi.loadSecondary(period);
+        renderPosition(position);
+        renderLeaks(leaks);
+        renderAiHistory(aiHistory);
+        renderHandHistory(handHistory);
+        renderPersonalRange(personalRange);
+    } catch (e) {
+        console.error("Stats API error:", e);
+    }
+    showLoading(false);
+}
+
+// ==============================
+// 総合スコア
+// ==============================
+function renderOverview(data) {
+    const rate = data.gto_match_rate ?? 0;
+    document.getElementById("gto-score").textContent = rate + "%";
+    document.getElementById("gauge-bar").style.width = rate + "%";
+    document.getElementById("stat-actions").textContent = data.total_actions;
+    document.getElementById("stat-ev-loss").textContent = (data.avg_ev_loss ?? 0).toFixed(2) + " bb";
+}
+
+// ==============================
+// ポジション別テーブル
+// ==============================
+function renderPosition(rows) {
+    const tbody = document.getElementById("pos-table-body");
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="no-data">${t("stats.no_data")}</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(r => {
+        const gtoClass = r.gto_rate >= 70 ? "gto-high" : r.gto_rate >= 50 ? "gto-mid" : "gto-low";
+        const handsLabel = r.hands === 0 ? "—" : t("stats.hands_count", { n: r.hands });
+        return `<tr>
+            <td class="pos-name">${r.pos}</td>
+            <td>${handsLabel}</td>
+            <td><span class="gto-chip ${gtoClass}">${r.gto_rate}%</span></td>
+        </tr>`;
+    }).join("");
+}
+
+// ==============================
+// プレイの傾向（4タイプ）
+// ==============================
+function renderStyle(st) {
+    const cells = document.querySelectorAll("#style-grid .style-cell");
+    cells.forEach(c => c.classList.toggle("active", !!st && st.ready && c.dataset.type === st.type));
+    const box = document.getElementById("style-result");
+    if (!st || !st.ready) {
+        box.innerHTML = `<div class="style-desc">${t("stats.style.need", { n: String((st && st.need) || 30) })}</div>`;
+        return;
+    }
+    const sign = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(1);
+    const balanced = Math.abs(st.loose_diff) < 2 && Math.abs(st.aggr_diff) < 2;
+    box.innerHTML = `<div class="style-name">${t("stats.style.name." + st.type)}</div>
+        <div class="style-desc">${balanced ? t("stats.style.balanced") : t("stats.style.desc." + st.type)}</div>
+        <div class="style-diff">${t("stats.style.diff", { loose: sign(st.loose_diff), aggr: sign(st.aggr_diff) })}</div>`;
+}
+
+// ==============================
+// ストリート別評価分布
+// ==============================
+function renderStreets(data) {
+    const container = document.getElementById("street-bars");
+    const streets = ["PREFLOP", "FLOP", "TURN", "RIVER"];
+    const labels = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
+
+    container.innerHTML = streets.map(st => {
+        const d = data[st] || { "◎": 0, "◯": 0, "△": 0, "×": 0 };
+        const total = d["◎"] + d["◯"] + d["△"] + d["×"];
+        const pct = (n) => total > 0 ? Math.round(n / total * 100) : 0;
+        const oo = pct(d["◎"]), o = pct(d["◯"]), mg = pct(d["△"]), x = pct(d["×"]);
+        const seg = (w, cls, label) => w > 0
+            ? `<div class="bar-seg ${cls}" style="width:${w}%">${w > 8 ? label : ""}</div>`
+            : "";
+        const barHTML = total > 0
+            ? seg(oo, "bar-optimal", "◎") + seg(o, "bar-good", "◯") + seg(mg, "bar-marginal", "△") + seg(x, "bar-bad", "×")
+            : `<div class="bar-empty"></div>`;
+        return `<div class="street-row">
+            <div class="street-label">${labels[st]}</div>
+            <div class="stacked-bar">${barHTML}</div>
+            <div class="street-total">${total > 0 ? t("stats.hands_count", { n: total }) : "—"}</div>
+        </div>`;
+    }).join("");
+}
+
+// ==============================
+// よくあるミス
+// ==============================
+function renderLeaks(leaks) {
+    const container = document.getElementById("leak-list");
+    if (!leaks || leaks.length === 0) {
+        container.innerHTML = `<div class="no-data">${t("stats.no_leaks")}</div>`;
+        return;
+    }
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
+    container.innerHTML = leaks.map((lk, i) => {
+        const isMarginal = lk.evaluation === "△";
+        return `<div class="leak-item ${isMarginal ? "marginal" : ""}">
+            <div class="leak-desc">${i + 1}. ${lk.description}</div>
+            <div class="leak-meta">
+                <span>${lk.pos} / ${lk.street}</span>
+                <span>${actionLabel[lk.action] || lk.action} × ${t("stats.hands_count", { n: lk.count })}</span>
+                <span class="leak-ev-loss">${t("stats.avg_loss", { v: lk.avg_ev_loss.toFixed(2) })}</span>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+// ==============================
+// AIコーチ履歴
+// ==============================
+function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// コーチの回答を読みやすく（ゲーム画面の formatCoachText と同じ記法: 【】/[] 見出し、- 箇条書き）
+function formatCoachReply(text) {
+    return escapeHtml(text)
+        .replace(/【([^】]+)】/g, '<strong class="coach-heading">【$1】</strong>')
+        .replace(/\[([^\][\n]{1,40})\]/g, '<strong class="coach-heading">[$1]</strong>')
+        .replace(/^-\s+/gm, '<span class="coach-bullet">▸</span> ');
+}
+
+// 2026/11/16 より前の相談履歴は、AIに送った生テキスト（hand_context）しか残っていない。
+// そこからカード・ポジション・アクションを読み取り、新しい保存形式（hand_state）と同じ形にする
+function parseLegacyHandContext(text) {
+    if (!text) return null;
+    const cardsIn = (re) => {
+        const m = text.match(re);
+        if (!m) return [];
+        return (m[1].match(/[2-9TJQKA][shdc]/g) || []);
+    };
+    const hero = cardsIn(/(?:Hero|あなた|You)[^\n]*?(?:ハンド|hand) ([^/\n]*)/);
+    const board = cardsIn(/(?:ボード|Board): ([^\n]*)/);
+    const posMatch = text.match(/(?:Hero|あなた|You)[^:\n]*: (\w+) \//);
+    const history = [];
+    const lineRe = /^\[(PREFLOP|FLOP|TURN|RIVER)\] (\S+?)\((\w+|\?)\): (\w+)(?: ([\d.]+)bb)?/gm;
+    let m;
+    while ((m = lineRe.exec(text)) !== null) {
+        const isCpu = /^(CPU|相手|Opponent)$/.test(m[2]);
+        history.push({ street: m[1], actor: isCpu ? "CPU" : "HERO", action: m[4], amount: m[5] ? Number(m[5]) : 0 });
+    }
+    if (!hero.length && !history.length) return null;
+    return { hero, board, hero_pos: posMatch ? posMatch[1] : "", history };
+}
+
+// ハンド履歴と同じ見た目で、ストリートごとのアクションを並べる
+function renderActionRows(history) {
+    const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
+    const streetLabel = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
+    const streets = [];
+    (history || []).forEach(a => {
+        const last = streets[streets.length - 1];
+        if (!last || last.street !== a.street) streets.push({ street: a.street, items: [a] });
+        else last.items.push(a);
+    });
+    return streets.map(g => {
+        const chips = g.items.map(a => {
+            const isHero = a.actor !== "CPU";
+            const cls = isHero ? (evalClass[a.evaluation] || "") : "hh-cpu";
+            const who = isHero ? t("stats.you") : "CPU";
+            const lbl = actionLabel[a.action] || escapeHtml(a.action);
+            const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+            const ev = isHero && a.evaluation ? ` ${escapeHtml(a.evaluation)}` : "";
+            return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>`;
+        }).join("");
+        return `<div class="hh-street-row"><span class="hh-street">${streetLabel[g.street] || escapeHtml(g.street)}</span>${chips}</div>`;
+    }).join("");
+}
+
+function renderAiHistory(historyData) {
+    const container = document.getElementById("ai-history-list");
+    if (!historyData || historyData.length === 0) {
+        container.innerHTML = `<div class="no-data">${t("stats.no_coach_history")}</div>`;
+        return;
+    }
+    container.innerHTML = historyData.map((h, i) => {
+        const dt = new Date(h.timestamp);
+        const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const st = h.hand_state || parseLegacyHandContext(h.hand_context);
+        let handHtml;
+        if (st) {
+            const cards = formatCards((st.hero || []).join(",")) || "??";
+            const pos = st.hero_pos ? `<span class="hh-pos">${escapeHtml(st.hero_pos)}</span>` : "";
+            const boardHtml = (st.board || []).length
+                ? `<div class="hh-detail-row"><span class="hh-detail-label">${t("stats.board")}</span>${formatCards(st.board.join(","))}</div>` : "";
+            handHtml = `<div class="ai-hand-box">
+                <div class="ai-hand-head"><span class="hh-cards">${cards}</span>${pos}</div>
+                ${boardHtml}
+                <div class="hh-streets">${renderActionRows(st.history) || t("stats.no_actions")}</div>
+            </div>`;
+        } else {
+            // 読み取れない形式は、そのまま（ただし読める色で）出す
+            handHtml = `<div class="ai-context-box">${escapeHtml(h.hand_context)}</div>`;
+        }
+        return `<div class="ai-history-item">
+            <div class="ai-history-header" onclick="toggleCollapse('ai-body-${i}', 'ai-toggle-${i}')">
+                <span style="font-weight:700;">${t("stats.hand_n", { n: historyData.length - i })} <span class="ai-history-date">(${dateStr})</span></span>
+                <span class="ai-history-toggle" id="ai-toggle-${i}">${t("stats.show_detail")}</span>
+            </div>
+            <div class="ai-history-body" id="ai-body-${i}">
+                ${handHtml}
+                <div class="ai-feedback-box">${formatCoachReply(h.ai_feedback)}</div>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+// ==============================
+// ハンド履歴
+// ==============================
+// "Ah,Kd" 形式のカード文字列をスート記号付きチップHTMLに変換
+function formatCards(cardsStr) {
+    if (!cardsStr) return "";
+    const suitMap = { h: "♥", d: "♦", s: "♠", c: "♣" };
+    return cardsStr.split(",").filter(Boolean).map(c => {
+        c = c.trim();
+        const rank = c.slice(0, -1);
+        const suit = c.slice(-1).toLowerCase();
+        const red = (suit === "h" || suit === "d") ? " card-red" : "";
+        return `<span class="hh-card${red}">${rank}${suitMap[suit] || suit}</span>`;
+    }).join("");
+}
+
+function renderHandHistory(hands) {
+    const container = document.getElementById("hand-history-list");
+    if (!hands || hands.length === 0) {
+        container.innerHTML = `<div class="no-data">${t("stats.no_hand_history")}</div>`;
+        return;
+    }
+    const evalClass = { "◎": "eval-optimal", "◯": "eval-good", "△": "eval-marginal", "×": "eval-bad" };
+    const actionLabel = { FOLD: t("action.fold"), CALL: t("action.call"), BET: t("action.bet"), RAISE: t("action.raise"), CHECK: t("action.check") };
+    const streetLabel = { PREFLOP: t("street.PREFLOP"), FLOP: t("street.FLOP"), TURN: t("street.TURN"), RIVER: t("street.RIVER") };
+    const winnerBadge = {
+        YOU: '<span class="hh-result hh-win">WIN</span>',
+        CPU: '<span class="hh-result hh-lose">LOSE</span>',
+        TIE: '<span class="hh-result hh-tie">TIE</span>',
+    };
+
+    const dev = statsDevMode();
+    _devHands = hands;
+    container.innerHTML = hands.map((h, i) => {
+        const dt = new Date(h.date);
+        const dateStr = dt.toLocaleString(getLang() === 'ja' ? 'ja-JP' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const cards = formatCards(h.hole_cards) || "??";
+        const pos = h.position || "?";
+
+        // ストリートごとにグループ化（時系列順を維持）
+        const streets = [];
+        (h.actions || []).forEach(a => {
+            const last = streets[streets.length - 1];
+            if (!last || last.street !== a.street) streets.push({ street: a.street, items: [a] });
+            else last.items.push(a);
+        });
+        const rowsHtml = streets.map(g => {
+            const chips = g.items.map(a => {
+                const isHero = a.actor !== "CPU";
+                const cls = isHero ? (evalClass[a.evaluation] || "") : "hh-cpu";
+                const who = isHero ? t("stats.you") : "CPU";
+                const lbl = actionLabel[a.action] || a.action;
+                const amt = a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : "";
+                const ev = isHero && a.evaluation ? ` ${a.evaluation}` : "";
+                const why = dev && isHero && a.reason
+                    ? `<div class="hh-dev-reason">${escapeHtml(a.reason).replace(/\n/g, "<br>")}</div>` : "";
+                return `<span class="hh-action ${cls}">${who}: ${lbl}${amt}${ev}</span>${why}`;
+            }).join("");
+            return `<div class="hh-street-row"><span class="hh-street">${streetLabel[g.street] || g.street}</span>${chips}</div>`;
+        }).join("");
+        const devHtml = dev ? `<div class="hh-dev">
+                ${h.cpu_pos ? `<div class="hh-detail-row"><span class="hh-detail-label">CPU</span>${escapeHtml(h.cpu_pos)}</div>` : ""}
+                ${(h.coach || []).map(c => `<div class="hh-dev-reason">【AIコーチ】<br>${escapeHtml(c).replace(/\n/g, "<br>")}</div>`).join("")}
+                <button class="hh-dev-copy" onclick="devCopyHand(${i})">${t("dev.copy_hand")}</button>
+                <span id="dev-copy-msg-${i}" class="hh-dev-msg"></span>
+                <textarea id="dev-copy-text-${i}" class="hh-dev-text" readonly style="display:none"></textarea>
+            </div>` : "";
+
+        const boardHtml = h.board
+            ? `<div class="hh-detail-row"><span class="hh-detail-label">${t("stats.board")}</span>${formatCards(h.board)}</div>` : "";
+        const cpuHtml = h.cpu_hand
+            ? `<div class="hh-detail-row"><span class="hh-detail-label">CPU</span>${formatCards(h.cpu_hand)}</div>` : "";
+        const potHtml = h.final_pot > 0 ? `<span class="hh-pot">POT ${Number(h.final_pot).toFixed(1)}bb</span>` : "";
+        const badge = winnerBadge[h.winner] || "";
+
+        return `<div class="hh-item">
+            <div class="hh-header" onclick="toggleCollapse('hh-body-${i}', 'hh-toggle-${i}')">
+                <span class="hh-cards">${cards}</span>
+                <span class="hh-pos">${pos}</span>
+                ${badge}${potHtml}
+                <span class="hh-date">${dateStr}</span>
+                <span class="hh-toggle" id="hh-toggle-${i}">▼</span>
+            </div>
+            <div class="hh-body" id="hh-body-${i}">
+                ${boardHtml}${cpuHtml}
+                <div class="hh-streets">${rowsHtml || t("stats.no_actions")}</div>
+                ${devHtml}
+            </div>
+        </div>`;
+    }).join("");
+}
+
+// ==============================
+// パーソナルレンジグリッド
+// ==============================
+function renderPersonalRange(data) {
+    const container = document.getElementById("personal-range-grid");
+    if (!container) return;
+
+    const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+    const hasData = data && Object.keys(data).length > 0;
+
+    if (!hasData) {
+        container.innerHTML = `<div class="no-data" style="grid-column:span 13;">${t("stats.no_preflop_data")}</div>`;
+        return;
+    }
+
+    container.innerHTML = "";
+    for (let r1 = 0; r1 < 13; r1++) {
+        for (let r2 = 0; r2 < 13; r2++) {
+            let combo;
+            if (r1 === r2) {
+                combo = ranks[r1] + ranks[r2];
+            } else if (r1 < r2) {
+                combo = ranks[r1] + ranks[r2] + "s";
+            } else {
+                combo = ranks[r2] + ranks[r1] + "o";
+            }
+
+            const cell = document.createElement("div");
+            cell.className = "pr-cell";
+            cell.innerText = combo;
+
+            const d = data[combo];
+            if (d) {
+                const total = (d.OPEN || 0) + (d["3BET"] || 0) + (d.CALL || 0) + (d.FOLD || 0);
+                const played = total - (d.FOLD || 0);
+                const playRate = total > 0 ? played / total : 0;
+                const opacity = Math.max(0.3, Math.min(1.0, 0.3 + playRate * 0.7));
+
+                // 色は3つだけ: オープン = 緑 / 3ベット = 白 / コール = 灰色。参加率が低いほど薄く
+                let bg = null;
+                if ((d["3BET"] || 0) > 0 && (d["3BET"] || 0) >= (d.OPEN || 0)) {
+                    bg = `rgba(226,232,228,${opacity})`; // 3bet
+                } else if ((d.OPEN || 0) > 0) {
+                    bg = `rgba(16,185,129,${opacity})`; // open
+                } else if ((d.CALL || 0) > 0) {
+                    bg = `rgba(154,166,159,${opacity})`; // call
+                }
+                if (bg) cell.classList.add("pr-played");
+                if (bg) cell.style.background = bg;
+
+                const tip = t("stats.pr_tooltip", { combo: combo, open: d.OPEN||0, threebet: d["3BET"]||0, call: d.CALL||0, fold: d.FOLD||0 });
+                cell.innerHTML += `<span class="pr-tooltip">${tip}</span>`;
+            }
+
+            container.appendChild(cell);
+        }
+    }
+}
+
+function toggleCollapse(bodyId, toggleId) {
+    const body = document.getElementById(bodyId);
+    const toggle = document.getElementById(toggleId);
+    if (!body) return;
+    const isOpen = body.classList.contains('active');
+    body.classList.toggle('active', !isOpen);
+    if (toggle) toggle.textContent = isOpen ? t("stats.show_detail") : t("stats.hide_detail");
+}
+
+function showLoading(on) {
+    const el = document.getElementById("loading-overlay");
+    if (el) el.style.display = on ? "block" : "none";
+}
