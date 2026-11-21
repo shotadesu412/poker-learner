@@ -45,6 +45,9 @@
     TURN: { ip: { base: 0.95, slope: 0.6 }, oop: { base: 0.85, slope: 0.8 } },
   };
 
+  // ドンクを最善とする、チェックに対する予測の得の下限（ポット比）。監査で、これ未満の予測は実際には得でなかった
+  const DONK_MIN_EDGE = 0.10;
+
   // 判定の閾値（最善手との差 ÷ ポット）
   const GRADE = { optimal: 0.02, good: 0.07, marginal: 0.15 };
 
@@ -260,7 +263,21 @@
         chosen = { action, amount, ...PostflopEV.actionEv(ctx, action, amount) };
         opts.push(chosen);
       }
-      const best = opts.reduce((a, b) => (b.ev > a.ev ? b : a));
+      let best = opts.reduce((a, b) => (b.ev > a.ev ? b : a));
+      // ドンクの場面（OOP・主導権なし・このストリートで先に動く）はチェックを基準にする（2026/11/21〜）。
+      // 理論では主導権の無い側は先にチェックが基本。監査（ロールアウト）では、モデルが予測したドンクの得が
+      // ポットの10%未満の場面は、実際にはチェックと同じかチェックの方が得だった（10〜20%: +9.6% / 20%以上: +30%）。
+      // そこで、予測の得が10%以上の場面だけドンクを最善とし、それ以外はチェックを最善とする
+      const donkSpot = facing <= 0.01 && !ctx.ip && eng.aggressor !== 'HERO'
+        && !eng.actionHistory.some((a) => a.street === eng.street);
+      let donk = null;
+      const checkOpt = opts.find((o) => o.action === 'CHECK');
+      if (donkSpot && checkOpt) {
+        const bestBet = opts.filter((o) => o.action === 'BET').reduce((a, b) => (!a || b.ev > a.ev ? b : a), null);
+        const edge = bestBet ? (bestBet.ev - checkOpt.ev) / Math.max(0.5, ctx.pot) : -1;
+        donk = { justified: edge >= DONK_MIN_EDGE, edge };
+        if (!donk.justified && (best.action === 'BET')) best = checkOpt;
+      }
       const loss = Math.max(0, best.ev - chosen.ev);
       const lossPct = loss / Math.max(0.5, ctx.pot);
       const B = root.BetSizing;
@@ -279,12 +296,19 @@
       const gradeOf = (kk) => (lossPct <= GRADE.optimal * kk ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * kk ? B.EVAL_GOOD
         : lossPct <= GRADE.marginal * kk ? B.EVAL_MARGINAL : B.EVAL_BAD);
       let evaluation = gradeOf(k);
+      // 正当化されないドンクを打った（チェック以上の得はあるが小さい）: チェックが基本なので ◯ まで。
+      // チェックより損なドンクは、普通に「チェックの方が良い」で判定する
+      const donkUnjustified = donk && !donk.justified && chosen.action === 'BET' && chosen.ev >= checkOpt.ev;
+      if (donkUnjustified && (evaluation === B.EVAL_OPTIMAL)) evaluation = B.EVAL_GOOD;
+      // ドンクの場面でのチェックは理論の基本なので、ドンクがはっきり得な例外の場面でも △ より下にしない
+      if (donk && chosen.action === 'CHECK' && evaluation === B.EVAL_BAD) evaluation = B.EVAL_MARGINAL;
       const softened = evaluation !== gradeOf(1.0);   // 緩めたことで記号が変わった（解説で断る）
 
       const name = (o) => PostflopEV.actionName(o, ctx);
       const lines = [];
       const kw = { best: name(best), pct: lossPct * 100, bb: loss };
-      if (best === chosen || lossPct <= 0.005) lines.push(t('pf.verdict.best', { act: name(chosen) }));
+      if (donkUnjustified) lines.push(t('pf.verdict.donk'));
+      else if (best === chosen || lossPct <= 0.005) lines.push(t('pf.verdict.best', { act: name(chosen) }));
       else if (evaluation === B.EVAL_OPTIMAL) lines.push(t('pf.verdict.close', kw));
       else if (evaluation === B.EVAL_GOOD) lines.push(t('pf.verdict.good', kw));
       else if (evaluation === B.EVAL_MARGINAL) lines.push(t('pf.verdict.inaccuracy', kw));
@@ -296,13 +320,24 @@
         lines.push(t(ctx.street === 'RIVER' ? 'pf.basis.facing_river' : 'pf.basis.facing', { eq: ctx.eq * 100, req: req * 100 }));
       }
       // 考え方（なぜその手が最善か）
-      const why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive });
+      let why;
+      if (donkUnjustified) {
+        why = [t('pf.why.donk_small', { edge: Math.max(0, donk.edge) * 100 })];
+      } else if (donk && !donk.justified && chosen.action === 'BET') {
+        why = [t('pf.why.donk_worse')];
+      } else if (donk && !donk.justified && chosen.action === 'CHECK') {
+        why = [t('pf.why.check_donk_spot')];
+      } else {
+        why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive });
+        if (donk && donk.justified) why.push(t('pf.why.donk_justified', { edge: donk.edge * 100 }));
+      }
       for (const w of why) lines.push(w);
-      if (!(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));
+      if (!donkUnjustified && !(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));
       return {
         evaluation, reason: lines.join('\n'), ev: chosen.ev, ev_loss: loss, loss_pct: lossPct,
         req_eq: facing > 0.01 ? facing / (ctx.pot + facing) : 0, realized_eq: ctx.eq,
         best: { action: best.action, amount: best.amount },
+        donk,   // ドンクの場面なら { justified, edge }（game.js のドンクの扱いに使う）
         options: opts.map((o) => ({ action: o.action, amount: Py.round(o.amount, 2), ev: Py.round(o.ev, 3) })),
       };
     },

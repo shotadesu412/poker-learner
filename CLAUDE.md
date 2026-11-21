@@ -30,6 +30,10 @@
   先に動く場面の判定の正しさはリバー +2.5→+3.2bb・ターン +1.1→+1.4bb。フロップは以前の計算の方が合っていたのでそのまま。
   残り: 中くらいの手はまだずれがある（ターンで実際はベットが +16% 良いのに予測は −3%）。ただし監査のロールアウトはあなた役が簡易ルールなので、
   後の判断が多いチェックの線ほど不利に出る。ここに合わせるとルールの弱点を正解として取り込むので、2026/11/19 時点では直していない
+- **ドンクの場面はチェックが基準**（2026/11/21〜）: OOP・主導権なし・そのストリートで先に動く場面では、モデルが予測するドンクの得が
+  ポットの10%以上のときだけドンクを最善にする（理論では主導権の無い側は先にチェックが基本。監査で、予測の得が10%未満の場面は
+  実際にはチェックと同じか損だった）。ドンクを勧める割合 66%→24%。チェックは △ より下にしない。正当でないドンクは ◯ まで。
+  なお、正当なドンクの多くは「先に打たれてもレイズを返さない」今の CPU の弱点を突く面がある（CPU の対ドンクの打ち方は改善候補）
 - **プリフロップのレイズは場面ごとに1サイズ**（2026/11/19 shota 指定。`GameApi.preflopRaise`）: オープン UTG〜BTN 2.5bb・SB 3bb（合計）/
   BB で SB のリンプに 4bb / 3ベット IP 3倍・OOP 4倍 / 4ベット IP 2.2倍・OOP 2.5倍 / それ以上はオールイン。判定はサイズを見ない（レンジ表の前提サイズ）
 - **保留（2026/11/19 shota 指定で止めている）**: 3ベットレンジが gto_3bet_matrix の頻度より狭い（SB vs BTN 表 6.8% / 行列 15.1%、BB vs BTN 3.7% / 13.9%）。
@@ -366,8 +370,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=11` / `game_api.js?v=13`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 12）で一括管理
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=11` / `game_api.js?v=14`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 13）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 

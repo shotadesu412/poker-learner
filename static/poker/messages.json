@@ -638,5 +638,25 @@
  "pf.why.raise_vs_small": {
   "ja": "相手のベットはポットの約{pct:.0f}%と小さいので、何倍にするかより、ポットに対して大きく返す方が多く取れます。",
   "en": "Their bet is small (about {pct:.0f}% of the pot), so raise big relative to the pot rather than by a multiple of their bet."
+ },
+ "pf.verdict.donk": {
+  "ja": "【悪くはないが非標準】主導権の無い側がポジション不利で先に打つ（ドンクベット）より、チェックが基本です。",
+  "en": "[Playable but non-standard] Without the initiative and out of position, checking is the default rather than leading out (a donk bet)."
+ },
+ "pf.why.donk_small": {
+  "ja": "先に打つ得は小さい（ポットの約{edge:.0f}%）ので、チェックして相手に打たせるのが理論どおりです。",
+  "en": "The gain from leading is small (about {edge:.0f}% of the pot), so checking and letting them bet is the theoretical play."
+ },
+ "pf.why.donk_worse": {
+  "ja": "この場面で先に打つと、チェックより損です。",
+  "en": "Leading out here loses compared with checking."
+ },
+ "pf.why.check_donk_spot": {
+  "ja": "主導権の無い側がポジション不利で先に動くときは、チェックが基本です。",
+  "en": "Without the initiative and out of position, check first by default."
+ },
+ "pf.why.donk_justified": {
+  "ja": "主導権の無い側でも、ここは先に打つ方がはっきり得な例外的な場面です（ポットの約{edge:.0f}%）。",
+  "en": "Even without the initiative, leading out is clearly better here, an exception (about {edge:.0f}% of the pot)."
  }
 }

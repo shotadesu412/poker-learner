@@ -271,13 +271,8 @@
         evaluation = B.EVAL_GOOD;
         reason += '\n' + root.Messages.t('pf.note.oop_check');
       }
-      // ドンクベット（OOP で主導権の無い側が先に打つ）は ◎ にしない（以前からの仕様）
-      const isDonk = action === 'BET' && eng.aggressor !== 'HERO' && !eng.isHeroIp
-        && !eng.actionHistory.some((a) => a.street === eng.street);
-      if (isDonk && evaluation === B.EVAL_OPTIMAL) {
-        evaluation = B.EVAL_GOOD;
-        reason = root.Messages.t('bet.donk') + '\n' + reason;
-      }
+      // ドンクベット（OOP で主導権の無い側が先に打つ）の扱いは postflop_ev.js が決める（2026/11/21〜）。
+      // 以前は一律に ◎ を ◯ にしていたが、今はチェックを基準にし、はっきり得な場面だけドンクを最善にする
       const eq = pf.realized_eq;
       // reason: 画面に出した判定の解説。開発者モードのハンド履歴で見る（2026/11/21〜）
       const common = { street: eng.street, actor: 'HERO', equity: eq, hero_pos: eng.heroPosition, reason };
