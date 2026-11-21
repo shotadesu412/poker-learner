@@ -68,6 +68,15 @@
       return Math.max(0.3, Math.min(1.4, r));
     },
 
+    // レイズの3つのサイズ（追加で出す額）。2.5倍・3.5倍と、ポットサイズのレイズ（コール後のポットと同じ額を上乗せ）。
+    // 相手のベットが大きく、ポットサイズが元の一番大きい倍率（4.5倍・リバー5倍）より小さいときはその倍率（2026/11/21〜）。
+    // 以前は倍率だけで、ポットの1割程度の小さいベットには5倍でもポットに対して小さすぎた。script.js の getActionSizes と揃える
+    raiseSizes(street, facing, pot) {
+      const m = RAISE_MULTS[street];
+      const potRaise = pot + 2 * facing;   // pot は相手のベットを含む。コール額 + (コール後のポット)
+      return [facing * m[0], facing * m[1], Math.max(facing * m[2], potRaise)];
+    },
+
     // 選べるアクション（画面のボタンと同じ）。[action, 追加で出す額]
     options(eng) {
       const f = Math.max(0, eng.currentBet - eng.heroInvested);
@@ -78,7 +87,7 @@
       else out.push(['CHECK', 0]);
       const kind = f > 0.01 ? 'RAISE' : 'BET';
       if (max > f + 0.05) {
-        const raw = f > 0.01 ? RAISE_MULTS[eng.street].map((m) => f * m) : BET_SIZES[eng.street].map((x) => pot * x);
+        const raw = f > 0.01 ? PostflopEV.raiseSizes(eng.street, f, pot) : BET_SIZES[eng.street].map((x) => pot * x);
         const seen = new Set();
         for (let s of raw) {
           s = Math.round(s * 10) / 10;

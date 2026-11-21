@@ -383,13 +383,18 @@ function getActionSizes(actionType) {
                 { label: t('bet.size_large_pot', { pct: Math.round(mults[2] * 100) }), amount: pot * mults[2] }
             ];
         } else { // RAISE POSTFLOP
+            // 2.5倍・3.5倍・ポットサイズ（判定側の PostflopEV.raiseSizes と同じ。小さいベットにも大きく返せるように）
             let mults = [2.5, 3.5, 4.5]; // FLOP / TURN
             if (street === "RIVER") mults = [2.5, 3.5, 5.0];
+            const potRaise = pot + 2 * facing;
+            const usePot = potRaise > facing * mults[2];
 
             options = [
                 { label: t('bet.size_small_x', { mult: mults[0] }), amount: facing * mults[0] },
                 { label: t('bet.size_medium_x', { mult: mults[1] }), amount: facing * mults[1] },
-                { label: t('bet.size_large_x', { mult: mults[2] }), amount: facing * mults[2] }
+                usePot
+                    ? { label: t('bet.size_pot_raise'), amount: potRaise }
+                    : { label: t('bet.size_large_x', { mult: mults[2] }), amount: facing * mults[2] }
             ];
         }
     }
