@@ -124,7 +124,108 @@
     background: var(--border-color);
 }
 
-/* ===== 練習画面: 履歴・相手のレンジ・テーブルのスワイプ（panels.js） ===== */
+/* ===== ゲーム画面では下のタブを出さない（2026/11/21〜） ===== */
+body.in-game .tab-bar { display: none; }
+/* 下のタブが無いので、操作ボタンの下はホームバー分あける */
+body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px); }
+
+.nav-back {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    padding: 2px 4px 2px 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* ===== ホーム（練習タブ） ===== */
+#view-home.active {
+    display: block;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hm-header {
+    padding: max(env(safe-area-inset-top, 0px), 14px) 16px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.hm-header h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; }
+
+.hm-body { padding: 8px 16px 32px; }
+
+.hm-block { padding: 18px 0; border-bottom: 1px solid var(--border-color); }
+.hm-block:last-child { border-bottom: none; }
+
+.hm-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hm-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #d4a72c;
+    border: 1px solid #d4a72c;
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.hm-desc { font-size: 0.8rem; color: var(--text-muted); margin: 6px 0 14px; line-height: 1.5; }
+
+.hm-label { font-size: 0.74rem; color: var(--text-muted); margin-bottom: 6px; }
+
+.hm-pos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+.hm-check {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+
+.hm-start {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #10b981;
+    color: #06120c;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.hm-start-sub {
+    background: transparent;
+    color: var(--text-main);
+    border: 1px solid #10b981;
+}
+
+/* ===== ゲーム画面の上の情報を詰める（2026/11/21〜。画面に収まっていなかった） ===== */
+#view-play .board-area { min-height: 0; padding: 6px 10px; }
+#view-play .board-area .card,
+#view-play .board-area .empty-card { width: 44px; height: 64px; }
+#view-play .info-area { padding: 6px 12px 6px; gap: 6px; overflow: hidden; }
+#view-play .info-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+#view-play .street-display { font-size: 0.95rem; letter-spacing: 1px; margin: 0; }
+#view-play .pot-display { font-size: 0.88rem; padding: 3px 12px; }
+#view-play .stacks-container { font-size: 0.8rem; gap: 14px; }
+#view-play .hands-info { padding: 6px 20px; gap: 28px; }
+#view-play .hands-info .card,
+#view-play .hands-info .face-down-card,
+#view-play .hands-info .empty-card { width: 44px; height: 64px; }
+#view-play .card .main-val { font-size: 1.25rem; }
+
+/* ===== 練習画面: 推定レンジ ← 履歴 → テーブル のスワイプ（panels.js） ===== */
 .swipe-wrap {
     width: 100%;
     flex: 1;
@@ -133,29 +234,32 @@
     flex-direction: column;
 }
 
-.swipe-track {
+/* 自前のスワイプ: 3枚を横に並べて translateX で動かす。縦はブラウザのスクロールに任せる */
+.swipe-view {
     flex: 1;
     min-height: 0;
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    overflow: hidden;
+    touch-action: pan-y;
 }
 
-.swipe-track::-webkit-scrollbar { display: none; }
+.swipe-track {
+    height: 100%;
+    width: 300%;
+    display: flex;
+    will-change: transform;
+}
 
 .swipe-page {
-    flex: 0 0 100%;
+    flex: 0 0 33.3333%;
     min-width: 0;
-    scroll-snap-align: start;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    padding: 0 2px;
 }
 
-/* 履歴が空でも面は残す（以前は :empty で消していた） */
+/* 履歴が空でも面は残す */
 .swipe-page .eval-history-inline:empty {
     display: flex;
 }
@@ -178,20 +282,41 @@
 .swipe-dot.active { background: var(--text-main); }
 
 .panel-title {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 2px;
 }
 
 .panel-caption {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
-    margin-bottom: 6px;
+    margin: 2px 0 6px;
 }
 
-/* 相手のレンジ（13×13） */
-.panel-range { padding: 4px 2px; }
+/* 推定レンジ（13×13） */
+.panel-range { padding: 2px; }
+
+.pr-head { display: flex; align-items: center; gap: 8px; }
+
+.pr-seg {
+    display: inline-flex;
+    flex: 0 0 auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.pr-seg button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    cursor: pointer;
+}
+
+.pr-seg button.on { background: #2b332e; color: var(--text-main); }
 
 .pr-grid {
     display: grid;
@@ -225,7 +350,7 @@
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     color: var(--text-muted);
     margin-top: 6px;
 }
@@ -242,27 +367,27 @@
 .lg-in { background: rgba(16, 185, 129, 0.8); }
 .lg-gone { background: rgba(229, 83, 75, 0.5); }
 
-/* 楕円のテーブル */
+/* テーブル（横長の楕円） */
 .panel-table {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 0;
 }
 
 .tb-table {
     position: relative;
     width: 100%;
-    aspect-ratio: 1.25;
+    aspect-ratio: 1.45;
+    font-size: 11px;
 }
 
 .tb-felt {
     position: absolute;
-    inset: 14% 10%;
-    border-radius: 50%;
-    background: #1f3a2c;
-    border: 6px solid #2c2219;
+    inset: 15% 9%;
+    border-radius: 999px;
+    background: #1c1f1d;
+    border: 2px solid #8a948e;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,54 +395,93 @@
 
 .tb-center { text-align: center; }
 
-.tb-board { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; }
+.tb-board { display: flex; gap: 2px; justify-content: center; margin-bottom: 0.3em; min-height: 1em; }
 
 .tb-card {
+    display: inline-flex;
+    align-items: center;
     background: #f1f3f2;
     color: #151816;
     border-radius: 3px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 1px 3px;
+    font-size: 1em;
+    font-weight: 800;
+    padding: 0.15em 0.25em;
+    line-height: 1.1;
 }
 
+.tb-card small { font-size: 0.85em; margin-left: 1px; }
 .tb-card.red { color: #c62828; }
 
-.tb-pot { font-size: 0.8rem; color: #e2e8e4; font-weight: 700; }
+.tb-pot { font-size: 1.35em; color: #e2e8e4; font-weight: 800; }
 
 .tb-seat {
     position: absolute;
     transform: translate(-50%, -50%);
-    text-align: center;
-    min-width: 54px;
-    padding: 4px 6px;
-    border-radius: 6px;
-    background: #262c28;
-    border: 1px solid #3b423f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.tb-seat.is-out { opacity: 0.35; }
-.tb-seat.is-hero { border-color: #10b981; }
-.tb-seat.is-cpu { border-color: #9aa69f; }
+.tb-cards { display: flex; gap: 1px; height: 1.9em; align-items: flex-end; margin-bottom: -0.3em; position: relative; z-index: 1; }
+.tb-cards .tb-card { font-size: 0.95em; }
 
-.tb-pos { font-size: 0.7rem; font-weight: 700; color: var(--text-main); }
-.tb-who { font-size: 0.66rem; color: var(--text-muted); }
+.tb-back {
+    display: inline-block;
+    width: 1.25em;
+    height: 1.75em;
+    border-radius: 2px;
+    background: #4a3f4f;
+    border: 1px solid #6b5f70;
+}
+
+.tb-box {
+    min-width: 4.4em;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    background: #16181a;
+    border: 1px solid #4b524e;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.tb-seat.is-hero .tb-box { border-color: #e879f9; }
+.tb-seat.is-out { opacity: 0.3; }
+
+.tb-pos { font-size: 0.95em; font-weight: 700; color: var(--text-main); }
+.tb-stack { font-size: 0.95em; color: var(--text-main); }
 
 .tb-d {
-    display: inline-block;
-    background: #e2e8e4;
+    position: absolute;
+    right: -1.5em;
+    bottom: 0.1em;
+    background: #f1f3f2;
     color: #151816;
     border-radius: 50%;
-    width: 14px;
-    height: 14px;
-    line-height: 14px;
-    font-size: 0.55rem;
+    width: 1.3em;
+    height: 1.3em;
+    line-height: 1.3em;
+    text-align: center;
+    font-size: 0.85em;
+    font-weight: 800;
 }
 
 .tb-bet {
     position: absolute;
     transform: translate(-50%, -50%);
-    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 1em;
     font-weight: 700;
-    color: #d4a72c;
+    color: var(--text-main);
 }
+
+.tb-bet i {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    border-radius: 50%;
+    background: #5b625e;
+}
+
+.tb-bet i.agg { background: #e5534b; }

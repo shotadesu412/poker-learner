@@ -892,18 +892,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await GameApi.state();
 
         if (data.has_hand_in_progress) {
-            // ゲームが進行中 → 状態を復元してそのまま続行
+            // ゲームが進行中 → 状態を復元しておき、ホームの「続きから」で再開する
             currentState = data;
             updateUI();
-            return;
         }
     } catch (e) {
-        // stateの取得に失敗した場合は新しくゲームを開始する
-        console.warn('Could not restore game state, starting new hand:', e);
+        console.warn('Could not restore game state:', e);
     }
-
-    // ゲームが進行中でない（未開始 or サーバー再起動後）→ 新規開始
-    startHand();
+    // 最初はホーム（2026/11/21〜。ゲーム画面はスタートを押してから）
+    refreshHome();
 });
 
 
@@ -1442,9 +1439,9 @@ function applyPremiumUI() {
     if (_coachGateResolve) { _coachGateResolve(true); _coachGateResolve = null; }
     const coachModal = el('coach-limit-modal');
     if (coachModal) coachModal.classList.add('hidden');
-    // スポットモードボタンなどのpremiumゲートを解除
-    const spotBtn = el('btn-spot-mode');
-    if (spotBtn) spotBtn.style.opacity = '1';
+    // ホームのスポット練習の「Premium」の印を消す
+    const badge = el('hm-spot-badge');
+    if (badge) badge.classList.add('hidden');
 }
 
 // ==============================
@@ -1453,12 +1450,16 @@ function applyPremiumUI() {
 // ==============================
 // 下のタブ（2026/11/19〜。練習・振り返り・分析・設定）
 // ==============================
-let currentTab = 'play';
+let currentTab = 'home';
 function showTab(name) {
     if (!el('view-' + name)) return;
     currentTab = name;
     document.querySelectorAll('.tab-view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    // ゲーム画面は下のタブを出さない（左上の戻るでホームへ）
+    document.body.classList.toggle('in-game', name === 'play');
+    if (name === 'home') refreshHome();
+    if (name === 'play' && typeof fitPanels === 'function') requestAnimationFrame(fitPanels);
     // 分析・振り返りは開くたびに最新の記録で描き直す（練習で増えた分を反映）
     if ((name === 'stats' || name === 'review') && typeof StatsPage !== 'undefined') StatsPage.load();
     if (name === 'settings') fillSettings();
@@ -1521,31 +1522,48 @@ function setSpeedSetting(speed) {
 // ==============================
 // スポット練習モード
 // ==============================
-function toggleSpotMode() {
-    if (!isPremium) {
+// ホームのスタート（spot=true でスポット練習）。スポット練習はプレミアム限定（以前の toggleSpotMode と同じゲート）
+function startPractice(spot) {
+    if (spot && !isPremium) {
         openPurchaseModal();
         return;
     }
-    isSpotMode = !isSpotMode;
-    const btn = el('btn-spot-mode');
-    const selector = el('spot-pos-selector');
-    if (btn) {
-        btn.classList.toggle('spot-active', isSpotMode);
-        btn.textContent = isSpotMode ? t('game.spot_mode_on') : t('game.spot_mode');
-    }
-    if (selector) {
-        selector.classList.toggle('hidden', !isSpotMode);
+    const sameMode = isSpotMode === spot;
+    isSpotMode = spot;
+    updatePlayTitle();
+    showTab('play');
+    // 通常の練習で、進行中のハンドがあれば続きから。モードを変えたら新しいハンド
+    if (!spot && sameMode && currentState && !currentState.finished) {
+        updateUI();
+        if (typeof renderPanels === 'function') renderPanels();
+        return;
     }
     startHand();
 }
 
+function goHome() {
+    showTab('home');
+}
+
+function updatePlayTitle() {
+    const title = el('play-title');
+    if (!title) return;
+    title.textContent = isSpotMode ? t('home2.spot_title', { pos: spotPosition || t('game.spot_random') }) : t('home2.normal_title');
+}
+
+// ホームの表示を今の状態に合わせる（進行中のハンドがあれば「続きから」）
+function refreshHome() {
+    const start = el('btn-home-start');
+    if (start) start.textContent = (!isSpotMode && currentState && !currentState.finished) ? t('home2.resume') : t('home2.start');
+    const badge = el('hm-spot-badge');
+    if (badge) badge.classList.toggle('hidden', !!isPremium);
+}
+
 function setSpotPosition(pos) {
     spotPosition = pos;
-    // ボタンのactiveクラス更新
     document.querySelectorAll('.spot-pos-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.pos === pos);
     });
-    if (isSpotMode) startHand();
 }
 
 function setSpotParticipated(val) {

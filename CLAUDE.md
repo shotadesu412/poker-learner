@@ -44,7 +44,10 @@
 - **CPU がドンクを受けたとき**（2026/11/21〜。range_model.js の vsDonk*）: バリューの基準を下げ、強いドローの半分・弱い手の一部でレイズを返す。
   フロップの小さいドンクへのレイズ 3%→23%
 ### 新しい UI（`static/v2/`。開発者モードのときだけ開く。shota が納得するまで今の画面は変えない）
-- 下のタブ（練習・振り返り・分析・設定）の1ページ化、練習画面のアクション履歴を左右スワイプで3枚（履歴・相手のレンジ・楕円のテーブル）。
+- 下のタブ（練習・振り返り・分析・設定）の1ページ化。練習タブはホーム（通常の練習のスタート / スポット練習の設定とスタート）で、
+  ゲーム画面は別（下のタブを隠し、左上の戻るでホームへ。進行中のハンドはホームの「続きから」で再開）。
+  ゲーム画面の中央は左右スワイプで3枚: 推定レンジ（相手/あなた を切り替え）← アクション履歴（最初の面）→ 横長の楕円のテーブル。
+  スワイプは自前の translateX（panels.js。scroll-snap は iPhone で描き直すたびに位置が戻ったのでやめた。2026/11/21）。
   コンセプト: 理論が入った相手と打ち合える → 一手ごとに即評価 → 納得いかないハンドは AI に深く解説してもらう
 - **開発者モード（下の節）をオンにすると、`/` `/play` `/stats` を開いたとき `/v2` に移る**（各ページの head の inline script）。オフで今の画面へ戻る。
   新バージョンの確認はこの経路で shota の実機（本番アプリ）で行う。ユーザーには見えない
@@ -374,7 +377,7 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=12` / `game_api.js?v=16`（index.html, home.html, stats.html 内）
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=13` / `game_api.js?v=16`（index.html, home.html, stats.html 内）
    `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 15）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`

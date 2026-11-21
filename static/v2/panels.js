@@ -1,21 +1,21 @@
-// panels.js — 練習画面のアクション履歴の部分を、左右スワイプで切り替える3枚にする（2026/11/19〜。ブランチ ui-v2）
-//   1. アクション履歴（今までと同じ #eval-history）
-//   2. 相手のレンジ: 直前の相手のアクションで消えた手を赤く薄く、残っている手を緑の濃さで
-//   3. 楕円のテーブル: 6席・ボタン・このストリートで出した額・ポット
-// スワイプはブラウザの横スクロール（scroll-snap）に任せる。描画は script.js の updateUI の最後に renderPanels() を呼ぶ
-// 依存: script.js（currentState, displayCpuPos, parseCardStr, t）
+// panels.js — 練習画面の中央を、左右スワイプで切り替える3枚にする（2026/11/19〜。2026/11/21 作り直し）
+//   0. 推定レンジ（相手 / あなた をタブで切り替え）: 直前のアクションで消えた手を赤く、残っている手を緑の濃さで
+//   1. アクション履歴（最初に出す面。#eval-history）
+//   2. テーブル: 横長の楕円に 6席・カード・このストリートで出した額・ポット
+// スワイプは自前で動かす（translateX）。以前はブラウザの横スクロール（scroll-snap）に任せていたが、iPhone で中身を
+// 描き直すたびに位置が合わせ直され、アクションのたびにレンジの面へ戻っていた
+// 描画は script.js の updateUI の最後に renderPanels() を呼ぶ
+// 依存: script.js（currentState, displayCpuPos, parseCardStr, t, el, openRangeModal）
 
 const PANEL_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 const PANEL_SEATS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];   // 時計回り（次に動く人が左隣）
 
-// 相手のレンジの「直前のアクションでどれだけ消えたか」を出すための記録
-const rangeTrack = {
-    handKey: null,          // ハンドが変わったら記録を捨てる
-    lastRange: null,        // 前回描いたときの相手のレンジ
-    lastCpuCount: 0,        // 前回描いたときの相手のアクション数
-    before: null,           // 直前の相手のアクションの前のレンジ
-    actionLabel: '',        // 直前の相手のアクション
-};
+let panelIndex = 1;            // 今出している面（最初は履歴）。描き直しでは変えない
+let rangeSide = 'CPU';         // 推定レンジの面で出す側（'CPU' | 'HERO'）
+
+// 「直前のアクションでどれだけ消えたか」を出すための記録（相手・あなたそれぞれ）
+function newTrack() { return { handKey: null, lastRange: null, lastCount: 0, before: null, actionLabel: '' }; }
+const rangeTracks = { CPU: newTrack(), HERO: newTrack() };
 
 function comboCount(name) { return name.length === 2 ? 6 : name.endsWith('s') ? 4 : 12; }
 
@@ -28,32 +28,44 @@ function rangeWidth(range) {
 
 function renderPanels() {
     if (!currentState) return;
+    // どちらの面を出していても、両方の記録は毎回進める（切り替えたときに「直前」がずれないように）
+    trackRange(currentState, 'CPU');
+    trackRange(currentState, 'HERO');
     renderRangePanel(currentState);
     renderTablePanel(currentState);
     requestAnimationFrame(fitPanels);
 }
 
-// ---------- 2. 相手のレンジ ----------
+// ---------- 0. 推定レンジ ----------
+function trackRange(st, side) {
+    const tr = rangeTracks[side];
+    const range = (side === 'CPU' ? st.cpuRangeRaw : st.heroRangeRaw) || {};
+    const acts = (st.history || []).filter(a => a.actor === side);
+    const handKey = (st.heroHand || []).join('') + '|' + st.heroPos;
+    if (tr.handKey !== handKey) Object.assign(tr, newTrack(), { handKey });
+    // 新しく動いていたら、その前のレンジを「消えた手」の基準にする
+    if (tr.lastRange && acts.length > tr.lastCount) {
+        tr.before = tr.lastRange;
+        const a = acts[acts.length - 1];
+        tr.actionLabel = a.action + (a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : '');
+    }
+    tr.lastRange = range;
+    tr.lastCount = acts.length;
+}
+
+function setRangeSide(side) {
+    rangeSide = side;
+    if (currentState) renderRangePanel(currentState);
+    requestAnimationFrame(fitPanels);
+}
+
 function renderRangePanel(st) {
     const box = el('panel-range');
     if (!box) return;
-    const range = st.cpuRangeRaw || {};
-    const hist = st.history || [];
-    const cpuActs = hist.filter(a => a.actor === 'CPU');
-    const handKey = (st.heroHand || []).join('') + '|' + st.heroPos;
-    if (rangeTrack.handKey !== handKey) {
-        Object.assign(rangeTrack, { handKey, lastRange: null, lastCpuCount: 0, before: null, actionLabel: '' });
-    }
-    // 相手が新しく動いていたら、その前のレンジを「消えた手」の基準にする
-    if (rangeTrack.lastRange && cpuActs.length > rangeTrack.lastCpuCount) {
-        rangeTrack.before = rangeTrack.lastRange;
-        const a = cpuActs[cpuActs.length - 1];
-        rangeTrack.actionLabel = (a.action + (a.amount > 0 ? ` ${Number(a.amount).toFixed(1)}bb` : ''));
-    }
-    rangeTrack.lastRange = range;
-    rangeTrack.lastCpuCount = cpuActs.length;
-
-    const before = rangeTrack.before;
+    const side = rangeSide;
+    const tr = rangeTracks[side];
+    const range = (side === 'CPU' ? st.cpuRangeRaw : st.heroRangeRaw) || {};
+    const before = tr.before;
     const nowW = rangeWidth(range);
     // 「消えた手」: 直前のアクションで、その手の可能性が何倍になったか（後 ÷ 前）を、一番残った手と比べる。
     // 表示用のレンジは毎回「一番可能性の高い手 = 1」に揃えてあるので、前後の値をそのまま引き算すると
@@ -68,10 +80,10 @@ function renderRangePanel(st) {
     }
     let caption;
     if (before && Math.abs(rangeWidth(before) - nowW) >= 0.5) {
-        caption = t('panel.range_after', { act: rangeTrack.actionLabel, from: rangeWidth(before).toFixed(0), to: nowW.toFixed(0) });
+        caption = t('panel.range_after', { act: tr.actionLabel, from: rangeWidth(before).toFixed(0), to: nowW.toFixed(0) });
     } else if (before) {
         // 範囲が変わっていないときは「絞られた」と言わない（プリフロップのコールは、最初からその範囲の手が配られている）
-        caption = t('panel.range_same', { act: rangeTrack.actionLabel, pct: nowW.toFixed(0) });
+        caption = t('panel.range_same', { act: tr.actionLabel, pct: nowW.toFixed(0) });
     } else {
         caption = t('panel.range_now', { pct: nowW.toFixed(0) });
     }
@@ -92,17 +104,27 @@ function renderRangePanel(st) {
             cells += `<div class="${cls}" style="${style}">${name}</div>`;
         }
     }
-    box.innerHTML = `<div class="panel-title">${t('panel.range_title', { pos: displayCpuPos() })}</div>
+    const title = side === 'CPU'
+        ? t('panel.range_title', { pos: displayCpuPos() })
+        : t('panel.range_title_hero', { pos: st.heroPos });
+    box.innerHTML = `<div class="pr-head">
+            <div class="pr-seg">
+                <button class="${side === 'CPU' ? 'on' : ''}" onclick="setRangeSide('CPU')">${t('panel.tab_cpu')}</button>
+                <button class="${side === 'HERO' ? 'on' : ''}" onclick="setRangeSide('HERO')">${t('panel.tab_hero')}</button>
+            </div>
+            <div class="panel-title">${title}</div>
+        </div>
         <div class="panel-caption">${caption}</div>
-        <div class="pr-grid" onclick="openRangeModal('CPU')">${cells}</div>
+        <div class="pr-grid" onclick="openRangeModal('${side}')">${cells}</div>
         <div class="panel-legend"><span><i class="lg-in"></i>${t('panel.legend_in')}</span>${before ? `<span><i class="lg-gone"></i>${t('panel.legend_gone')}</span>` : ''}<span>${t('panel.tap_grid')}</span></div>`;
 }
 
-// 表とテーブルを、スワイプの面の高さに収める（横幅いっぱいだと縦にはみ出す）
+// 表とテーブルを、面の高さに収める（横幅いっぱいだと縦にはみ出す）
 function fitPanels() {
     const page = document.querySelector('.swipe-page');
     if (!page) return;
     const H = page.clientHeight, W = page.clientWidth;
+    if (!H || !W) return;
     const grid = document.querySelector('#panel-range .pr-grid');
     if (grid) {
         const used = grid.offsetTop - grid.parentElement.offsetTop;
@@ -114,11 +136,16 @@ function fitPanels() {
         grid.style.fontSize = Math.max(6, Math.min(11, side / 13 * 0.32)) + 'px';
     }
     const table = document.querySelector('#panel-table .tb-table');
-    if (table) table.style.width = Math.max(160, Math.min(W, (H - 16) * 1.25)) + 'px';
+    if (table) {
+        const w = Math.max(200, Math.min(W - 4, (H - 6) * 1.45));
+        table.style.width = w + 'px';
+        // 席の大きさをテーブルの大きさに合わせる（基準は幅 330px）
+        table.style.fontSize = Math.max(8, Math.min(13, w / 330 * 11.5)) + 'px';
+    }
 }
 window.addEventListener('resize', fitPanels);
 
-// ---------- 3. 楕円のテーブル ----------
+// ---------- 2. テーブル ----------
 function streetInvest(st, actor) {
     // このストリートで出した額（プリフロップはブラインドを含む）
     let sum = 0;
@@ -133,62 +160,122 @@ function streetInvest(st, actor) {
     return sum;
 }
 
+// このストリートの最後の行動がベット・レイズか（チップの色）
+function streetAggressive(st, actor) {
+    const acts = (st.history || []).filter(a => a.street === st.street && a.actor === actor);
+    const last = acts[acts.length - 1];
+    return !!last && (last.action === 'BET' || last.action === 'RAISE' || last.action === 'ALLIN');
+}
+
+function tableCard(c) {
+    const p = parseCardStr(c);
+    return p ? `<span class="tb-card ${p.color}">${p.rank}<small>${p.symbol}</small></span>` : '';
+}
+
 function renderTablePanel(st) {
     const box = el('panel-table');
     if (!box) return;
     const heroPos = st.heroPos, cpuPos = displayCpuPos();
     const h = PANEL_SEATS.indexOf(heroPos);
+    const heroFolded = (st.history || []).some(a => a.actor === 'HERO' && a.action === 'FOLD');
+    const cpuFolded = (st.history || []).some(a => a.actor === 'CPU' && a.action === 'FOLD');
     let seats = '';
     PANEL_SEATS.forEach((pos, i) => {
-        // あなたを一番下に置き、時計回りに並べる（楕円上の角度。画面の座標は下向きが正）
+        // あなたを一番下に置き、時計回りに並べる（横長の楕円。画面の座標は下向きが正）
         const k = ((i - h) % 6 + 6) % 6;
         const ang = (90 + 60 * k) * Math.PI / 180;
-        const x = 50 + 42 * Math.cos(ang), y = 50 + 38 * Math.sin(ang);
-        const bx = 50 + 24 * Math.cos(ang), by = 50 + 22 * Math.sin(ang);   // ベット額はテーブルの内側
+        const cx = Math.cos(ang), cy = Math.sin(ang);
+        const x = 50 + 41 * cx, y = 50 + 37 * cy;
+        const bx = 50 + 31 * cx, by = 50 + 23 * cy;   // ベット額は席とボードの間
         const isHero = pos === heroPos, isCpu = pos === cpuPos;
-        const who = isHero ? 'You' : isCpu ? 'CPU' : '';
-        const stack = isHero ? st.heroStack : isCpu ? st.cpuStack : null;
+        const folded = isHero ? heroFolded : isCpu ? cpuFolded : true;
         let blind = 0;
-        if (!isHero && !isCpu && st.street === 'PREFLOP') blind = pos === 'SB' ? 0.5 : pos === 'BB' ? 1.0 : 0;
-        const inv = isHero ? streetInvest(st, 'HERO') : isCpu ? streetInvest(st, 'CPU') : blind;
-        seats += `<div class="tb-seat ${isHero ? 'is-hero' : isCpu ? 'is-cpu' : 'is-out'}" style="left:${x}%;top:${y}%">
-                <div class="tb-pos">${pos}${pos === 'BTN' ? ' <span class="tb-d">D</span>' : ''}</div>
-                ${who ? `<div class="tb-who">${who} ${stack !== null ? Number(stack).toFixed(1) : ''}</div>` : ''}
+        if (!isHero && !isCpu) blind = pos === 'SB' ? 0.5 : pos === 'BB' ? 1.0 : 0;
+        const stack = isHero ? st.heroStack : isCpu ? st.cpuStack : 100 - blind;
+        let cards = '';
+        if (isHero && !heroFolded) cards = (st.heroHand || []).map(tableCard).join('');
+        else if (isCpu && !cpuFolded) cards = (st.cpuHand && st.cpuHand.length) ? st.cpuHand.map(tableCard).join('') : '<span class="tb-back"></span><span class="tb-back"></span>';
+        seats += `<div class="tb-seat ${isHero ? 'is-hero' : ''} ${folded ? 'is-out' : ''}" style="left:${x}%;top:${y}%">
+                <div class="tb-cards">${cards}</div>
+                <div class="tb-box"><div class="tb-pos">${pos}</div><div class="tb-stack">${Number(stack).toFixed(1)}</div></div>
+                ${pos === 'BTN' ? '<span class="tb-d">D</span>' : ''}
             </div>`;
-        if (inv > 0) seats += `<div class="tb-bet" style="left:${bx}%;top:${by}%">${inv.toFixed(1)}</div>`;
+        const inv = isHero ? streetInvest(st, 'HERO') : isCpu ? streetInvest(st, 'CPU') : (st.street === 'PREFLOP' ? blind : 0);
+        if (inv > 0) {
+            const agg = (isHero || isCpu) && streetAggressive(st, isHero ? 'HERO' : 'CPU');
+            seats += `<div class="tb-bet" style="left:${bx}%;top:${by}%"><i class="${agg ? 'agg' : ''}"></i>${Number(inv.toFixed(1))}</div>`;
+        }
     });
-    const board = (st.board || []).map(c => {
-        const p = parseCardStr(c);
-        return p ? `<span class="tb-card ${p.color}">${p.rank}${p.symbol}</span>` : '';
-    }).join('');
+    const board = (st.board || []).map(tableCard).join('');
     box.innerHTML = `<div class="tb-table">
             <div class="tb-felt">
-                <div class="tb-center"><div class="tb-board">${board}</div><div class="tb-pot">Pot ${Number(st.potSize).toFixed(1)}bb</div></div>
+                <div class="tb-center"><div class="tb-board">${board}</div><div class="tb-pot">${Number(Number(st.potSize).toFixed(1))} BB</div></div>
             </div>
             ${seats}
         </div>`;
 }
 
-// ---------- スワイプの目印（●○○） ----------
-function initSwipe() {
+// ---------- スワイプ ----------
+function goPanel(i, animate) {
     const track = el('swipe-track');
-    const dots = document.querySelectorAll('.swipe-dot');
-    if (!track || !dots.length) return;
-    let saved = 0;
-    try { saved = Number(localStorage.getItem('poker_panel') || 0); } catch (e) { /* 保存できない環境では最初の面 */ }
-    const go = (i, smooth) => track.scrollTo({ left: i * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
-    let current = 0;
-    const mark = () => {
-        const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-        if (i === current) return;
-        current = i;
-        dots.forEach((d, j) => d.classList.toggle('active', j === i));
-        try { localStorage.setItem('poker_panel', String(i)); } catch (e) { /* 無視 */ }
+    if (!track) return;
+    panelIndex = Math.max(0, Math.min(2, i));
+    track.style.transition = animate === false ? 'none' : 'transform 0.25s ease';
+    track.style.transform = `translateX(${-panelIndex * 100 / 3}%)`;
+    document.querySelectorAll('.swipe-dot').forEach((d, j) => d.classList.toggle('active', j === panelIndex));
+    if (panelIndex !== 1) requestAnimationFrame(fitPanels);
+}
+
+function initSwipe() {
+    const view = document.querySelector('.swipe-view');
+    const track = el('swipe-track');
+    if (!view || !track) return;
+    document.querySelectorAll('.swipe-dot').forEach((d, j) => d.addEventListener('click', () => goPanel(j)));
+    goPanel(panelIndex, false);
+
+    // 横に動かしたときだけスワイプとして扱う（縦は各面の中のスクロール）。CSS の touch-action: pan-y で縦はブラウザに任せる
+    let sx = 0, sy = 0, dx = 0, dragging = false, decided = false, pid = null, t0 = 0;
+    view.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        sx = e.clientX; sy = e.clientY; dx = 0; dragging = false; decided = false; pid = e.pointerId; t0 = Date.now();
+    });
+    view.addEventListener('pointermove', (e) => {
+        if (pid !== e.pointerId) return;
+        const mx = e.clientX - sx, my = e.clientY - sy;
+        if (!decided) {
+            if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+            decided = true;
+            dragging = Math.abs(mx) > Math.abs(my);
+            if (dragging) { try { view.setPointerCapture(pid); } catch (err) { /* 古い環境 */ } track.style.transition = 'none'; }
+        }
+        if (!dragging) return;
+        dx = mx;
+        // 端では動きを鈍くする
+        if ((panelIndex === 0 && dx > 0) || (panelIndex === 2 && dx < 0)) dx *= 0.3;
+        const w = view.clientWidth || 1;
+        track.style.transform = `translateX(calc(${-panelIndex * 100 / 3}% + ${dx}px))`;
+        if (w) e.preventDefault();
+    });
+    const end = (e) => {
+        if (pid !== e.pointerId) return;
+        pid = null;
+        if (!dragging) return;
+        const w = view.clientWidth || 1;
+        const fast = Math.abs(dx) > 30 && Date.now() - t0 < 300;
+        let next = panelIndex;
+        if (dx < -w * 0.2 || (fast && dx < 0)) next = panelIndex + 1;
+        else if (dx > w * 0.2 || (fast && dx > 0)) next = panelIndex - 1;
+        goPanel(next);
+        // スワイプの後に表を押した扱いにしない
+        if (Math.abs(dx) > 8) {
+            const block = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+            view.addEventListener('click', block, { capture: true, once: true });
+            setTimeout(() => view.removeEventListener('click', block, { capture: true }), 50);
+        }
+        dragging = false;
     };
-    track.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
-    dots.forEach((d, j) => d.addEventListener('click', () => go(j, true)));
-    // 最後に見た面を開く（描画が終わってから）
-    requestAnimationFrame(() => { go(saved, false); current = -1; mark(); });
+    view.addEventListener('pointerup', end);
+    view.addEventListener('pointercancel', end);
 }
 
 document.addEventListener('DOMContentLoaded', initSwipe);
