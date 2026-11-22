@@ -192,12 +192,13 @@
           // 相手の防衛の下限は、このサイズでベットしてきたレンジで計算する
           const betVec = new Float64Array(RM.N);
           for (const [i, w] of g.idx) betVec[i] = w;
-          s2.mdfE = RM.mdfEdge(eCpu2, betVec, s2);
+          const hs2 = table.strength();
+          s2.mdfE = RM.mdfEdge(hs2, betVec, s2);
           const Ra = PostflopEV.realization('aggressor', street, ctx.ip, heroHand, board);
           let acc = 0;
           for (const [i, w] of g.idx) {
             if (Number.isNaN(eCpu2[i])) continue;
-            const d = RM.ActionModel.probs({ ...s2, e: eCpu2[i], made: table.nowRank[i] <= 6185, draw: table.draw(i) });
+            const d = RM.ActionModel.probs({ ...s2, e: eCpu2[i], made: table.nowRank[i] <= 6185, draw: table.draw(i), hs: hs2[i] });
             let pf = 0;
             for (const o of d) if (o.action === 'FOLD') pf += o.p;
             acc += w * (pf * (pot + b) + (1 - pf) * (Math.min(1, Ra * eHero[i]) * (pot + 2 * r) - r));
@@ -224,13 +225,14 @@
         vsDonk: ctx.facing <= 0.01 && action === 'BET' && eng.streetStartAggressor === 'CPU'
           && !eng.actionHistory.some((a) => a.street === eng.street),
       };
-      base.mdfE = RM.mdfEdge(eCpuPub, cpuVecPublic, base);
+      const hs = table.strength();
+      base.mdfE = RM.mdfEdge(hs, cpuVecPublic, base);
       let wSum = 0, wFold = 0, wCont = 0, eqCont = 0;
       for (let i = 0; i < RM.N; i++) {
         const w = cpuVec[i];
         if (!(w > 0) || Number.isNaN(eCpu[i]) || Number.isNaN(eHero[i])) continue;
         const nr = table.nowRank[i];
-        const dist = RM.ActionModel.probs({ ...base, e: eCpu[i], made: nr <= 6185, draw: table.draw(i) });
+        const dist = RM.ActionModel.probs({ ...base, e: eCpu[i], made: nr <= 6185, draw: table.draw(i), hs: hs[i] });
         let pf = 0;
         for (const o of dist) if (o.action === 'FOLD') pf += o.p;
         wSum += w; wFold += w * pf; wCont += w * (1 - pf); eqCont += w * (1 - pf) * eHero[i];

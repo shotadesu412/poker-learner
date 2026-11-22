@@ -157,6 +157,12 @@
       return this._draw[i];
     }
 
+    // 手の強さ（全コンボに対する勝率）。防衛の下限で「レンジの上位」を選ぶ順番に使う（2026/11/22〜）
+    strength() {
+      if (!this._hs) { const one = new Float64Array(N).fill(1); this._hs = this.equityVector(one, one); }
+      return this._hs;
+    }
+
     // vecA の各コンボが vecB（相手レンジ）に勝つ確率。vecA の重みが0のコンボは NaN
     equityVector(vecA, vecB) {
       const acc = new Float64Array(N), cnt = new Float64Array(N);
@@ -275,8 +281,11 @@
         const eqReal = s.e * realize;
         // 防衛の下限: レンジの上位（MDF × mdfShare）の手は降りない。mdfE はその境目の勝率（posterior / CPU の思考で計算）。
         // これが無いと、相手のベットレンジをバリュー寄りに見積もったときに降りすぎる（Chen & Ankenman の MDF）
+        // 上位は手の強さ s.hs（全コンボに対する勝率）の順（2026/11/22〜）。以前は相手のベット後のレンジに対する勝率 e の順だったが、
+        // レイズのレンジはほぼ強い手だけと見積もられるので手が横並びになり、ブラフの手まで約5割守る計算だった
+        // （被ベットのリバーの 36% で「レイズが最善」になっていた）
         const byPrice = sig(eqReal - need, SOFT / 2);
-        const byMdf = s.mdfE === undefined ? 0 : sig(s.e - s.mdfE, SOFT / 2);
+        const byMdf = s.mdfE === undefined ? 0 : sig((s.hs !== undefined ? s.hs : s.e) - s.mdfE, SOFT / 2);
         const callFull = Math.max(byPrice, byMdf);
         const callLoose = sig(eqReal - need * P.looseCallBand, SOFT / 2) - callFull;
         const pCallCond = callFull + Math.max(0, callLoose) * P.looseCallP;
@@ -395,13 +404,14 @@
     // vec のレンジがアクションを取ったあとの事後分布。ctx は stateFor が作る状況（e 以外）
     posterior(table, vec, oppVec, ctx, action, amount, sizeStrict = false) {
       const eq = table.equityVector(vec, oppVec);
-      const mdfE = mdfEdge(eq, vec, ctx);
+      const hs = table.strength();
+      const mdfE = mdfEdge(hs, vec, ctx);
       const out = new Float64Array(N);
       let sum = 0;
       for (let i = 0; i < N; i++) {
         if (!(vec[i] > 0) || Number.isNaN(eq[i])) continue;
         const made = table.nowRank[i] !== BAD && table.nowRank[i] <= 6185;
-        const s = { ...ctx, e: eq[i], made, draw: table.draw(i), mdfE };
+        const s = { ...ctx, e: eq[i], made, draw: table.draw(i), mdfE, hs: hs[i] };
         const l = ActionModel.likelihood(ActionModel.probs(s), action, amount, s, sizeStrict);
         out[i] = vec[i] * l;
         sum += out[i];

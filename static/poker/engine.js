@@ -562,9 +562,11 @@
       const s = { ...this._modelContext('CPU'), e, made: nr <= 6185, draw: table.draw(idx) };
       if (facing > 0.01) {
         s.facing = facing;
-        // 防衛の下限（レンジ推定の posterior と同じ計算）
+        // 防衛の下限（レンジ推定の posterior と同じ計算。上位は手の強さの順）
         const cpuVec = RM.toVec(this.cpuRange);
-        s.mdfE = RM.mdfEdge(table.equityVector(cpuVec, RM.toVec(this.heroRange)), cpuVec, s);
+        const hs = table.strength();
+        s.mdfE = RM.mdfEdge(hs, cpuVec, s);
+        s.hs = hs[idx];
       }
       const dist = RM.ActionModel.probs(s);
       let r = this.rng.random();
