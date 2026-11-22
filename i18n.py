@@ -101,6 +101,23 @@ _SERVER_MESSAGES = {
     "coach.actor.cpu": {"ja": "相手", "en": "Opponent"},
     "coach.action_verdict": {"ja": "判定 {mark}", "en": "verdict {mark}"},
     "coach.action_equity": {"ja": "勝率 {eq:.0f}%", "en": "equity {eq:.0f}%"},
+    # ▼ 2026/11/22: 役をアプリが判定して渡す。カードの文字列だけ渡していたときは、リバーでフォーカードになった
+    #   77 を「フルハウスが強化された」と講評した（言語モデルは役の読み取りを間違えやすい）
+    "coach.action_made": {"ja": "役 {made}", "en": "hand {made}"},
+    "coach.made_hero": {"ja": "あなたの役（今のボード、アプリ判定）: {made}", "en": "Your hand on the current board (app-checked): {made}"},
+    "coach.made_cpu": {"ja": "相手の役（今のボード、アプリ判定）: {made}", "en": "Opponent's hand on the current board (app-checked): {made}"},
+    # あなたのアクションの下に、画面に出したアプリの解説を添える（コーチがアプリと逆の結論を書かないため）
+    "coach.action_reason": {"ja": "    アプリの解説: {reason}\n", "en": "    App's explanation: {reason}\n"},
+    "coach.made.royal_flush": {"ja": "ロイヤルフラッシュ", "en": "Royal Flush"},
+    "coach.made.straight_flush": {"ja": "ストレートフラッシュ", "en": "Straight Flush"},
+    "coach.made.four_of_a_kind": {"ja": "フォーカード", "en": "Four of a Kind"},
+    "coach.made.full_house": {"ja": "フルハウス", "en": "Full House"},
+    "coach.made.flush": {"ja": "フラッシュ", "en": "Flush"},
+    "coach.made.straight": {"ja": "ストレート", "en": "Straight"},
+    "coach.made.three_of_a_kind": {"ja": "スリーカード", "en": "Three of a Kind"},
+    "coach.made.two_pair": {"ja": "ツーペア", "en": "Two Pair"},
+    "coach.made.pair": {"ja": "ワンペア", "en": "One Pair"},
+    "coach.made.high_card": {"ja": "ハイカード", "en": "High Card"},
     # ▼ 2026/11/16 改訂。以前は「ブラフのストーリー」「混合戦略」を毎回必ず書かせており、
     #   (1) ブラフでないハンドにもブラフの話が出る (2)「薄く打ってバリュー」と「早く降ろせ」の
     #   ような逆向きの方針が同居する、という報告があった。アプリの判定と勝率を渡し、
@@ -114,7 +131,8 @@ _SERVER_MESSAGES = {
 
 【判断の材料】
 - あなたのアクションには、このアプリの判定（◎◯△×）と、その時点の勝率が付いている。ハンドの強さはこの勝率と役から判断すること。
-- 原則としてアプリの判定と同じ結論にする。どうしても異なる見解を述べる場合は「アプリの判定は◯ですが」と前置きして理由を1文で添える。
+- 役（ワンペア・フルハウス・フォーカードなど）は、カードから自分で判定せず、必ず [役] と「あなたの役／相手の役」に書かれたものを使うこと。
+- あなたのアクションの下の「アプリの解説」には、アプリが比べた最善手とその理由がある。原則としてアプリの判定と解説と同じ結論にする（例: アプリが大きいベットを推奨しているのに小さく打てとは書かない）。どうしても異なる見解を述べる場合は「アプリの判定は◯ですが」と前置きして理由を1文で添える。
 
 【講評の進め方】
 1. 各ストリートで、そのハンドの「役割」を1つだけ決める（例: 強いのでバリューを取る / 中くらいなのでポットを小さく保つ / ドローなのでセミブラフ / 弱いので諦める / ブラフ）。
@@ -152,7 +170,8 @@ Review the user's (the player's own) hand from the perspective of standard poker
 
 [What to base your judgement on]
 - Each of your actions comes with this app's verdict (◎◯△×) and the equity at that moment. Judge hand strength from that equity and the made hand.
-- As a rule, reach the same conclusion as the app's verdict. If you must disagree, say so explicitly ("The app rated this ◯, but...") and give the reason in one sentence.
+- Never work out made hands (one pair, full house, four of a kind, ...) from the cards yourself. Always use the [hand] notes and the "Your hand / Opponent's hand" lines.
+- Under each of your actions, "App's explanation" gives the best option the app found and why. As a rule, reach the same conclusion as the app's verdict and explanation (e.g. do not tell the player to bet smaller when the app recommends a bigger bet). If you must disagree, say so explicitly ("The app rated this ◯, but...") and give the reason in one sentence.
 
 [How to structure the review]
 1. On each street, decide on exactly one role for the hand (e.g. strong, so bet for value / medium, so keep the pot small / a draw, so semi-bluff / weak, so give up / bluff).

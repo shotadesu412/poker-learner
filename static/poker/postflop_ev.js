@@ -311,7 +311,9 @@
       const lines = [];
       const kw = { best: name(best), pct: lossPct * 100, bb: loss };
       if (donkUnjustified) lines.push(t('pf.verdict.donk'));
-      else if (best === chosen || lossPct <= 0.005) lines.push(t('pf.verdict.best', { act: name(chosen) }));
+      else if (best === chosen) lines.push(t('pf.verdict.best', { act: name(chosen) }));
+      // 最善手との差がごく小さいときは「ほぼ同じ」（以前は選んだ手を「最善」と書き、続く解説と矛盾することがあった）
+      else if (lossPct <= 0.005) lines.push(t('pf.verdict.close', kw));
       else if (evaluation === B.EVAL_OPTIMAL) lines.push(t('pf.verdict.close', kw));
       else if (evaluation === B.EVAL_GOOD) lines.push(t('pf.verdict.good', kw));
       else if (evaluation === B.EVAL_MARGINAL) lines.push(t('pf.verdict.inaccuracy', kw));
@@ -328,10 +330,17 @@
         why = [t('pf.why.donk_small', { edge: Math.max(0, donk.edge) * 100 })];
       } else if (donk && !donk.justified && chosen.action === 'BET') {
         why = [t('pf.why.donk_worse')];
+        // 強い手なら、なぜチェックが得か（相手が打ってくる）を添える
+        // なぜチェックが得かを添える: 強い手 → 相手が打ってくる / 弱い手 → ブラフとして降りない / 中くらい → ポットを小さく
+        const kw2 = { act: name(chosen), best: name(checkOpt), fe: (chosen.fe || 0) * 100, eqc: (chosen.eqC || 0) * 100, eq: ctx.eq * 100 };
+        if (ctx.eq >= 0.6 && checkOpt.pBet > 0.2) why.push(t('pf.why.check_induce', { best: name(checkOpt), pb: checkOpt.pBet * 100 }));
+        else if (ctx.eq < 0.2) why.push(t('pf.why.bad_bluff', kw2));
+        else if (ctx.eq < 0.35) why.push(t('pf.why.bluff_sdv', kw2));
+        else if (ctx.eq < 0.6) why.push(t('pf.why.pot_control', kw2));
       } else if (donk && !donk.justified && chosen.action === 'CHECK') {
         why = [t('pf.why.check_donk_spot')];
       } else {
-        why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive });
+        why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive, checkOpt });
         if (donk && donk.justified) why.push(t('pf.why.donk_justified', { edge: donk.edge * 100 }));
       }
       for (const w of why) lines.push(w);
@@ -368,7 +377,18 @@
           lines.push(t(close ? 'pf.why.size_worse_close' : 'pf.why.size_worse', { passive: o.name(pas), best: o.name(best) }));
           return lines;
         }
-        lines.push(allIn(best) ? t('pf.why.allin', { best: o.name(best) }) : t('pf.why.size', { best: o.name(best) }));
+        // 差がサイズだけのとき、その手の役割（バリュー/ブラフ）と、サイズで何が変わるか（降りる割合・続けてくる手への勝率）を書く
+        // （2026/11/22〜。以前は「差はサイズだけです」だけで、なぜ大きく/小さく打つのかが分からなかった）
+        //   バリュー（勝率60%以上）/ ブラフ（20%未満）/ その間は数字だけ並べる（どちらとも言い切れないため）
+        const bigger = best.amount > chosen.amount;
+        if (!allIn(best)) lines.push(t('pf.why.size', { best: o.name(best) }));
+        let key;
+        if (strong) key = bigger ? (Math.abs(best.fe - chosen.fe) < 0.03 ? 'size_value_big_nofold' : 'size_value_big') : 'size_value_small';
+        else if (eq < 0.2) key = bigger ? 'size_bluff_big' : 'size_bluff_small';
+        else key = 'size_mid';
+        lines.push(t('pf.why.' + key, {
+          best: o.name(best), alt: o.name(chosen), fb: P(best.fe), fa: P(chosen.fe), eqcb: P(best.eqC), eqca: P(chosen.eqC),
+        }));
         // 小さいベットへのレイズ: 倍率より、ポットに対してどれだけ大きく返すか
         const before = ctx.pot - o.facing;
         if (chosen.action === 'RAISE' && strong && o.facing > 0.01 && before > 0 && o.facing / before < 0.25 && best.amount > chosen.amount) {
@@ -381,6 +401,8 @@
         const kw = { act: o.name(target), alt: o.name(chosen), fe: P(target.fe), eqc: P(target.eqC), eq: P(eq) };
         if (strong) lines.push(t(isBest ? 'pf.why.value' : 'pf.why.missed_value', kw));
         else if (weak) lines.push(t(isBest ? 'pf.why.bluff' : 'pf.why.missed_bluff', kw));
+        // リバーは後のカードが無いので「ドローに無料でカードを見せない」ではなく、弱い手からコールをもらう（薄いバリュー）
+        else if (ctx.street === 'RIVER') lines.push(t(isBest ? 'pf.why.thin_value' : 'pf.why.missed_thin_value', kw));
         else lines.push(t(isBest ? 'pf.why.protect' : 'pf.why.missed_protect', kw));
         if (!isBest && o.softened) lines.push(t('pf.why.soft_slowplay'));
         return lines;
@@ -388,7 +410,13 @@
       // 最善手がチェック・コール・フォールド
       if (!isBest && aggr(chosen)) {
         const kw = { act: o.name(chosen), best: o.name(best), fe: P(chosen.fe), eqc: P(chosen.eqC), eq: P(eq) };
-        if (strong) lines.push(t('pf.why.trap_better', kw));
+        // チェック/コールが勝る理由: 打つと強い手ばかり続けてくる / チェックすれば相手が打ってくる / 弱い手が降りてしまう
+        const pb = o.checkOpt && best === o.checkOpt ? o.checkOpt.pBet : undefined;
+        if (strong && chosen.eqC < 0.5) lines.push(t('pf.why.bet_called_by_better', kw));
+        else if (strong && pb > 0.2) lines.push(t('pf.why.check_induce_strong', { ...kw, pb: P(pb) }));
+        else if (strong) lines.push(t('pf.why.trap_better', kw));
+        // ショーダウンで勝てる見込みがある手をブラフにする必要はない
+        else if (weak && eq >= 0.2 && best.action === 'CHECK') lines.push(t('pf.why.bluff_sdv', kw));
         else if (weak) lines.push(t('pf.why.bad_bluff', kw));
         else lines.push(t('pf.why.pot_control', kw));
         return lines;

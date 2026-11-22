@@ -2,7 +2,7 @@
 //
 // 依存: なし（static/poker/ のモジュールをページごとに読み込む）
 
-const POKER_JS_VERSION = 15;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
+const POKER_JS_VERSION = 16;   // static/poker/ 以下を変えたら上げる（キャッシュバスティング）
 
 // 読み込み順は依存順（MIGRATION_NOTES.md フェーズ5 参照）
 const POKER_GAME_MODULES = [
@@ -49,17 +49,20 @@ const GameApi = {
         }
     },
 
-    // このハンドでのあなたのアクションの判定（◎◯△×）。AIコーチに渡す
+    // このハンドでのあなたのアクションの判定（◎◯△×）と、画面に出した解説。AIコーチに渡す
     heroEvaluations: [],
+    heroReasons: [],
 
     async startHand(spot, position) {
         this.heroEvaluations = [];
+        this.heroReasons = [];
         return detach(this.game.startHand({ spot, position }));
     },
 
     async action(action, amount) {
         const result = detach(this.game.action({ action, amount }));
         this.heroEvaluations.push(result.evaluation || "");
+        this.heroReasons.push(result.reason || "");
         return result;
     },
 
@@ -115,18 +118,38 @@ const GameApi = {
                 ? eng.cpuHand.map(Card.toStr) : [],
             // あなたのアクションにはアプリの判定と、その時点の勝率（実現率込み）を添える。
             // コーチがアプリの判定と食い違う講評や、ハンドの強さを取り違えた講評をしないため
+            // 役はアプリが判定して渡す。カードの文字列だけだとコーチ（言語モデル）が役を読み違える
+            // （2026/11/22: リバーで4カードになった 77 を「フルハウスが強化された」と講評した）
+            hero_made: this._madeHand(eng.heroHand, eng.board),
+            cpu_made: (eng.handFinished && !eng.actionHistory.some(a => a.actor === "CPU" && a.action === "FOLD"))
+                ? this._madeHand(eng.cpuHand, eng.board) : "",
             history: (() => {
                 let heroIndex = 0;
+                const boardLen = { FLOP: 3, TURN: 4, RIVER: 5 };
                 return eng.actionHistory.map(a => {
                     const row = { street: a.street, actor: a.actor, action: a.action, amount: a.amount || 0 };
                     if (a.actor === "HERO") {
-                        row.evaluation = this.heroEvaluations[heroIndex++] || "";
+                        row.evaluation = this.heroEvaluations[heroIndex] || "";
+                        // 画面に出した判定の解説。コーチがアプリと逆の結論を書かないように渡す
+                        row.reason = (this.heroReasons[heroIndex] || "").slice(0, 600);
+                        heroIndex++;
                         if (typeof a.equity === "number") row.equity = Math.round(a.equity * 1000) / 10;
+                        if (boardLen[a.street]) row.made = this._madeHand(eng.heroHand, eng.board.slice(0, boardLen[a.street]));
                     }
                     return row;
                 });
             })(),
         };
+    },
+
+    // 役の名前（英語。例 "Four of a Kind"）。ボードが3枚未満・手札が無いときは空
+    _madeHand(hand, board) {
+        if (!hand || hand.length !== 2 || !board || board.length < 3) return "";
+        try {
+            return HandEvaluator.classToString(HandEvaluator.getRankClass(HandEvaluator.evaluate(hand, board)));
+        } catch (e) {
+            return "";
+        }
     },
 
     // AIコーチの最初の回答を相談履歴に残す

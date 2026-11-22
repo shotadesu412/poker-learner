@@ -658,5 +658,53 @@
  "pf.why.donk_justified": {
   "ja": "主導権の無い側でも、ここは先に打つ方がはっきり得な例外的な場面です（ポットの約{edge:.0f}%）。",
   "en": "Even without the initiative, leading out is clearly better here, an exception (about {edge:.0f}% of the pot)."
+ },
+ "pf.why.size_value_big": {
+  "ja": "{best}だと相手が降りる割合は約{fa:.0f}%→約{fb:.0f}%に増えますが、続けてくる手にも約{eqcb:.0f}%勝てるので、コールされたときに取れる額が大きい分だけ得です。",
+  "en": "At {best} folds rise from about {fa:.0f}% to about {fb:.0f}%, but you still beat about {eqcb:.0f}% of the hands that continue, so the bigger pot when called wins more."
+ },
+ "pf.why.size_value_big_nofold": {
+  "ja": "{best}にしても相手が降りるのは約{fb:.0f}%と変わらず、続けてくる手にも約{eqcb:.0f}%勝てるので、大きく打つほど多く取れます。",
+  "en": "Even at {best} the opponent folds only about {fb:.0f}%, about the same, and you beat about {eqcb:.0f}% of the hands that continue, so a bigger bet wins more."
+ },
+ "pf.why.size_mid": {
+  "ja": "{best}: 相手が降りる約{fb:.0f}%・続けてくる手への勝率{eqcb:.0f}% ／ {alt}: 約{fa:.0f}%・{eqca:.0f}%。",
+  "en": "{best}: about {fb:.0f}% fold, you beat {eqcb:.0f}% of the hands that continue / {alt}: about {fa:.0f}%, {eqca:.0f}%."
+ },
+ "pf.why.size_value_small": {
+  "ja": "{alt}だと相手が約{fa:.0f}%降り、続けてくる手への勝率は{eqca:.0f}%です。{best}なら降りるのは約{fb:.0f}%で、弱い手からもコールがもらえます（勝率{eqcb:.0f}%）。",
+  "en": "At {alt} the opponent folds about {fa:.0f}% and you beat {eqca:.0f}% of the hands that continue. At {best} only about {fb:.0f}% fold, so weaker hands call too (you beat {eqcb:.0f}%)."
+ },
+ "pf.why.size_bluff_big": {
+  "ja": "勝てない手なので、相手を降ろすためのベットです。{best}なら約{fb:.0f}%降ります（{alt}は約{fa:.0f}%）。",
+  "en": "Your hand rarely wins, so this bet is to make the opponent fold. At {best} about {fb:.0f}% fold (about {fa:.0f}% at {alt})."
+ },
+ "pf.why.size_bluff_small": {
+  "ja": "勝てない手なので、相手を降ろすためのベットです。{best}でも約{fb:.0f}%降り（{alt}は約{fa:.0f}%）、少ない額で済む分だけ得です。",
+  "en": "Your hand rarely wins, so this bet is to make the opponent fold. {best} still gets about {fb:.0f}% folds (about {fa:.0f}% at {alt}) and risks less."
+ },
+ "pf.why.thin_value": {
+  "ja": "ショーダウンでも勝てる中くらいの手ですが、{act}なら弱い手からコールがもらえます（降りるのは約{fe:.0f}%、続けてくる手への勝率{eqc:.0f}%）。",
+  "en": "A medium hand that can win at showdown, but {act} gets called by weaker hands (about {fe:.0f}% fold; you beat {eqc:.0f}% of the hands that continue)."
+ },
+ "pf.why.missed_thin_value": {
+  "ja": "中くらいの手ですが、{alt}より{act}の方が得です。弱い手からコールがもらえます（降りるのは約{fe:.0f}%、続けてくる手への勝率{eqc:.0f}%）。",
+  "en": "A medium hand, but {act} is better than {alt}: weaker hands call (about {fe:.0f}% fold; you beat {eqc:.0f}% of the hands that continue)."
+ },
+ "pf.why.bet_called_by_better": {
+  "ja": "強い手ですが、{act}に続けてくるのは強い手が中心で（勝率{eqc:.0f}%）、{best}の方が得です。",
+  "en": "A strong hand, but mostly better hands continue against {act} (you beat {eqc:.0f}%), so {best} is better."
+ },
+ "pf.why.check_induce_strong": {
+  "ja": "強い手ですが、{best}なら相手が約{pb:.0f}%打ってくるので、そこから取る方が得です。",
+  "en": "A strong hand, but after {best} the opponent bets about {pb:.0f}% of the time, and you win more from those bets."
+ },
+ "pf.why.check_induce": {
+  "ja": "{best}なら相手が約{pb:.0f}%打ってくるので、そこから取る方が得です。",
+  "en": "After {best} the opponent bets about {pb:.0f}% of the time, and you win more from those bets."
+ },
+ "pf.why.bluff_sdv": {
+  "ja": "チェックでも約{eq:.0f}%勝てる手なので、ブラフにする必要はありません（{act}で降りるのは約{fe:.0f}%）。",
+  "en": "You win about {eq:.0f}% by checking, so there is no need to turn this hand into a bluff (about {fe:.0f}% fold to {act})."
  }
 }

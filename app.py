@@ -111,6 +111,8 @@ class CoachAction(BaseModel):
     amount: float = 0.0
     evaluation: str = Field("", max_length=4)   # あなたのアクションのアプリ判定（◎◯△×）
     equity: Optional[float] = None                # その時点の勝率(%)
+    made: str = Field("", max_length=24)          # その時点のあなたの役（アプリが判定。英語の役名）
+    reason: str = Field("", max_length=800)       # 画面に出した判定の解説
 
 class CoachHandState(BaseModel):
     """端末のエンジン（static/poker/game.js）で遊んでいるときに、相談するハンドの状態を送ってもらう。
@@ -124,6 +126,8 @@ class CoachHandState(BaseModel):
     board: list[str] = Field(default_factory=list, max_length=5)
     hero: list[str] = Field(default_factory=list, max_length=2)
     cpu: list[str] = Field(default_factory=list, max_length=2)
+    hero_made: str = Field("", max_length=24)     # 今のボードでのあなたの役（アプリが判定）
+    cpu_made: str = Field("", max_length=24)      # ショーダウン後の相手の役
     history: list[CoachAction] = Field(default_factory=list, max_length=80)
 
 class AICoachRequest(BaseModel):
@@ -145,8 +149,19 @@ def _trim_to_last_sentence(text: str) -> str:
     return text[: last + 1]
 
 
+# 役の名前（端末は英語の役名を送る）。コーチが自分で役を読み違えないよう、アプリが判定した役を渡す
+_HAND_CLASSES = ("Royal Flush", "Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight",
+                 "Three of a Kind", "Two Pair", "Pair", "High Card")
+
+
+def _made_name(made: str) -> str:
+    if made not in _HAND_CLASSES:
+        return ""
+    return t("coach.made." + made.lower().replace(" ", "_"))
+
+
 def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
-                   board, hero, cpu, pot, history) -> str:
+                   board, hero, cpu, pot, history, hero_made="", cpu_made="") -> str:
     """AIコーチに渡すハンド状況の文章。board/hero/cpu はカード文字列のリスト"""
     # リストのまま埋め込むと "['As', 'Kd']" になり、相談履歴にもその形で残るため空白区切りにする
     cards = lambda cs: " ".join(cs) if cs else "-"
@@ -162,6 +177,15 @@ def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
         cpu=cards(cpu) if cpu else t("coach.unknown_cards"),
         pot=pot,
     )
+    made_lines = []
+    if _made_name(hero_made):
+        made_lines.append(t("coach.made_hero", made=_made_name(hero_made)))
+    if _made_name(cpu_made):
+        made_lines.append(t("coach.made_cpu", made=_made_name(cpu_made)))
+    if made_lines:
+        # ヘッダーの末尾（アクション履歴の見出しの前）に差し込む
+        head, sep, tail = context_str.rpartition("\n\n")
+        context_str = head + "\n" + "\n".join(made_lines) + sep + tail
     # 各アクションにもポジションを添える。"HERO: CALL" だけだと
     # どの位置からのアクションか分からず、コーチが講評できない
     # 呼び名は「あなた / 相手」。"HERO" のまま渡すとコーチが Hero 表記で答えるため
@@ -177,9 +201,14 @@ def _coach_context(street, hero_pos, cpu_pos, hero_stack, cpu_stack,
                 notes.append(t("coach.action_verdict", mark=act["evaluation"]))
             if act.get("equity") is not None:
                 notes.append(t("coach.action_equity", eq=float(act["equity"])))
+            if _made_name(act.get("made", "")):
+                notes.append(t("coach.action_made", made=_made_name(act["made"])))
         note_str = f" [{' / '.join(notes)}]" if notes else ""
         context_str += (f"[{act['street']}] {name_of.get(actor, actor)}({pos_of.get(actor, '?')}): "
                         f"{act['action']}{amt_str}{note_str}\n")
+        reason = (act.get("reason") or "").strip()
+        if actor == "HERO" and reason:
+            context_str += t("coach.action_reason", reason=" ".join(reason.split()))
     return context_str
 
 
@@ -192,7 +221,8 @@ def ai_coach(req: AICoachRequest):
         st = req.state
         context_str = _coach_context(
             st.street, st.hero_pos, st.cpu_pos, st.hero_stack, st.cpu_stack,
-            st.board, st.hero, st.cpu, st.pot, [a.model_dump() for a in st.history])
+            st.board, st.hero, st.cpu, st.pot, [a.model_dump() for a in st.history],
+            hero_made=st.hero_made, cpu_made=st.cpu_made)
 
         system_prompt = t("coach.system_prompt", context=context_str)
 
