@@ -484,6 +484,7 @@
       };
 
       // CPU のポジションはプリフロップで CPU が動くまで伏せる
+      const actedYet = (who) => eng.street !== 'PREFLOP' || eng.actionHistory.some((a) => a.actor === who);
       let displayCpuPos = eng.cpuPosition;
       if (eng.street === 'PREFLOP' && !eng.actionHistory.some((a) => a.actor === 'CPU')) displayCpuPos = '???';
 
@@ -517,8 +518,10 @@
         heroRange: compressRange(eng.heroRange),
         cpuRange: compressRange(eng.cpuRange),
         // 画面のレンジ表は 169 種類のハンド名で引く。ポストフロップのレンジはコンボ単位なので平均に直す
-        heroRangeRaw: Object.fromEntries(rangeForDisplay(eng.heroRange)),
-        cpuRangeRaw: Object.fromEntries(rangeForDisplay(eng.cpuRange)),
+        // まだ一度もアクションしていない側は全ハンドを表示する。内部のレンジは「オープンにコールする」などの前提で先に絞ってあるが、
+        // それを見せると動く前から手が絞られて見え、CPU の席（??? で隠している）まで推測できてしまう（2026/11/22）
+        heroRangeRaw: Object.fromEntries(actedYet('HERO') ? rangeForDisplay(eng.heroRange) : root.Ranges.ALL_HANDS_DICT),
+        cpuRangeRaw: Object.fromEntries(actedYet('CPU') ? rangeForDisplay(eng.cpuRange) : root.Ranges.ALL_HANDS_DICT),
         finished,
         // サーバーはレスポンス時点のスナップショットを返すので、ここでもコピーを渡す
         history: eng.actionHistory.map((a) => ({ ...a })),

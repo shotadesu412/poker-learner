@@ -364,11 +364,27 @@
     for (const i of idx) { acc += vec[i]; if (acc >= frac * total) return eq[i]; }
     return eq[idx[idx.length - 1]];
   }
-  // ベットに直面した側の防衛の境目（MDF = ベット前のポット ÷ ベット後のポット）
+  // ベットに直面した側の防衛の境目（MDF = ベット前のポット ÷ ベット後のポット）。
+  // 防衛の下限は probs で sig(e − 境目) なので、その「なめらかに守る量」の合計がちょうど MDF × mdfShare になる境目を二分法で探す
+  // （2026/11/22〜）。以前は分位点そのものを境目にしていたため、勝率がほぼ同じ手のかたまり（ボードをプレイする A ハイなど）が
+  // 境目に来ると、サイズに関係なくかたまり全体が約5割守る計算になっていた（33% でも 150% でも降りる割合が同じ）
   function mdfEdge(eq, vec, ctx) {
     if (!(ctx.facing > 0.01)) return undefined;
     const mdf = Math.max(0, ctx.pot - ctx.facing) / Math.max(0.01, ctx.pot);
-    return quantileE(eq, vec, mdf * ActionModel.P.mdfShare);
+    const frac = mdf * ActionModel.P.mdfShare;
+    const q = quantileE(eq, vec, frac);
+    if (q === undefined) return undefined;
+    const idx = [];
+    let total = 0;
+    for (let i = 0; i < N; i++) if (vec[i] > 0 && !Number.isNaN(eq[i])) { idx.push(i); total += vec[i]; }
+    const target = frac * total;
+    const defended = (x) => { let s = 0; for (const i of idx) s += vec[i] * sig(eq[i] - x, SOFT / 2); return s; };
+    let lo = q - 0.3, hi = q + 0.3;   // defended は x について単調減少
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (defended(mid) > target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
   }
 
   const RangeModel = {
