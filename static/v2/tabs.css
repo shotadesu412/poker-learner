@@ -139,23 +139,105 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     cursor: pointer;
 }
 
-/* ===== ホーム（練習タブ）: ボタンと最低限の設定だけ、画面の真ん中に ===== */
+/* ===== ホーム（練習タブ）: 成績・今日の課題・スタート・スポット練習（2026/11/23 ダッシュボード型） ===== */
 #view-home.active {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    background:
+        radial-gradient(120% 60% at 50% -10%, rgba(16, 185, 129, 0.18), transparent 60%),
+        var(--bg-color, #1a1d1b);
 }
 
 .hm-body {
-    margin: auto 0;          /* 縦の真ん中（はみ出すときはスクロール） */
-    padding: max(env(safe-area-inset-top, 0px), 20px) 20px 24px;
+    padding: max(env(safe-area-inset-top, 0px), 20px) 18px 24px;
     width: 100%;
     max-width: 480px;
     align-self: center;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 0 auto;          /* 画面の高さいっぱい。スタートは下（親指の届くところ）に寄せる */
 }
 
-.hm-spot { margin-top: 36px; }
+.hm-head { display: flex; align-items: center; gap: 12px; margin: 8px 0 6px; }
+
+.hm-logo {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 1.6rem;
+    color: #06120c;
+    background: linear-gradient(145deg, #34d399, #059669);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.hm-app { font-size: 1.2rem; font-weight: 800; color: var(--text-main); letter-spacing: 0.02em; }
+.hm-tag { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+
+.hm-card {
+    position: relative;
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font: inherit;
+}
+
+.hm-card-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+.hm-card-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+
+.hm-score-row { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
+.hm-score-num { font-size: 2.4rem; font-weight: 800; line-height: 1.1; color: var(--text-main); }
+.hm-score-diff { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+.hm-score-diff.up { color: #34d399; }
+.hm-score-diff.down { color: #f87171; }
+
+.hm-task { cursor: pointer; border-left: 3px solid #f59e0b; padding-right: 32px; }
+.hm-task-title { font-size: 0.98rem; font-weight: 700; margin-top: 4px; }
+
+.hm-chev {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.4rem; color: var(--text-muted);
+}
+
+.hm-start {
+    width: 100%;
+    padding: 18px;
+    margin-top: auto;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #34d399, #10b981);
+    color: #06120c;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.3);
+    cursor: pointer;
+}
+.hm-start:active { transform: scale(0.98); }
+
+.hm-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 14px 36px 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.hm-row-main { display: flex; flex-direction: column; }
 
 .hm-title {
     font-size: 0.95rem;
@@ -164,7 +246,6 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
 }
 
 .hm-badge {
@@ -176,6 +257,23 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     padding: 1px 5px;
 }
 
+/* スポット練習の設定（下から出るシート） */
+.hm-sheet { position: fixed; inset: 0; z-index: 300; }
+.hm-sheet-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.2s; }
+.hm-sheet-panel {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    max-width: 480px; margin: 0 auto;
+    padding: 10px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-radius: 18px 18px 0 0;
+    background: #222724;
+    transform: translateY(100%);
+    transition: transform 0.2s ease;
+}
+.hm-sheet.open .hm-sheet-bg { opacity: 1; }
+.hm-sheet.open .hm-sheet-panel { transform: translateY(0); }
+.hm-sheet-grip { width: 36px; height: 4px; border-radius: 2px; background: #4b5563; margin: 0 auto 12px; }
+.hm-sheet .hm-title { margin-bottom: 12px; }
+
 .hm-label { font-size: 0.72rem; color: var(--text-muted); margin: 0 0 6px; }
 
 /* 選択肢（ポジション・配るハンド）: 1行に並べ、文字は折り返さない */
@@ -185,7 +283,7 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     flex: 1 1 auto;
     min-width: 0;
     white-space: nowrap;
-    padding: 8px 4px;
+    padding: 9px 4px;
     font-size: 0.76rem;
     font-weight: 700;
     border-radius: 8px;
@@ -205,26 +303,6 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     font-size: 0.76rem;
     color: var(--text-muted);
     margin-bottom: 16px;
-}
-
-.hm-start {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    background: #10b981;
-    color: #06120c;
-    font-size: 1.05rem;
-    font-weight: 800;
-    cursor: pointer;
-}
-
-.hm-start-sub {
-    padding: 13px;
-    font-size: 0.95rem;
-    background: transparent;
-    color: var(--text-main);
-    border: 1px solid #10b981;
 }
 
 /* ===== ゲーム画面の上の情報を詰める（2026/11/21〜。画面に収まっていなかった） ===== */

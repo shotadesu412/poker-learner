@@ -1567,6 +1567,62 @@ function refreshHome() {
     if (start) start.textContent = (!isSpotMode && currentState && !currentState.finished) ? t('home2.resume') : t('home2.start');
     const badge = el('hm-spot-badge');
     if (badge) badge.classList.toggle('hidden', !!isPremium);
+    renderSpotSummary();
+    renderHomeStats();
+}
+
+// 成績と今日の課題（端末の記録から。読めなければ空のまま）
+async function renderHomeStats() {
+    if (typeof StatsStore === 'undefined' || typeof StatsCalc === 'undefined') return;
+    let sum;
+    try { sum = StatsCalc.getHomeSummary(await StatsStore.loadAll()); } catch (e) { return; }
+    const num = el('hm-score-num'), diff = el('hm-score-diff'), sub = el('hm-score-sub');
+    if (sum.n7 === 0) {
+        num.textContent = '—';
+        diff.textContent = '';
+        sub.textContent = t('home2.score_empty');
+    } else {
+        num.textContent = Math.round(sum.rate7) + '%';
+        // 前の7日と比べるのは、前の7日にも十分な判断があるときだけ
+        if (sum.nPrev >= 20) {
+            const d = Math.round(sum.rate7 - sum.ratePrev);
+            diff.textContent = (d >= 0 ? t('home2.score_up', { d }) : t('home2.score_down', { d: -d })) + ' ' + t('home2.score_vs');
+            diff.className = 'hm-score-diff ' + (d > 0 ? 'up' : d < 0 ? 'down' : '');
+        } else {
+            diff.textContent = '';
+        }
+        sub.textContent = t('home2.score_sub', { n: sum.n7 });
+    }
+    const task = el('hm-task');
+    if (sum.leak) {
+        const l = sum.leak;
+        el('hm-task-title').textContent = t('home2.task_title', { pos: l.pos, street: t('street.' + l.street), action: t('home2.act.' + l.action) });
+        el('hm-task-sub').textContent = t('home2.task_sub', { bb: l.avg_ev_loss.toFixed(1), n: l.count });
+        task.classList.remove('hidden');
+    } else {
+        task.classList.add('hidden');
+    }
+}
+
+// スポット練習の今の設定（1行の要約）
+function renderSpotSummary() {
+    const s = el('hm-spot-summary');
+    if (s) s.textContent = (spotPosition || t('game.spot_random')) + ' · ' + (spotHands === 'range' ? t('home2.hands_range') : t('game.spot_random'));
+}
+
+function openSpotSheet() {
+    const sh = el('spot-sheet');
+    if (!sh) return;
+    sh.classList.remove('hidden');
+    requestAnimationFrame(() => sh.classList.add('open'));
+}
+
+function closeSpotSheet() {
+    const sh = el('spot-sheet');
+    if (!sh) return;
+    sh.classList.remove('open');
+    setTimeout(() => sh.classList.add('hidden'), 200);
+    renderSpotSummary();
 }
 
 function setSpotPosition(pos) {

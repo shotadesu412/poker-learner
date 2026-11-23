@@ -209,6 +209,20 @@
     }));
   }
 
+  // 新しい画面のホームに出す成績（2026/11/23〜）: 直近7日の ◎◯ の割合と、その前の7日。いちばん損している場面（3回以上）
+  function getHomeSummary(data, now = nowIso()) {
+    const d7 = minusDays(now, 7), d14 = minusDays(now, 14);
+    const rows = heroActions(data);
+    const rate = (xs) => (xs.length ? Py.round(xs.filter((a) => a.evaluation === '◎' || a.evaluation === '◯').length / xs.length * 100, 1) : 0);
+    const cur = rows.filter((a) => a.timestamp >= d7 && a.evaluation);
+    const prev = rows.filter((a) => a.timestamp >= d14 && a.timestamp < d7 && a.evaluation);
+    const leak = getLeaks(data).find((l) => l.count >= 3) || null;
+    return {
+      n7: cur.length, rate7: rate(cur), nPrev: prev.length, ratePrev: rate(prev),
+      leak: leak && { street: leak.street, action: leak.action, pos: leak.pos, avg_ev_loss: leak.avg_ev_loss, count: leak.count },
+    };
+  }
+
   function getSavedHands(data) {
     return [...data.saved_hands]
       .sort((x, y) => (x.timestamp < y.timestamp ? 1 : x.timestamp > y.timestamp ? -1 : 0))
@@ -344,7 +358,7 @@
   const StatsCalc = {
     formatIso, parseIso, nowIso, sqlAvg,
     getOverview, getPositionStats, getStreetEvalDist, getLeaks,
-    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle,
+    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary,
   };
   root.StatsCalc = StatsCalc;
   if (typeof module !== 'undefined') module.exports = StatsCalc;

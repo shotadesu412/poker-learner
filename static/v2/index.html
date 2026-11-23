@@ -8,18 +8,60 @@
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=17">
     <link rel="stylesheet" href="/static/v2/stats.css?v=1">
-    <link rel="stylesheet" href="/static/v2/tabs.css?v=3">
-    <script src="/static/i18n.js?v=14"></script>
+    <link rel="stylesheet" href="/static/v2/tabs.css?v=4">
+    <script src="/static/i18n.js?v=15"></script>
 </head>
 
 <body data-page="app">
 
-    <!-- ===== 練習タブ（ホーム）: スタートとスポット練習の入口。ゲーム画面は別（下のタブを出さない） ===== -->
+    <!-- ===== 練習タブ（ホーム）: 成績・今日の課題・スタート・スポット練習の入口（2026/11/23 ダッシュボード型に作り直し）。
+         ゲーム画面は別（下のタブを出さない） ===== -->
     <section id="view-home" class="tab-view home-view active">
         <div class="hm-body">
+            <header class="hm-head">
+                <div class="hm-logo">♠</div>
+                <div>
+                    <div class="hm-app" data-i18n="app.name">ポーカーラッシュ</div>
+                    <div class="hm-tag" data-i18n="home2.tagline">理論で打つ CPU と対戦、一手ごとに判定</div>
+                </div>
+            </header>
+
+            <!-- 成績（直近7日の ◎◯ の割合） -->
+            <div class="hm-card hm-score" id="hm-score">
+                <div class="hm-card-label" data-i18n="home2.score_label">◎◯ の割合（直近7日）</div>
+                <div class="hm-score-row">
+                    <span class="hm-score-num" id="hm-score-num">—</span>
+                    <span class="hm-score-diff" id="hm-score-diff"></span>
+                </div>
+                <div class="hm-card-sub" id="hm-score-sub"></div>
+            </div>
+
+            <!-- 今日の課題（いちばん損している場面。全員に1件だけ。続きは分析タブ） -->
+            <button class="hm-card hm-task hidden" id="hm-task" onclick="showTab('stats')">
+                <div class="hm-card-label" data-i18n="home2.task_label">今日の課題</div>
+                <div class="hm-task-title" id="hm-task-title"></div>
+                <div class="hm-card-sub" id="hm-task-sub"></div>
+                <span class="hm-chev">›</span>
+            </button>
+
             <button class="hm-start" id="btn-home-start" onclick="startPractice(false)" data-i18n="home2.start">スタート</button>
-            <div class="hm-spot">
-                <div class="hm-title"><span data-i18n="game.spot_mode">スポット練習</span><span class="hm-badge" id="hm-spot-badge">Premium</span></div>
+
+            <!-- スポット練習: 1行。押すと設定のシートを開く -->
+            <button class="hm-row" onclick="openSpotSheet()">
+                <span class="hm-row-main">
+                    <span class="hm-title"><span data-i18n="game.spot_mode">スポット練習</span><span class="hm-badge" id="hm-spot-badge">Premium</span></span>
+                    <span class="hm-card-sub" id="hm-spot-summary"></span>
+                </span>
+                <span class="hm-chev">›</span>
+            </button>
+        </div>
+
+        <!-- スポット練習の設定（下から出るシート） -->
+        <div class="hm-sheet hidden" id="spot-sheet">
+            <div class="hm-sheet-bg" onclick="closeSpotSheet()"></div>
+            <div class="hm-sheet-panel">
+                <div class="hm-sheet-grip"></div>
+                <div class="hm-title"><span data-i18n="game.spot_mode">スポット練習</span></div>
                 <div class="hm-label" data-i18n="home2.position">ポジション</div>
                 <div class="hm-seg hm-pos">
                     <button class="spot-pos-btn active" data-pos="" onclick="setSpotPosition('')" data-i18n="game.spot_random">ランダム</button>
@@ -39,7 +81,7 @@
                     <input type="checkbox" id="spot-participated-only" onchange="setSpotParticipated(this.checked)">
                     <span data-i18n="home2.auto_next">フォールドしたら自動で次のハンドへ</span>
                 </label>
-                <button class="hm-start hm-start-sub" onclick="startPractice(true)" data-i18n="home2.spot_start">スポット練習をスタート</button>
+                <button class="hm-start" onclick="closeSpotSheet(); startPractice(true)" data-i18n="home2.spot_start">スポット練習をスタート</button>
             </div>
         </div>
     </section>
@@ -567,9 +609,9 @@
         <p data-i18n="engine.load_failed">読み込みに失敗しました。通信環境を確認して、もう一度お試しください。</p>
         <button onclick="location.reload()" data-i18n="engine.retry" style="padding:10px 24px;">再読み込み</button>
     </div>
-    <script src="/static/game_api.js?v=21"></script>
+    <script src="/static/game_api.js?v=22"></script>
     <script src="/static/v2/stats.js?v=2"></script>
-    <script src="/static/v2/script.js?v=3"></script>
+    <script src="/static/v2/script.js?v=4"></script>
     <script src="/static/v2/panels.js?v=4"></script>
 </body>
 
