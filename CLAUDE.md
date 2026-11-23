@@ -98,12 +98,8 @@
   新しい画面を正式にする（今の画面と入れ替える）のは shota が納得してから
 
 ### shota 待ち（ここから再開）
-1. **Apple の規約（PLA）に同意する**: developer.apple.com/account と App Store Connect の「ビジネス」の両方。
-   未同意のせいで Organizer のアップロードが「PLA Update available / No iOS Distribution certificate」で止まっている。
-   dev-dashboard の毎朝の ASC 取得も止まる可能性がある
-2. **1.0.8 (14) をアップロードする**: Organizer → `1.0.8 (14)`（11/15 の2件。どちらも同じ中身）→ Distribute App。
-   証明書のエラーが残るなら Xcode → Settings → Accounts → Manage Certificates → ＋ Apple Distribution
-3. **今のサブタイトルとキーワード欄を共有してもらう**（公開ページからは取れなかった）
+- 2026/11/23 shota 報告: Apple の規約（PLA）への同意と 1.0.8 (14) のアップロードは完了。審査に出したか（ストアの見た目を変えるなら提出前）は未確認
+- **今のサブタイトルとキーワード欄を共有してもらう**（公開ページからは取れなかった）
 
 ### Claude がやること（shota の上記を受けて）
 - **1.0.8 の提出前に、ストアの見た目を練習アプリ寄りに作り直す**（アプリ名・サブタイトル・キーワード・スクショ1〜3枚目）。
