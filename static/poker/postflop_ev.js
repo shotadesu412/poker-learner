@@ -301,13 +301,15 @@
       const gradeOf = (kk) => (lossPct <= GRADE.optimal * kk ? B.EVAL_OPTIMAL : lossPct <= GRADE.good * kk ? B.EVAL_GOOD
         : lossPct <= GRADE.marginal * kk ? B.EVAL_MARGINAL : B.EVAL_BAD);
       let evaluation = gradeOf(k);
+      // 緩めたことで記号が変わった（解説で断る）。下のドンクの場面の扱いで変わった分は含めない
+      //（以前は「チェックは △ より下にしない」で変わった分まで「スロープレイなので緩めた」と書いていた）
+      const softened = evaluation !== gradeOf(1.0);
       // 正当化されないドンクを打った（チェック以上の得はあるが小さい）: チェックが基本なので ◯ まで。
       // チェックより損なドンクは、普通に「チェックの方が良い」で判定する
       const donkUnjustified = donk && !donk.justified && chosen.action === 'BET' && chosen.ev >= checkOpt.ev;
       if (donkUnjustified && (evaluation === B.EVAL_OPTIMAL)) evaluation = B.EVAL_GOOD;
       // ドンクの場面でのチェックは理論の基本なので、ドンクがはっきり得な例外の場面でも △ より下にしない
       if (donk && chosen.action === 'CHECK' && evaluation === B.EVAL_BAD) evaluation = B.EVAL_MARGINAL;
-      const softened = evaluation !== gradeOf(1.0);   // 緩めたことで記号が変わった（解説で断る）
 
       const name = (o) => PostflopEV.actionName(o, ctx);
       const lines = [];
@@ -320,6 +322,13 @@
       else if (evaluation === B.EVAL_GOOD) lines.push(t('pf.verdict.good', kw));
       else if (evaluation === B.EVAL_MARGINAL) lines.push(t('pf.verdict.inaccuracy', kw));
       else lines.push(t('pf.verdict.mistake', kw));
+      // ドンクが有効な例外の場面は、判定のすぐ後に「ドンクベットが有効」とその理由を書く（2026/11/23 shota 指摘。
+      // 以前は解説の最後に一言だけで、ドンクという言葉も無く、なぜ打つのかが伝わらなかった）
+      if (donk && donk.justified) {
+        const pb = checkOpt.pBet;
+        const kwd = { edge: donk.edge * 100, pb: (pb || 0) * 100 };
+        lines.push(t(pb !== undefined && pb < 0.5 ? 'pf.why.donk_justified_checkback' : 'pf.why.donk_justified', kwd));
+      }
 
       // 根拠: 数字はコールの判断に要るもの（勝率と必要勝率）だけ
       if (facing > 0.01) {
@@ -343,7 +352,6 @@
         why = [t('pf.why.check_donk_spot')];
       } else {
         why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive, checkOpt });
-        if (donk && donk.justified) why.push(t('pf.why.donk_justified', { edge: donk.edge * 100 }));
       }
       for (const w of why) lines.push(w);
       if (!donkUnjustified && !(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));

@@ -45,6 +45,9 @@
   （当たる向き 77%→86%）、推奨が変わった局面でターン +1.2±0.3bb・リバー +1.1±0.5bb、被ベットの一致率 ターン 77→80% / リバー 91→94%。
   CPU のリバーのレイズへのフォールド 33%→50%、リバーの 100%以上のベットへ約56%、55〜85% へ約40%（いずれも 1−0.9×MDF の範囲）。
   プリフロップの 3ベットへの防衛の下限（engine.js の `_vs3betMdfE`）は今までどおり勝率順
+- **ドンクが有効な場面の解説**（2026/11/23 shota 指摘。postflop_ev.js の `pf.why.donk_justified(_checkback)`）: 判定のすぐ後（2行目）に
+  「ドンクベットが有効な場面」と理由（チェックより得な量。ターン・リバーはチェックしたときに相手が打ってくる割合も）を書く。以前は解説の最後に一言だけだった。
+  あわせて、ドンクの場面で「チェックは △ より下にしない」で記号が変わった分を「スロープレイなので緩めた」と書いていたのを直した
 - **リバーの解説の総点検**（postflop_ev.js の `explain`）: サイズの差の理由（役割と、降りる割合・続けてくる手への勝率の比較）、リバーは「薄いバリュー」
   （以前は「ドローに無料でカードを見せない」）、チェックが勝る理由（強い手ばかり続けてくる / 相手が打ってくる / 勝てる手をブラフにしない）、
   ドンクの場面の理由、判定と解説の矛盾（差 0.5% 未満で「最善」と書いていた）を直した
@@ -414,8 +417,8 @@ poker-learner/
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
    現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
-   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=14` / `game_api.js?v=20`（index.html, home.html, stats.html 内）
-   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 18）で一括管理
+   `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=14` / `game_api.js?v=21`（index.html, home.html, stats.html 内）
+   `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 19）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
 4. 反映確認: `curl -s "https://poker-learner.onrender.com/static/script.js?v=NN" | grep 目印`
 

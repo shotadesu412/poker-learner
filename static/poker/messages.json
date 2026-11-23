@@ -656,8 +656,12 @@
   "en": "Without the initiative and out of position, check first by default."
  },
  "pf.why.donk_justified": {
-  "ja": "主導権の無い側でも、ここは先に打つ方がはっきり得な例外的な場面です（ポットの約{edge:.0f}%）。",
-  "en": "Even without the initiative, leading out is clearly better here, an exception (about {edge:.0f}% of the pot)."
+  "ja": "ここはドンクベット（主導権の無い側が先に打つこと）が有効な場面です。普通はチェックが基本ですが、先に打つ方がチェックよりポットの約{edge:.0f}%得です。",
+  "en": "A donk bet (leading out without the initiative) works here. Checking is the default, but leading out is better than checking by about {edge:.0f}% of the pot."
+ },
+ "pf.why.donk_justified_checkback": {
+  "ja": "ここはドンクベット（主導権の無い側が先に打つこと）が有効な場面です。チェックしても相手が打ってくるのは約{pb:.0f}%だけで、残りはチェックで返されるので、先に打つ方がポットの約{edge:.0f}%得です。",
+  "en": "A donk bet (leading out without the initiative) works here. If you check, they bet only about {pb:.0f}% of the time and check back the rest, so leading out is better by about {edge:.0f}% of the pot."
  },
  "pf.why.size_value_big": {
   "ja": "{best}だと相手が降りる割合は約{fa:.0f}%→約{fb:.0f}%に増えますが、続けてくる手にも約{eqcb:.0f}%勝てるので、コールされたときに取れる額が大きい分だけ得です。",
