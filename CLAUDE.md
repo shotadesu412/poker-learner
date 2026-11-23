@@ -412,7 +412,7 @@ poker-learner/
 1. 変更をコミットして `git push origin main`
 2. Render が自動デプロイ（数分。無料/Starterプランでコールドスタートあり）
 3. **静的アセットを変えたら必ずキャッシュバスティングの ?v= を上げる**
-   現在値: `style.css?v=15` / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
+   現在値: `style.css?v=17`（v2 も同じ番号） / `script.js?v=39` / `home.js?v=7` / `home.css?v=10` /
    `stats.css?v=8` / `stats.js?v=9` / `i18n.js?v=14` / `game_api.js?v=21`（index.html, home.html, stats.html 内）
    `static/poker/*.js` と `ranges.json` / `messages.json` は `game_api.js` の `POKER_JS_VERSION`（現在 19）で一括管理
    **i18n.js は3ページ全部で読み込んでいるので、上げるときは3ファイルとも直すこと**
