@@ -151,23 +151,24 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 
 .hm-body {
-    padding: max(env(safe-area-inset-top, 0px), 20px) 18px 24px;
+    padding: max(env(safe-area-inset-top, 0px), 12px) 18px 16px;
     width: 100%;
     max-width: 480px;
     align-self: center;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    flex: 1 0 auto;
 }
 
-.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 10px 0 8px; }
+.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 4px 0 2px; }
 
 .hm-card {
     position: relative;
     display: block;
     width: 100%;
     text-align: left;
-    padding: 14px 16px;
+    padding: 11px 16px;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(255, 255, 255, 0.04);
@@ -178,13 +179,14 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-card-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
 .hm-card-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
 
-.hm-score-row { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
-.hm-score-num { font-size: 2.4rem; font-weight: 800; line-height: 1.1; color: var(--text-main); }
+.hm-score-row { display: flex; align-items: center; gap: 14px; margin-top: 2px; }
+.hm-score-side { display: flex; flex-direction: column; gap: 2px; }
+.hm-score-side .hm-card-sub { margin-top: 0; }
+.hm-score-num { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--text-main); }
 .hm-score-diff { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
 .hm-score-diff.up { color: #34d399; }
 .hm-score-diff.down { color: #f87171; }
 
-.hm-score { margin-top: 6px; }
 .hm-task, .hm-style { cursor: pointer; padding-right: 32px; }
 .hm-task { border-left: 3px solid #f59e0b; }
 .hm-style { border-left: 3px solid #60a5fa; }
@@ -212,31 +214,12 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 .hm-start:active { transform: scale(0.98); }
 
-.hm-row {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 14px 36px 14px 16px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-main);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-.hm-row-main { display: flex; flex-direction: column; }
-
-/* スポット練習は紫のボタン（スタートと並ぶ2つ目の入口） */
+/* スポット練習のボタンは紫 */
 .hm-spot-btn {
     background: linear-gradient(180deg, #8b5cf6, #6d28d9);
-    border: none;
+    color: #fff;
     box-shadow: 0 8px 22px rgba(124, 58, 237, 0.3);
 }
-.hm-spot-btn .hm-title, .hm-spot-btn .hm-chev { color: #fff; }
-.hm-spot-btn .hm-card-sub { color: rgba(255, 255, 255, 0.8); }
-.hm-spot-btn .hm-badge { color: #fde68a; border-color: #fde68a; }
 
 .hm-title {
     font-size: 0.95rem;
@@ -256,15 +239,21 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     padding: 1px 5px;
 }
 
-/* 直近7日の練習量（カードにせず1行で軽く） */
-.hm-week { display: flex; align-items: center; gap: 10px; padding: 2px 4px; font-size: 0.74rem; color: var(--text-muted); }
-.hm-week-dots { display: flex; gap: 5px; }
-.hm-week-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); }
-.hm-week-dots i.lv1 { background: rgba(52, 211, 153, 0.4); }
-.hm-week-dots i.lv2 { background: rgba(52, 211, 153, 0.7); }
-.hm-week-dots i.lv3 { background: #34d399; }
-.hm-week-dots i.today { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35); }
-.hm-week-streak { margin-left: auto; color: #fbbf24; font-weight: 700; }
+/* 週の記録: 1日ごとの細い棒 */
+.hm-week-head { display: flex; align-items: center; gap: 8px; }
+.hm-week-text { font-size: 0.74rem; color: var(--text-muted); }
+.hm-week-streak { margin-left: auto; font-size: 0.74rem; color: #fbbf24; font-weight: 700; }
+.hm-week-bars { display: flex; gap: 8px; margin-top: 6px; }
+.hm-wk { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.66rem; color: var(--text-muted); }
+.hm-wk-track { width: 100%; max-width: 26px; height: 18px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); display: flex; align-items: flex-end; overflow: hidden; }
+.hm-wk-fill { width: 100%; background: linear-gradient(180deg, #34d399, #10b981); border-radius: 5px; }
+.hm-wk.today span { color: var(--text-main); font-weight: 700; }
+
+/* 練習の入口: 見出し・説明・ボタン。画面の下側に寄せて空きを埋める */
+.hm-practice { margin-top: auto; padding-top: 6px; display: flex; flex-direction: column; gap: 14px; }
+.hm-sec-title { font-size: 0.95rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+.hm-sec-sub { font-size: 0.74rem; color: var(--text-muted); margin: 1px 0 7px; }
+.hm-practice .hm-start { margin-top: 0; padding: 13px; }
 
 /* スポット練習の設定（下から出るシート。ホームの外に置く: iPhone ではスクロールする枠の中だと下のタブより下に描かれる） */
 .hm-sheet { position: fixed; inset: 0; z-index: 300; }

@@ -1616,14 +1616,17 @@ async function renderHomeStats() {
     }
 }
 
-// 直近7日の練習量: 7つの点（打った日は濃く）とハンド数・連続日数
+// 週の記録: 直近7日の1日ごとの棒（高さはハンド数）・曜日・ハンド数・連続日数
 function renderWeek(w) {
-    const dots = el('hm-week-dots');
-    if (!dots) return;
+    const bars = el('hm-week-bars');
+    if (!bars) return;
     const max = Math.max(1, ...w.days);
-    dots.innerHTML = w.days.map((n, i) => {
-        const lv = n === 0 ? 0 : n >= max * 0.66 ? 3 : n >= max * 0.33 ? 2 : 1;
-        return '<i class="lv' + lv + (i === 6 ? ' today' : '') + '"></i>';
+    const names = t('home2.days').split(',');
+    const today = new Date().getDay();
+    bars.innerHTML = w.days.map((n, i) => {
+        const h = n === 0 ? 0 : Math.max(12, Math.round(n / max * 100));
+        const dow = names[(today - 6 + i + 7) % 7];
+        return '<div class="hm-wk' + (i === 6 ? ' today' : '') + '"><div class="hm-wk-track"><div class="hm-wk-fill" style="height:' + h + '%"></div></div><span>' + dow + '</span></div>';
     }).join('');
     el('hm-week-text').textContent = t('home2.week_hands', { n: String(w.total) });
     el('hm-week-streak').textContent = w.streak >= 2 ? t('home2.week_streak', { n: String(w.streak) }) : '';
