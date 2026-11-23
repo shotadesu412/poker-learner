@@ -223,6 +223,27 @@
     };
   }
 
+  // ホームの「直近7日の練習量」（2026/11/23）: 端末の日付で1日ごとのハンド数（古い順、最後が今日）と連続日数。
+  // 連続日数は今日まだ打っていなければ昨日から数える（朝に開いて0日と出さないため）
+  function getWeekActivity(data, nowMs = Date.now()) {
+    const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+    const perDay = new Map();
+    for (const s of data.sessions || []) {
+      const ms = Date.parse(s.started_at);
+      if (!Number.isFinite(ms)) continue;
+      const k = dayKey(ms);
+      perDay.set(k, (perDay.get(k) || 0) + 1);
+    }
+    // 日付は正午を基準に1日ずつ戻す（夏時間の切り替わりでずれないように）
+    const noon = new Date(nowMs); noon.setHours(12, 0, 0, 0);
+    const back = (i) => { const d = new Date(noon); d.setDate(d.getDate() - i); return d.getTime(); };
+    const days = [];
+    for (let i = 6; i >= 0; i--) days.push(perDay.get(dayKey(back(i))) || 0);
+    let streak = 0;
+    for (let i = perDay.get(dayKey(back(0))) ? 0 : 1; perDay.get(dayKey(back(i))); i++) streak++;
+    return { days, total: days.reduce((a, b) => a + b, 0), streak };
+  }
+
   function getSavedHands(data) {
     return [...data.saved_hands]
       .sort((x, y) => (x.timestamp < y.timestamp ? 1 : x.timestamp > y.timestamp ? -1 : 0))
@@ -358,7 +379,7 @@
   const StatsCalc = {
     formatIso, parseIso, nowIso, sqlAvg,
     getOverview, getPositionStats, getStreetEvalDist, getLeaks,
-    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary,
+    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary, getWeekActivity,
   };
   root.StatsCalc = StatsCalc;
   if (typeof module !== 'undefined') module.exports = StatsCalc;

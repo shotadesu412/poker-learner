@@ -1567,15 +1567,15 @@ function refreshHome() {
     if (start) start.textContent = (!isSpotMode && currentState && !currentState.finished) ? t('home2.resume') : t('home2.start');
     const badge = el('hm-spot-badge');
     if (badge) badge.classList.toggle('hidden', !!isPremium);
-    renderSpotSummary();
     renderHomeStats();
 }
 
 // 成績と今日の課題（端末の記録から。読めなければ空のまま）
 async function renderHomeStats() {
     if (typeof StatsStore === 'undefined' || typeof StatsCalc === 'undefined') return;
-    let sum;
-    try { sum = StatsCalc.getHomeSummary(await StatsStore.loadAll()); } catch (e) { return; }
+    let sum, data;
+    try { data = await StatsStore.loadAll(); sum = StatsCalc.getHomeSummary(data); } catch (e) { return; }
+    renderWeek(StatsCalc.getWeekActivity(data));
     const num = el('hm-score-num'), diff = el('hm-score-diff'), sub = el('hm-score-sub');
     if (sum.n7 === 0) {
         num.textContent = '—';
@@ -1595,7 +1595,7 @@ async function renderHomeStats() {
     }
     // アクション傾向（分析タブの「プレイの傾向」と同じ。全期間）
     try {
-        const st = StatsCalc.getPlayStyle(await StatsStore.loadAll(), 'all');
+        const st = StatsCalc.getPlayStyle(data, 'all');
         const sign = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(1);
         if (st.ready) {
             el('hm-style-name').textContent = t('stats.style.name.' + st.type);
@@ -1616,10 +1616,17 @@ async function renderHomeStats() {
     }
 }
 
-// スポット練習の今の設定（1行の要約）
-function renderSpotSummary() {
-    const s = el('hm-spot-summary');
-    if (s) s.textContent = (spotPosition || t('game.spot_random')) + ' · ' + (spotHands === 'range' ? t('home2.hands_range') : t('game.spot_random'));
+// 直近7日の練習量: 7つの点（打った日は濃く）とハンド数・連続日数
+function renderWeek(w) {
+    const dots = el('hm-week-dots');
+    if (!dots) return;
+    const max = Math.max(1, ...w.days);
+    dots.innerHTML = w.days.map((n, i) => {
+        const lv = n === 0 ? 0 : n >= max * 0.66 ? 3 : n >= max * 0.33 ? 2 : 1;
+        return '<i class="lv' + lv + (i === 6 ? ' today' : '') + '"></i>';
+    }).join('');
+    el('hm-week-text').textContent = t('home2.week_hands', { n: String(w.total) });
+    el('hm-week-streak').textContent = w.streak >= 2 ? t('home2.week_streak', { n: String(w.streak) }) : '';
 }
 
 function openSpotSheet() {
@@ -1634,7 +1641,6 @@ function closeSpotSheet() {
     if (!sh) return;
     sh.classList.remove('open');
     setTimeout(() => sh.classList.add('hidden'), 200);
-    renderSpotSummary();
 }
 
 function setSpotPosition(pos) {
