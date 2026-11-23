@@ -1593,6 +1593,18 @@ async function renderHomeStats() {
         }
         sub.textContent = t('home2.score_sub', { n: sum.n7 });
     }
+    // アクション傾向（分析タブの「プレイの傾向」と同じ。全期間）
+    try {
+        const st = StatsCalc.getPlayStyle(await StatsStore.loadAll(), 'all');
+        const sign = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(1);
+        if (st.ready) {
+            el('hm-style-name').textContent = t('stats.style.name.' + st.type);
+            el('hm-style-sub').textContent = t('stats.style.diff', { loose: sign(st.loose_diff), aggr: sign(st.aggr_diff) });
+        } else {
+            el('hm-style-name').textContent = '—';
+            el('hm-style-sub').textContent = t('home2.style_need', { n: String(st.need) });
+        }
+    } catch (e) { /* 表示だけなので無視 */ }
     const task = el('hm-task');
     if (sum.leak) {
         const l = sum.leak;

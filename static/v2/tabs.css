@@ -158,23 +158,9 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     display: flex;
     flex-direction: column;
     gap: 12px;
-    flex: 1 0 auto;          /* 画面の高さいっぱい。スタートは下（親指の届くところ）に寄せる */
 }
 
-.hm-head { display: flex; align-items: center; gap: 12px; margin: 8px 0 6px; }
-
-.hm-logo {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    display: grid; place-items: center;
-    font-size: 1.6rem;
-    color: #06120c;
-    background: linear-gradient(145deg, #34d399, #059669);
-    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
-}
-
-.hm-app { font-size: 1.2rem; font-weight: 800; color: var(--text-main); letter-spacing: 0.02em; }
-.hm-tag { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 10px 0 8px; }
 
 .hm-card {
     position: relative;
@@ -198,7 +184,10 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-score-diff.up { color: #34d399; }
 .hm-score-diff.down { color: #f87171; }
 
-.hm-task { cursor: pointer; border-left: 3px solid #f59e0b; padding-right: 32px; }
+.hm-score { margin-top: 6px; }
+.hm-task, .hm-style { cursor: pointer; padding-right: 32px; }
+.hm-task { border-left: 3px solid #f59e0b; }
+.hm-style { border-left: 3px solid #60a5fa; }
 .hm-task-title { font-size: 0.98rem; font-weight: 700; margin-top: 4px; }
 
 .hm-chev {
@@ -210,7 +199,7 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-start {
     width: 100%;
     padding: 18px;
-    margin-top: auto;
+    margin-top: 8px;
     border: none;
     border-radius: 14px;
     background: linear-gradient(180deg, #34d399, #10b981);
@@ -238,6 +227,16 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     cursor: pointer;
 }
 .hm-row-main { display: flex; flex-direction: column; }
+
+/* スポット練習は紫のボタン（スタートと並ぶ2つ目の入口） */
+.hm-spot-btn {
+    background: linear-gradient(180deg, #8b5cf6, #6d28d9);
+    border: none;
+    box-shadow: 0 8px 22px rgba(124, 58, 237, 0.3);
+}
+.hm-spot-btn .hm-title, .hm-spot-btn .hm-chev { color: #fff; }
+.hm-spot-btn .hm-card-sub { color: rgba(255, 255, 255, 0.8); }
+.hm-spot-btn .hm-badge { color: #fde68a; border-color: #fde68a; }
 
 .hm-title {
     font-size: 0.95rem;
