@@ -285,8 +285,15 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-col-item.has { color: var(--text-main); }
 .hm-col-item.has b { color: #fbbf24; }
 .hm-col-weeks { display: flex; flex-direction: column; gap: 12px; }
-.hm-col-week-head { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
-.hm-col-week-head b { color: #fbbf24; }
+.hm-col-week-head { display: flex; align-items: center; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+.hm-col-week-head b { color: #fbbf24; margin-left: auto; }
+.hm-col-star { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; padding: 0 0 0 10px; cursor: pointer; }
+.hm-col-star.on { color: #fbbf24; }
+.hm-col-mybest { margin-bottom: 16px; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(251, 191, 36, 0.6); background: radial-gradient(120% 120% at 50% 0%, rgba(251, 191, 36, 0.14), transparent 70%); }
+.hm-col-mybest .hm-col-cards .hm-wc { max-width: 44px; }
+.hm-col-mybest .hm-col-cards .hm-wc b { font-size: 1.05rem; }
+.hm-col-mybest .hm-col-cards .hm-wc i { font-size: 0.95rem; }
+.hm-col-mybest-empty { font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 10px 0; }
 .hm-col-cards { display: flex; gap: 5px; }
 .hm-col-cards .hm-wc { flex: 1; min-width: 0; max-width: 36px; }
 .hm-col-cards .hm-wc b { font-size: 0.85rem; }

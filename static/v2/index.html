@@ -8,8 +8,8 @@
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=17">
     <link rel="stylesheet" href="/static/v2/stats.css?v=1">
-    <link rel="stylesheet" href="/static/v2/tabs.css?v=11">
-    <script src="/static/i18n.js?v=22"></script>
+    <link rel="stylesheet" href="/static/v2/tabs.css?v=12">
+    <script src="/static/i18n.js?v=23"></script>
 </head>
 
 <body data-page="app">
@@ -119,6 +119,9 @@
         <div class="hm-sheet-panel">
             <div class="hm-sheet-grip"></div>
             <div class="hm-title" data-i18n="home2.collection_title">役のコレクション</div>
+            <!-- マイベスト: 下の週の ☆ で選んだ1週（端末に保存） -->
+            <div class="hm-label" data-i18n="home2.mybest_label">マイベスト</div>
+            <div class="hm-col-mybest" id="hm-col-mybest"></div>
             <div class="hm-col-grid" id="hm-col-grid"></div>
             <div class="hm-label" data-i18n="home2.collection_weeks">これまでの週</div>
             <div class="hm-col-weeks" id="hm-col-weeks"></div>
@@ -649,7 +652,7 @@
     </div>
     <script src="/static/game_api.js?v=26"></script>
     <script src="/static/v2/stats.js?v=2"></script>
-    <script src="/static/v2/script.js?v=11"></script>
+    <script src="/static/v2/script.js?v=12"></script>
     <script src="/static/v2/panels.js?v=4"></script>
 </body>
 

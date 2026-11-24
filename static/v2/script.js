@@ -1740,20 +1740,46 @@ function openSpotSheet() { openSheet('spot-sheet'); }
 function closeSpotSheet() { closeSheet('spot-sheet'); }
 
 // 役のコレクション: 役ごとの回数と、終わった週ごとの7枚
+// 役のコレクション: マイベスト（選んだ1週）、役ごとの回数、終わった週ごとの7枚
+const WC_MYBEST_KEY = 'poker_wc_mybest';
+let _collection = null;
+
 async function openCollection() {
-    let col;
-    try { col = StatsCalc.getCardCollection(await StatsStore.loadAll(), currentUserId, Date.now(), loadWeekSwaps()); } catch (e) { return; }
+    try { _collection = StatsCalc.getCardCollection(await StatsStore.loadAll(), currentUserId, Date.now(), loadWeekSwaps()); } catch (e) { return; }
+    renderCollection();
+    openSheet('collection-sheet');
+}
+
+function collectionWeekRow(wk, withStar, isBest) {
+    const k = String(wk.start);
+    const date = t('home2.collection_week', { m: String(+k.slice(4, 6)), d: String(+k.slice(6, 8)) });
+    const cards = wk.cards.map((c) => (c ? weekCardFace(c) : '<div class="hm-wc missed"></div>')).join('');
+    const star = withStar ? '<button class="hm-col-star' + (isBest ? ' on' : '') + '" onclick="toggleMyBest(' + wk.start + ')">' + (isBest ? '★' : '☆') + '</button>' : '';
+    return '<div class="hm-col-week"><div class="hm-col-week-head"><span>' + date + '</span><b>' + t('home2.rank.' + wk.best) + '</b>' + star + '</div><div class="hm-col-cards">' + cards + '</div></div>';
+}
+
+function renderCollection() {
+    const col = _collection;
+    if (!col) return;
+    const bestKey = localStorage.getItem(WC_MYBEST_KEY);
+    const best = col.weeks.find((wk) => String(wk.start) === bestKey);
+    el('hm-col-mybest').innerHTML = best
+        ? collectionWeekRow(best, false, true)
+        : '<div class="hm-col-mybest-empty">' + t(col.weeks.length ? 'home2.mybest_empty' : 'home2.mybest_none') + '</div>';
     el('hm-col-grid').innerHTML = col.categories.map((c) => {
         const n = col.counts[c];
         return '<div class="hm-col-item' + (n ? ' has' : '') + '"><span>' + t('home2.rank.' + c) + '</span><b>' + (n ? '×' + n : '—') + '</b></div>';
     }).join('');
-    el('hm-col-weeks').innerHTML = col.weeks.length ? col.weeks.map((wk) => {
-        const k = String(wk.start);
-        const date = t('home2.collection_week', { m: String(+k.slice(4, 6)), d: String(+k.slice(6, 8)) });
-        const cards = wk.cards.map((c) => (c ? weekCardFace(c) : '<div class="hm-wc missed"></div>')).join('');
-        return '<div class="hm-col-week"><div class="hm-col-week-head"><span>' + date + '</span><b>' + t('home2.rank.' + wk.best) + '</b></div><div class="hm-col-cards">' + cards + '</div></div>';
-    }).join('') : '<div class="hm-card-sub">' + t('home2.collection_empty') + '</div>';
-    openSheet('collection-sheet');
+    el('hm-col-weeks').innerHTML = col.weeks.length
+        ? col.weeks.map((wk) => collectionWeekRow(wk, true, String(wk.start) === bestKey)).join('')
+        : '<div class="hm-card-sub">' + t('home2.collection_empty') + '</div>';
+}
+
+// ☆ を押した週をマイベストにする（選んでいる週をもう一度押すと外す）
+function toggleMyBest(start) {
+    if (localStorage.getItem(WC_MYBEST_KEY) === String(start)) localStorage.removeItem(WC_MYBEST_KEY);
+    else localStorage.setItem(WC_MYBEST_KEY, String(start));
+    renderCollection();
 }
 
 function setSpotPosition(pos) {
