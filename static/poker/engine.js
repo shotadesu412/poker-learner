@@ -540,6 +540,15 @@
           return !!first && first.actor === other && first.action === 'BET';
         })(),
         texture: this.classifyBoardTexture(this.board),
+        // 相手がこのストリートの最後のベット/レイズで追加した額（防衛の下限の計算に使う。2026/11/25〜）
+        oppRisk: (() => {
+          for (let k = this.actionHistory.length - 1; k >= 0; k--) {
+            const a = this.actionHistory[k];
+            if (a.street !== this.street) break;
+            if (a.actor === other && (a.action === 'BET' || a.action === 'RAISE')) return a.amount;
+          }
+          return undefined;
+        })(),
       };
     }
 

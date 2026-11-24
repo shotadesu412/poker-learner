@@ -184,11 +184,11 @@
         let raiseEv = -Infinity;
         const r = Math.min(heroMax, b * 3);
         if (r > b + 0.05) {
-          const heroCtx2 = { ...heroCtx, facing: b, pot: pot + b, opponentChecked: false };
+          const heroCtx2 = { ...heroCtx, facing: b, pot: pot + b, opponentChecked: false, oppRisk: b };
           const heroRaise = RM.posterior(table, heroAfter, cpuVecPublic, heroCtx2, 'RAISE', r, false);
           const eCpu2 = table.equityVector(cpuVecPublic, heroRaise);
           const s2 = { street, facing: r - b, pot: pot + b + r, stack: Math.max(0, stack - b), ip: !ctx.ip,
-            wasAggressor: true, opponentChecked: false, texture };
+            wasAggressor: true, opponentChecked: false, texture, oppRisk: r };
           // 相手の防衛の下限は、このサイズでベットしてきたレンジで計算する
           const betVec = new Float64Array(RM.N);
           for (const [i, w] of g.idx) betVec[i] = w;
@@ -220,7 +220,7 @@
       const eCpu = eCpuPub;
       const base = {
         street: ctx.street, facing: Math.max(0.01, amount - ctx.facing), pot: ctx.pot + amount,
-        stack: eng.cpuStack, ip: !ctx.ip, wasAggressor: false, opponentChecked: false, texture: '',
+        stack: eng.cpuStack, ip: !ctx.ip, wasAggressor: false, opponentChecked: false, texture: '', oppRisk: amount,
         // あなたが主導権の無い側で先に打つ（ドンク）なら、CPU はドンクへの返し方で反応する（engine の _modelContext と同じ）
         vsDonk: ctx.facing <= 0.01 && action === 'BET' && eng.streetStartAggressor === 'CPU'
           && !eng.actionHistory.some((a) => a.street === eng.street),

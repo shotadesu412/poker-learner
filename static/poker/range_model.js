@@ -243,8 +243,13 @@
       looseCallP: 0.25, looseCallBand: 0.9,
       riverCallPenalty: 0.0,
       mdfShare: 0.9,   // 実際のプレイヤーは理論値（MDF）より少し多く降りる
+      mdfShareVsRaise: 1.0,   // レイズを受けたとき（2026/11/25〜）
       valueThr: { FLOP: 0.65, TURN: 0.68, RIVER: 0.70 },
       valueBetP: 0.85, donkValueBetP: 0.35,
+      // リバーのブラフ（勝率が riverBluffMaxE 未満の手が打つ割合）。以前は勝率20%未満で 40%（主導権あり）/ 30%
+      riverBluffP: { aggr: 0.55, other: 0.45 }, riverBluffMaxE: 0.25,
+      // リバーで大きい方（100%）を選ぶ割合: バリューは強さで min〜max、ブラフは一定（2026/11/25〜）
+      riverBigValueMin: 0.30, riverBigValueMax: 0.55, riverBigBluffShare: 0.45,
     },
 
     sizeOrJam(amount, stack) { return amount >= stack * 0.6 ? stack : amount; },
@@ -315,20 +320,24 @@
       else if (s.wasAggressor) {
         if (st === 'FLOP') bluffP = s.e < 0.45 ? (strongDraw ? 0.65 : 0.45) : 0.35;
         else if (st === 'TURN') bluffP = strongDraw ? 0.55 : (s.e < 0.35 ? 0.25 : 0.15);
-        else bluffP = s.e < 0.20 ? 0.40 : 0.0;
+        else bluffP = P.riverBluffP.aggr * sig(P.riverBluffMaxE - s.e, SOFT);
       } else {
         if (st === 'FLOP') bluffP = strongDraw ? 0.50 : (s.e < 0.45 ? 0.35 : 0.20);
         else if (st === 'TURN') bluffP = strongDraw ? 0.45 : (s.e < 0.35 ? 0.30 : 0.15);
-        else bluffP = s.e < 0.20 ? 0.30 : 0.0;
+        else bluffP = P.riverBluffP.other * sig(P.riverBluffMaxE - s.e, SOFT);
       }
       const pOther = (1 - isValue) * bluffP;
       if (s.stack > 0.01) {
         if (st === 'RIVER') {
-          // リバーのサイズは強さで変わる（とても強い手は 100%、それ以外は 75%）
+          // リバーのサイズ（2026/11/25〜）: どちらのサイズにもバリューとブラフを混ぜる。強い手ほど大きい方が多く、
+          // 薄いバリューは 75% 寄り、ブラフは両方に分ける（GTOpen の同じ局面の解に合わせた。tools/solver_compare/calib_analyze.js）。
+          // 以前は「とても強い手だけ 100%・それ以外とブラフは 75%」で、サイズで強さが分かった
+          // （100% に対するあなたの勝率 14%・75% に 47%。GTO はどちらも約37%）
           const veryStrong = sig(s.e - 0.85, SOFT);
           const big = sizeFor(true), normal = sizeFor(false);
           const pBet = pValueBet + pOther;
-          const pBig = pValueBet * veryStrong;
+          const bigShareV = P.riverBigValueMin + (P.riverBigValueMax - P.riverBigValueMin) * veryStrong;
+          const pBig = pValueBet * bigShareV + pOther * P.riverBigBluffShare;
           if (Math.abs(big - normal) < 0.01) out.push({ action: 'BET', amount: big, p: pBet });
           else {
             out.push({ action: 'BET', amount: big, p: pBig });
@@ -379,8 +388,14 @@
   // 境目に来ると、サイズに関係なくかたまり全体が約5割守る計算になっていた（33% でも 150% でも降りる割合が同じ）
   function mdfEdge(eq, vec, ctx) {
     if (!(ctx.facing > 0.01)) return undefined;
-    const mdf = Math.max(0, ctx.pot - ctx.facing) / Math.max(0.01, ctx.pot);
-    const frac = mdf * ActionModel.P.mdfShare;
+    // MDF = 相手が打つ前のポット ÷ 打った後のポット。相手のブラフが「追加した額」で「打つ前のポット」を取りに来たときに
+    // 損得ゼロになる守り方。レイズでは相手が追加した額（oppRisk）はコール額より大きい（2026/11/25 修正。以前はコール額で
+    // 計算していて、例えばリバーの 75% ベットへの 3倍のチェックレイズに 66% 守る計算だった。正しくは約44%）
+    const risk = ctx.oppRisk > ctx.facing ? ctx.oppRisk : ctx.facing;
+    const mdf = Math.max(0, ctx.pot - risk) / Math.max(0.01, ctx.pot);
+    // レイズを受けたときは MDF ちょうど守る（0.9 倍だと、どんなレイズのブラフも必ず得になり、判定が
+    // 「チェックしてチェックレイズのブラフ」を勧めるようになった。ソルバーではそうならない）
+    const frac = mdf * (risk > ctx.facing ? ActionModel.P.mdfShareVsRaise : ActionModel.P.mdfShare);
     const q = quantileE(eq, vec, frac);
     if (q === undefined) return undefined;
     const idx = [];
