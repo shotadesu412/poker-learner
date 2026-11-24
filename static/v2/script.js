@@ -1576,23 +1576,6 @@ async function renderHomeStats() {
     let sum, data;
     try { data = await StatsStore.loadAll(); sum = StatsCalc.getHomeSummary(data); } catch (e) { return; }
     renderWeek(StatsCalc.getWeekCards(data, currentUserId, Date.now(), loadWeekSwaps()[String(weekKeyNow())] || {}));
-    const num = el('hm-score-num'), diff = el('hm-score-diff'), sub = el('hm-score-sub');
-    if (sum.n7 === 0) {
-        num.textContent = '—';
-        diff.textContent = '';
-        sub.textContent = t('home2.score_empty');
-    } else {
-        num.textContent = Math.round(sum.rate7) + '%';
-        // 前の7日と比べるのは、前の7日にも十分な判断があるときだけ
-        if (sum.nPrev >= 20) {
-            const d = Math.round(sum.rate7 - sum.ratePrev);
-            diff.textContent = (d >= 0 ? t('home2.score_up', { d }) : t('home2.score_down', { d: -d })) + ' ' + t('home2.score_vs');
-            diff.className = 'hm-score-diff ' + (d > 0 ? 'up' : d < 0 ? 'down' : '');
-        } else {
-            diff.textContent = '';
-        }
-        sub.textContent = t('home2.score_sub', { n: sum.n7 });
-    }
     // アクション傾向（分析タブの「プレイの傾向」と同じ。全期間）
     try {
         const st = StatsCalc.getPlayStyle(data, 'all');
@@ -1605,18 +1588,14 @@ async function renderHomeStats() {
             el('hm-style-sub').textContent = t('home2.style_need', { n: String(st.need) });
         }
     } catch (e) { /* 表示だけなので無視 */ }
-    const task = el('hm-task');
     if (sum.leak) {
         const l = sum.leak;
         el('hm-task-title').textContent = t('home2.task_title', { pos: l.pos, street: t('street.' + l.street), action: t('home2.act.' + l.action) });
         el('hm-task-sub').textContent = t('home2.task_sub', { bb: l.avg_ev_loss.toFixed(1), n: l.count });
-        task.classList.remove('hidden');
     } else {
-        task.classList.add('hidden');
+        el('hm-task-title').textContent = '—';
+        el('hm-task-sub').textContent = t('home2.task_empty');
     }
-    // 今日の課題が出るとカードが4枚になるので、間を詰めて1画面に収める
-    const body = document.querySelector('#view-home .hm-body');
-    if (body) body.classList.toggle('dense', !!sum.leak);
 }
 
 // 今週のカード: もらったカードは表。今日の1枚は10ハンド打つと裏向きで置かれ、タップでめくる（めくった日は端末に保存）。
@@ -1645,9 +1624,18 @@ function openDrawSheet() {
     const w = _weekCards;
     if (!w || !w.drawReady) return;
     _drawTarget = -1;
-    el('hm-draw-card').innerHTML = weekCardFace(w.days[w.todayIdx].draw);
+    // 追加の1枚も裏向きで出し、タップでめくってから入れ替えを選ぶ
+    el('hm-draw-card').innerHTML = '<div class="hm-wc ready" onclick="revealDrawCard(this)"><span class="hm-wc-tap">TAP</span></div>';
+    el('hm-draw-hint').classList.remove('hidden');
+    el('hm-draw-body').classList.add('hidden');
     renderDrawChoices();
     openSheet('draw-sheet');
+}
+function revealDrawCard(node) {
+    const w = _weekCards;
+    if (!w) return;
+    el('hm-draw-hint').classList.add('hidden');
+    flipCardInto(node, w.days[w.todayIdx].draw, () => el('hm-draw-body').classList.remove('hidden'));
 }
 function renderDrawChoices() {
     const w = _weekCards;
@@ -1714,18 +1702,23 @@ function renderWeek(w) {
     el('hm-week-text').classList.toggle('hidden', !waiting && w.drawReady);
 }
 
-// 今日の1枚をめくる（裏 → 表の回転）
+// カードをめくる（裏 → 表の回転）。node を回転する要素に置き換え、終わったら done を呼ぶ
+function flipCardInto(node, card, done) {
+    const flip = document.createElement('div');
+    flip.className = 'hm-flip';
+    flip.innerHTML = '<div class="hm-flip-in"><div class="hm-wc ready hm-flip-back"></div>' + weekCardFace(card, 'hm-flip-front') + '</div>';
+    node.replaceWith(flip);
+    requestAnimationFrame(() => requestAnimationFrame(() => flip.classList.add('on')));
+    setTimeout(done, 750);
+}
+
+// 今日の1枚をめくる
 function revealTodayCard(node) {
     const w = _weekCards;
     if (!w) return;
     const today = w.days[w.todayIdx];
     localStorage.setItem(WC_REVEALED_KEY, String(today.key));
-    const flip = document.createElement('div');
-    flip.className = 'hm-flip';
-    flip.innerHTML = '<div class="hm-flip-in"><div class="hm-wc ready hm-flip-back"></div>' + weekCardFace(today.card).replace('hm-wc got', 'hm-wc got hm-flip-front') + '</div>';
-    node.replaceWith(flip);
-    requestAnimationFrame(() => requestAnimationFrame(() => flip.classList.add('on')));
-    setTimeout(() => renderWeek(w), 750);
+    flipCardInto(node, today.card, () => renderWeek(w));
 }
 
 // ===== 下から出るシート（スポット練習の設定・役のコレクション） =====

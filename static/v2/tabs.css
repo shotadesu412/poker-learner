@@ -161,11 +161,6 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     flex: 1 0 auto;
 }
 
-.hm-body.dense { gap: 8px; }
-.hm-body.dense .hm-page-title { margin-bottom: 0; }
-.hm-body.dense .hm-practice { gap: 10px; padding: 0; }
-.hm-body.dense .hm-sec-sub { margin-bottom: 5px; }
-.hm-body.dense .hm-wcards { margin: 6px 0 4px; }
 .hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0 0 clamp(0px, 0.8vh, 8px); }
 
 .hm-card {
@@ -183,14 +178,6 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 
 .hm-card-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
 .hm-card-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
-
-.hm-score-row { display: flex; align-items: center; gap: 14px; margin-top: 2px; }
-.hm-score-side { display: flex; flex-direction: column; gap: 2px; }
-.hm-score-side .hm-card-sub { margin-top: 0; }
-.hm-score-num { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--text-main); }
-.hm-score-diff { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
-.hm-score-diff.up { color: #34d399; }
-.hm-score-diff.down { color: #f87171; }
 
 .hm-task, .hm-style { cursor: pointer; padding-right: 32px; }
 .hm-task { border-left: 3px solid #f59e0b; }
@@ -281,7 +268,9 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 /* 追加の1枚 */
 .hm-draw-btn { margin-top: 4px; width: 100%; padding: 9px; border: none; border-radius: 10px; background: linear-gradient(180deg, #fbbf24, #f59e0b); color: #1a1205; font-weight: 800; font-size: 0.88rem; cursor: pointer; }
 .hm-wc.swapped { outline: 2px solid #fbbf24; outline-offset: -2px; }
-.hm-draw-card { width: 64px; margin: 0 auto 14px; }
+.hm-draw-card { width: 64px; margin: 0 auto 10px; }
+.hm-draw-card .hm-wc-tap { font-size: 0.8rem; }
+.hm-draw-hint { text-align: center; margin-bottom: 8px; }
 .hm-draw-card .hm-wc b { font-size: 1.6rem; }
 .hm-draw-card .hm-wc i { font-size: 1.4rem; }
 #hm-draw-week .hm-wd.pickable { cursor: pointer; }

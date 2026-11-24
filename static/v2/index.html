@@ -8,8 +8,8 @@
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=17">
     <link rel="stylesheet" href="/static/v2/stats.css?v=1">
-    <link rel="stylesheet" href="/static/v2/tabs.css?v=10">
-    <script src="/static/i18n.js?v=21"></script>
+    <link rel="stylesheet" href="/static/v2/tabs.css?v=11">
+    <script src="/static/i18n.js?v=22"></script>
 </head>
 
 <body data-page="app">
@@ -20,31 +20,19 @@
         <div class="hm-body">
             <h1 class="hm-page-title" data-i18n="tab.home">ホーム</h1>
 
-            <!-- 成績（直近7日の ◎◯ の割合） -->
-            <div class="hm-card hm-score" id="hm-score">
-                <div class="hm-card-label" data-i18n="home2.score_label">◎◯ の割合（直近7日）</div>
-                <div class="hm-score-row">
-                    <span class="hm-score-num" id="hm-score-num">—</span>
-                    <span class="hm-score-side">
-                        <span class="hm-score-diff" id="hm-score-diff"></span>
-                        <span class="hm-card-sub" id="hm-score-sub"></span>
-                    </span>
-                </div>
-            </div>
+            <!-- 今日の課題（いちばん損している場面。全員に1件だけ。続きは分析タブ。まだ無ければ案内） -->
+            <button class="hm-card hm-task" id="hm-task" onclick="showTab('stats')">
+                <div class="hm-card-label" data-i18n="home2.task_label">今日の課題</div>
+                <div class="hm-task-title" id="hm-task-title"></div>
+                <div class="hm-card-sub" id="hm-task-sub"></div>
+                <span class="hm-chev">›</span>
+            </button>
 
             <!-- アクション傾向（分析の「プレイの傾向」と同じ集計。押すと分析タブ） -->
             <button class="hm-card hm-style" id="hm-style" onclick="showTab('stats')">
                 <div class="hm-card-label" data-i18n="home2.style_label">アクション傾向</div>
                 <div class="hm-task-title" id="hm-style-name"></div>
                 <div class="hm-card-sub" id="hm-style-sub"></div>
-                <span class="hm-chev">›</span>
-            </button>
-
-            <!-- 今日の課題（いちばん損している場面。全員に1件だけ。続きは分析タブ） -->
-            <button class="hm-card hm-task hidden" id="hm-task" onclick="showTab('stats')">
-                <div class="hm-card-label" data-i18n="home2.task_label">今日の課題</div>
-                <div class="hm-task-title" id="hm-task-title"></div>
-                <div class="hm-card-sub" id="hm-task-sub"></div>
                 <span class="hm-chev">›</span>
             </button>
 
@@ -113,11 +101,15 @@
             <div class="hm-sheet-grip"></div>
             <div class="hm-title" data-i18n="home2.draw_title">追加の1枚</div>
             <div class="hm-draw-card" id="hm-draw-card"></div>
-            <div class="hm-label" data-i18n="home2.draw_pick">入れ替えるカードを選んでください（1日1回）</div>
-            <div class="hm-wcards" id="hm-draw-week"></div>
-            <div class="hm-card-sub hm-draw-preview" id="hm-draw-preview"></div>
-            <button class="hm-start" id="hm-draw-swap" onclick="decideDraw(true)" data-i18n="home2.draw_swap">入れ替える</button>
-            <button class="hm-draw-keep" onclick="decideDraw(false)" data-i18n="home2.draw_no">入れ替えない</button>
+            <div class="hm-card-sub hm-draw-hint" id="hm-draw-hint" data-i18n="home2.draw_tap">タップしてめくろう</div>
+            <!-- めくった後に出す -->
+            <div class="hidden" id="hm-draw-body">
+                <div class="hm-label" data-i18n="home2.draw_pick">入れ替えるカードを選んでください（1日1回）</div>
+                <div class="hm-wcards" id="hm-draw-week"></div>
+                <div class="hm-card-sub hm-draw-preview" id="hm-draw-preview"></div>
+                <button class="hm-start" id="hm-draw-swap" onclick="decideDraw(true)" data-i18n="home2.draw_swap">入れ替える</button>
+                <button class="hm-draw-keep" onclick="decideDraw(false)" data-i18n="home2.draw_no">入れ替えない</button>
+            </div>
         </div>
     </div>
 
@@ -657,7 +649,7 @@
     </div>
     <script src="/static/game_api.js?v=26"></script>
     <script src="/static/v2/stats.js?v=2"></script>
-    <script src="/static/v2/script.js?v=10"></script>
+    <script src="/static/v2/script.js?v=11"></script>
     <script src="/static/v2/panels.js?v=4"></script>
 </body>
 
