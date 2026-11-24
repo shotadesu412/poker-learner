@@ -663,6 +663,30 @@
   "ja": "ここはドンクベット（主導権の無い側が先に打つこと）が有効な場面です。チェックしても相手が打ってくるのは約{pb:.0f}%だけで、残りはチェックで返されるので、先に打つ方がポットの約{edge:.0f}%得です。",
   "en": "A donk bet (leading out without the initiative) works here. If you check, they bet only about {pb:.0f}% of the time and check back the rest, so leading out is better by about {edge:.0f}% of the pot."
  },
+ "pf.range.nut_hero_aggr": {
+  "ja": "このボードで特に強い手（作れる手の上位1割）は、相手から見たあなたのレンジに約{h:.0f}%・相手に約{c:.0f}%。あなたの方が強い手を多く持っている場面なので、打つと相手は降りやすくなります。",
+  "en": "On this board, the strongest hands (top 10% of all combos) make up about {h:.0f}% of your range as your opponent sees it, versus {c:.0f}% of theirs. You hold more of them, so your bets make your opponent fold more."
+ },
+ "pf.range.nut_hero_value": {
+  "ja": "このボードで特に強い手（作れる手の上位1割）は、相手から見たあなたのレンジに約{h:.0f}%・相手に約{c:.0f}%。あなたの方が強い手を多く持っている場面なので、打っても強い手で返されにくく、バリューを取りやすくなります。",
+  "en": "On this board, the strongest hands (top 10% of all combos) make up about {h:.0f}% of your range as your opponent sees it, versus {c:.0f}% of theirs. You hold more of them, so you can bet for value without often running into a stronger hand."
+ },
+ "pf.range.weak_cpu_bet": {
+  "ja": "相手のレンジには、このボードで弱い手（作れる手の下位4割）が約{w:.0f}%あり、打てばその多くが降ります（降りる割合 約{fe:.0f}%）。",
+  "en": "About {w:.0f}% of your opponent's range is weak on this board (bottom 40% of all combos), and most of it folds to a bet (about {fe:.0f}% fold)."
+ },
+ "pf.range.nut_cpu_check": {
+  "ja": "このボードで特に強い手（作れる手の上位1割）は、相手に約{c:.0f}%・相手から見たあなたのレンジに約{h:.0f}%と相手の方が多い場面です。打っても強い手には続けられやすいので、チェックが基本です。",
+  "en": "On this board, your opponent holds more of the strongest hands (top 10% of all combos): about {c:.0f}% vs your {h:.0f}%. Bets tend to get continued by those strong hands, so checking is the default."
+ },
+ "pf.range.nut_cpu_fold": {
+  "ja": "ここまでの打ち方から見た相手のレンジは、特に強い手（作れる手の上位1割）が約{c:.0f}%と多く（あなたは約{h:.0f}%）、続けても上回られていることが多い場面です。",
+  "en": "Given how your opponent has played, about {c:.0f}% of their range is among the strongest hands (top 10% of all combos), compared with {h:.0f}% of yours. Continuing usually runs into a better hand."
+ },
+ "pf.range.weak_cpu_call": {
+  "ja": "ここまでの打ち方から見た相手のレンジには、このボードで弱い手（作れる手の下位4割。ブラフや外れたドロー）が約{w:.0f}%含まれます。強い手だけで打ってきているわけではないので、降りすぎないことが大事な場面です。",
+  "en": "Given how your opponent has played, about {w:.0f}% of their range is weak on this board (bottom 40% of all combos: bluffs and missed draws). They are not betting only strong hands, so avoid folding too much."
+ },
  "pf.why.size_value_big": {
   "ja": "{best}だと相手が降りる割合は約{fa:.0f}%→約{fb:.0f}%に増えますが、続けてくる手にも約{eqcb:.0f}%勝てるので、コールされたときに取れる額が大きい分だけ得です。",
   "en": "At {best} folds rise from about {fa:.0f}% to about {fb:.0f}%, but you still beat about {eqcb:.0f}% of the hands that continue, so the bigger pot when called wins more."

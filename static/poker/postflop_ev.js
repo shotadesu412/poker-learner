@@ -354,6 +354,11 @@
         why = PostflopEV.explain(ctx, chosen, best, { lossPct, facing, softened, name, heroHand, board, passive, checkOpt });
       }
       for (const w of why) lines.push(w);
+      // 場面の理屈（レンジ同士の比べ合い）。推奨と同じ向きのときだけ1行（2026/11/24 shota 依頼）
+      if (!donk || donk.justified) {
+        const rl = PostflopEV.rangeLine({ ...ctx, passiveEv: passive ? passive.ev : undefined }, chosen, best, lossPct);
+        if (rl) lines.push(rl);
+      }
       if (!donkUnjustified && !(best === chosen || lossPct <= 0.005)) lines.push(t('pf.ev_diff', { bb: loss }));
       return {
         evaluation, reason: lines.join('\n'), ev: chosen.ev, ev_loss: loss, loss_pct: lossPct,
@@ -362,6 +367,67 @@
         donk,   // ドンクの場面なら { justified, edge }（game.js のドンクの扱いに使う）
         options: opts.map((o) => ({ action: o.action, amount: Py.round(o.amount, 2), ev: Py.round(o.ev, 3) })),
       };
+    },
+
+    // レンジ同士の比べ合い（どの手が多いか）。手の強さ（全コンボに対する勝率 = RankTable.strength）の順位で
+    //   特に強い手 = このボードで作れる全コンボの上位1割、弱い手 = 下位4割
+    // として、あなたのレンジ（相手から見たもの）と相手の推定レンジに占める割合を出す
+    rangeFacts(ctx) {
+      const RM = root.RangeModel;
+      const hs = ctx.table.strength();
+      const vals = [];
+      for (let i = 0; i < RM.N; i++) if (!Number.isNaN(hs[i])) vals.push(hs[i]);
+      if (vals.length < 10) return null;
+      vals.sort((x, y) => x - y);
+      const top = vals[Math.floor(vals.length * 0.9)], low = vals[Math.floor(vals.length * 0.4)];
+      const share = (vec) => {
+        let w = 0, n = 0, k = 0;
+        for (let i = 0; i < RM.N; i++) {
+          if (!(vec[i] > 0) || Number.isNaN(hs[i])) continue;
+          w += vec[i];
+          if (hs[i] >= top) n += vec[i];
+          if (hs[i] < low) k += vec[i];
+        }
+        return w > 0 ? { nut: n / w, weak: k / w } : null;
+      };
+      const h = share(ctx.heroVec), c = share(ctx.cpuVec);
+      return h && c ? { nutH: h.nut, nutC: c.nut, weakH: h.weak, weakC: c.weak } : null;
+    },
+
+    // 推奨する手（best）の理屈を、レンジの比べ合いで1行。推奨の向きと合う事実があるときだけ返す（無ければ null）。
+    // 固定の一言にすると逆の場面で誤った理屈になるため、場面ごとに条件を分ける:
+    //   打つのが推奨 … あなたの方が特に強い手を多く持つ（ナッツアドバンテージ）/ 相手に弱い手が多く、打てば降りる
+    //   チェックが推奨 … 相手の方が特に強い手を多く持つ（強い手でのチェックは誘い・罠なので出さない）
+    //   フォールドが推奨 … 打ってきた相手のレンジに特に強い手が多い
+    //   コールが推奨 … 打ってきた相手のレンジに弱い手（ブラフ・外れたドロー）が多い
+    rangeLine(ctx, chosen, best, lossPct) {
+      const f = PostflopEV.rangeFacts(ctx);
+      if (!f) return null;
+      const target = best === chosen || lossPct <= 0.005 ? chosen : best;
+      const P = (x) => x * 100;
+      const kw = { h: P(f.nutH), c: P(f.nutC), w: P(f.weakC) };
+      const heroNut = f.nutH >= 1.5 * f.nutC && f.nutH - f.nutC >= 0.05;
+      const cpuNut = f.nutC >= 1.5 * f.nutH && f.nutC - f.nutH >= 0.05;
+      const isAggr = (x) => x.action === 'BET' || x.action === 'RAISE';
+      const aggr = isAggr(target);
+      if (aggr) {
+        // サイズだけの違い: 特に強い手が多いことは「大きく打てる」理由なので、大きい方が推奨のときだけ。
+        // 選んだサイズがチェック/コールより悪い（打たない方が良い）場面では出さない
+        if (target !== chosen && isAggr(chosen)) {
+          if (ctx.passiveEv !== undefined && chosen.ev < ctx.passiveEv) return null;
+          if (!(heroNut && best.amount > chosen.amount)) return null;
+        }
+        // 強い手（バリュー）: 強い手で返されにくいので大きく打てる。それ以外（ブラフ・守る）: 相手が降りやすい
+        if (heroNut) return t(ctx.eq >= 0.6 ? 'pf.range.nut_hero_value' : 'pf.range.nut_hero_aggr', kw);
+        // 弱い手が多くて降りる、は降ろしたい手（バリューでない手）のときだけ。バリューでは降りられても嬉しくない
+        if (!cpuNut && ctx.eq < 0.6 && f.weakC >= 0.35 && (target.fe || 0) >= 0.3) return t('pf.range.weak_cpu_bet', { ...kw, fe: P(target.fe) });
+        return null;
+      }
+      if (target.action === 'CHECK') return cpuNut && ctx.eq < 0.6 ? t('pf.range.nut_cpu_check', kw) : null;
+      if (target.action === 'FOLD') return cpuNut && f.nutC >= 0.2 ? t('pf.range.nut_cpu_fold', kw) : null;
+      // コールが推奨: 「降りすぎない」はフォールドかコールかの場面の理屈。レイズを選んだ場面（レイズで弱い手を降ろしてしまう）には合わないので出さない
+      if (target.action === 'CALL') return f.weakC >= 0.25 && !isAggr(chosen) ? t('pf.range.weak_cpu_call', kw) : null;
+      return null;
     },
 
     // 判定の「考え方」の文。勝率の帯（強い手 / 中くらい / 弱い手）と、最善手・選んだ手の種類で選ぶ
