@@ -227,6 +227,9 @@
   // 月曜〜日曜の7枚で役を作る。カードは「端末の ID + 週の初日」で決まる並びから曜日の順に配るので、
   // 開き直しても変わらず、同じ週で重複しない。打たなかった日の分は無し（その日のカードは配られない）
   const DAILY_CARD_HANDS = 10;
+  // 同じ日にさらに10ハンド（合計20）打つと、1日1回だけ追加の1枚を引き、今週のどれか1枚と入れ替えられる（2026/11/24 shota 案）。
+  // 追加の1枚は同じ並びの8枚目以降（曜日ごとに1枚）なので、引き直しても変わらず、今週のカードとも重ならない
+  const DRAW_HANDS = 20;
   const CARD_RANKS = '23456789TJQKA', CARD_SUITS = 'shdc';
 
   function seededDeck(seedText) {
@@ -304,8 +307,9 @@
     return monday;
   }
 
-  // 1週間分のカード。upToIdx より後の曜日はまだ来ていない（今週だけ。過ぎた週は 6）
-  function weekCards(perDay, userId, monday, upToIdx) {
+  // 1週間分のカード。upToIdx より後の曜日はまだ来ていない（今週だけ。過ぎた週は 6）。
+  // swaps は { 引いた曜日: 入れ替えた曜日（-1 = 入れ替えない） }（端末に保存した選択）
+  function weekCards(perDay, userId, monday, upToIdx, swaps = {}) {
     const deck = seededDeck(String(userId || '') + ':' + dayKeyOf(monday.getTime()));
     const days = [];
     for (let i = 0; i < 7; i++) {
@@ -314,27 +318,37 @@
       const hands = perDay.get(key) || 0;
       const got = hands >= DAILY_CARD_HANDS && i <= upToIdx;
       const status = got ? 'got' : i < upToIdx ? 'missed' : i === upToIdx ? 'today' : 'future';
-      days.push({ status, hands, key, card: got ? deck[i] : null });
+      days.push({ status, hands, key, card: got ? deck[i] : null, draw: got && hands >= DRAW_HANDS ? deck[7 + i] : null, swapped: false });
+    }
+    for (let i = 0; i <= Math.min(upToIdx, 6); i++) {
+      const to = swaps[i];
+      if (!days[i].draw || typeof to !== 'number' || to < 0 || to > 6 || !days[to].card) continue;
+      days[to].card = days[i].draw;
+      days[to].swapped = true;
     }
     return days;
   }
 
-  // 今週。best は今日の分も含めた役、bestBeforeToday は今日の1枚を除いた役（めくる前に見せる用）
-  function getWeekCards(data, userId, nowMs = Date.now()) {
+  // 今週。best は今日の分も含めた役、bestBeforeToday は今日の1枚を除いた役（めくる前に見せる用）。
+  // drawReady: 今日の追加の1枚を引ける（20ハンド打って、まだ選んでいない）
+  function getWeekCards(data, userId, nowMs = Date.now(), swaps = {}) {
     const monday = mondayNoon(nowMs);
     const todayIdx = Math.round((new Date(nowMs).setHours(12, 0, 0, 0) - monday.getTime()) / 86400000);
-    const days = weekCards(handsPerDay(data), userId, monday, todayIdx);
+    const days = weekCards(handsPerDay(data), userId, monday, todayIdx, swaps);
     const cards = days.filter((x) => x.card).map((x) => x.card);
     const before = days.filter((x, i) => x.card && i !== todayIdx).map((x) => x.card);
+    const today = days[todayIdx];
     return {
-      days, todayIdx, need: DAILY_CARD_HANDS, count: cards.length,
+      days, todayIdx, weekKey: days[0].key, need: DAILY_CARD_HANDS, drawNeed: DRAW_HANDS, count: cards.length,
       best: bestHandCategory(cards), bestBeforeToday: bestHandCategory(before),
+      drawReady: !!today.draw && swaps[todayIdx] === undefined, drawDone: swaps[todayIdx] !== undefined,
     };
   }
 
   // 役のコレクション（2026/11/24）: 終わった週ごとの7枚と役（新しい順）、役ごとの回数。1枚ももらえなかった週は入れない
   const HAND_CATEGORIES = ['royal', 'straight_flush', 'quads', 'full_house', 'flush', 'straight', 'trips', 'two_pair', 'pair', 'high_card'];
-  function getCardCollection(data, userId, nowMs = Date.now()) {
+  // allSwaps は { 週の初日のキー: swaps }
+  function getCardCollection(data, userId, nowMs = Date.now(), allSwaps = {}) {
     const perDay = handsPerDay(data);
     const counts = Object.fromEntries(HAND_CATEGORIES.map((c) => [c, 0]));
     const weeks = [];
@@ -343,7 +357,8 @@
     if (!Number.isFinite(first)) return { weeks, counts, categories: HAND_CATEGORIES };
     const thisMonday = mondayNoon(nowMs);
     for (const m = mondayNoon(first); m < thisMonday; m.setDate(m.getDate() + 7)) {
-      const days = weekCards(perDay, userId, new Date(m), 6);
+      const mk = dayKeyOf(m.getTime());
+      const days = weekCards(perDay, userId, new Date(m), 6, allSwaps[mk] || {});
       const cards = days.filter((x) => x.card).map((x) => x.card);
       if (!cards.length) continue;
       const best = bestHandCategory(cards);

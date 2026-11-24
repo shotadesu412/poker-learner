@@ -1575,7 +1575,7 @@ async function renderHomeStats() {
     if (typeof StatsStore === 'undefined' || typeof StatsCalc === 'undefined') return;
     let sum, data;
     try { data = await StatsStore.loadAll(); sum = StatsCalc.getHomeSummary(data); } catch (e) { return; }
-    renderWeek(StatsCalc.getWeekCards(data, currentUserId));
+    renderWeek(StatsCalc.getWeekCards(data, currentUserId, Date.now(), loadWeekSwaps()[String(weekKeyNow())] || {}));
     const num = el('hm-score-num'), diff = el('hm-score-diff'), sub = el('hm-score-sub');
     if (sum.n7 === 0) {
         num.textContent = '—';
@@ -1624,9 +1624,62 @@ async function renderHomeStats() {
 const WC_REVEALED_KEY = 'poker_wc_revealed';
 let _weekCards = null;
 
-function weekCardFace(card) {
+function weekCardFace(card, extra) {
     const c = parseCardStr(card);
-    return '<div class="hm-wc got ' + c.color + '"><b>' + c.rank + '</b><i>' + c.symbol + '</i></div>';
+    return '<div class="hm-wc got ' + c.color + (extra ? ' ' + extra : '') + '"><b>' + c.rank + '</b><i>' + c.symbol + '</i></div>';
+}
+
+// 追加の1枚での入れ替えの選択（端末に保存）: { 週の初日のキー: { 引いた曜日: 入れ替えた曜日 or -1 } }
+const WC_SWAPS_KEY = 'poker_wc_swaps';
+function loadWeekSwaps() {
+    try { return JSON.parse(localStorage.getItem(WC_SWAPS_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function weekKeyNow() {
+    const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+// 追加の1枚: 引いたカードと今週のカードを並べ、入れ替える1枚を選ぶ（入れ替えないも可）。1日1回
+let _drawTarget = -1;
+function openDrawSheet() {
+    const w = _weekCards;
+    if (!w || !w.drawReady) return;
+    _drawTarget = -1;
+    el('hm-draw-card').innerHTML = weekCardFace(w.days[w.todayIdx].draw);
+    renderDrawChoices();
+    openSheet('draw-sheet');
+}
+function renderDrawChoices() {
+    const w = _weekCards;
+    const names = t('home2.days_mon').split(',');
+    el('hm-draw-week').innerHTML = w.days.map((d, i) => {
+        const face = d.card ? weekCardFace(d.card, i === _drawTarget ? 'picked' : '') : '<div class="hm-wc missed"></div>';
+        return '<div class="hm-wd' + (d.card ? ' pickable' : '') + '"' + (d.card ? ' onclick="pickDrawTarget(' + i + ')"' : '') + '>' + face + '<span>' + names[i] + '</span></div>';
+    }).join('');
+    const cards = w.days.filter((d) => d.card).map((d) => d.card);
+    const now = StatsCalc.bestHandCategory(cards);
+    let line = t('home2.draw_keep', { hand: t('home2.rank.' + now) });
+    if (_drawTarget >= 0) {
+        const after = w.days.map((d, i) => (i === _drawTarget ? w.days[w.todayIdx].draw : d.card)).filter(Boolean);
+        line = t('home2.draw_after', { hand: t('home2.rank.' + StatsCalc.bestHandCategory(after)) }) + ' / ' + line;
+    }
+    el('hm-draw-preview').textContent = line;
+    el('hm-draw-swap').disabled = _drawTarget < 0;
+}
+function pickDrawTarget(i) {
+    _drawTarget = _drawTarget === i ? -1 : i;
+    renderDrawChoices();
+}
+function decideDraw(swap) {
+    const w = _weekCards;
+    if (!w) return;
+    const all = loadWeekSwaps();
+    const wk = String(w.weekKey);
+    all[wk] = all[wk] || {};
+    all[wk][w.todayIdx] = swap ? _drawTarget : -1;
+    localStorage.setItem(WC_SWAPS_KEY, JSON.stringify(all));
+    closeSheet('draw-sheet');
+    renderHomeStats();
 }
 
 function renderWeek(w) {
@@ -1641,7 +1694,7 @@ function renderWeek(w) {
         if (i === w.todayIdx && waiting) {
             face = '<div class="hm-wc ready" onclick="event.stopPropagation(); revealTodayCard(this)"><span class="hm-wc-tap">TAP</span></div>';
         } else if (d.status === 'got') {
-            face = weekCardFace(d.card);
+            face = weekCardFace(d.card, d.swapped ? 'swapped' : '');
         } else if (d.status === 'today') {
             face = '<div class="hm-wc today"><b>' + d.hands + '</b><i>/' + w.need + '</i></div>';
         } else {
@@ -1652,8 +1705,13 @@ function renderWeek(w) {
     const best = waiting ? w.bestBeforeToday : w.best;
     el('hm-week-best').textContent = best ? t('home2.rank.' + best) : '';
     el('hm-week-text').textContent = waiting ? t('home2.cards_ready')
+        : w.drawReady ? t('home2.draw_ready')
+        : today.status === 'got' && !w.drawDone ? t('home2.draw_need', { n: String(w.drawNeed - today.hands) })
         : today.status === 'got' ? t('home2.cards_done')
         : t('home2.cards_need', { n: String(w.need - today.hands) });
+    el('hm-draw-btn').classList.toggle('hidden', waiting || !w.drawReady);
+    // ボタンが出ている間は説明の行を隠して高さを抑える
+    el('hm-week-text').classList.toggle('hidden', !waiting && w.drawReady);
 }
 
 // 今日の1枚をめくる（裏 → 表の回転）
@@ -1691,7 +1749,7 @@ function closeSpotSheet() { closeSheet('spot-sheet'); }
 // 役のコレクション: 役ごとの回数と、終わった週ごとの7枚
 async function openCollection() {
     let col;
-    try { col = StatsCalc.getCardCollection(await StatsStore.loadAll(), currentUserId); } catch (e) { return; }
+    try { col = StatsCalc.getCardCollection(await StatsStore.loadAll(), currentUserId, Date.now(), loadWeekSwaps()); } catch (e) { return; }
     el('hm-col-grid').innerHTML = col.categories.map((c) => {
         const n = col.counts[c];
         return '<div class="hm-col-item' + (n ? ' has' : '') + '"><span>' + t('home2.rank.' + c) + '</span><b>' + (n ? '×' + n : '—') + '</b></div>';

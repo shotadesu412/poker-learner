@@ -8,8 +8,8 @@
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=17">
     <link rel="stylesheet" href="/static/v2/stats.css?v=1">
-    <link rel="stylesheet" href="/static/v2/tabs.css?v=9">
-    <script src="/static/i18n.js?v=20"></script>
+    <link rel="stylesheet" href="/static/v2/tabs.css?v=10">
+    <script src="/static/i18n.js?v=21"></script>
 </head>
 
 <body data-page="app">
@@ -57,6 +57,7 @@
                 </div>
                 <div class="hm-wcards" id="hm-wcards"></div>
                 <div class="hm-card-sub" id="hm-week-text"></div>
+                <button class="hm-draw-btn hidden" id="hm-draw-btn" onclick="event.stopPropagation(); openDrawSheet()" data-i18n="home2.draw_btn">追加の1枚を引く</button>
             </div>
 
             <!-- 練習の入口（カードの下の空きの真ん中に置く） -->
@@ -102,6 +103,21 @@
                 <span data-i18n="home2.auto_next">フォールドしたら自動で次のハンドへ</span>
             </label>
             <button class="hm-start" onclick="closeSpotSheet(); startPractice(true)" data-i18n="home2.spot_start">スポット練習をスタート</button>
+        </div>
+    </div>
+
+    <!-- 追加の1枚（同じ日に20ハンドで1日1回。今週のどれか1枚と入れ替えるか選ぶ） -->
+    <div class="hm-sheet hidden" id="draw-sheet">
+        <div class="hm-sheet-bg" onclick="closeSheet('draw-sheet')"></div>
+        <div class="hm-sheet-panel">
+            <div class="hm-sheet-grip"></div>
+            <div class="hm-title" data-i18n="home2.draw_title">追加の1枚</div>
+            <div class="hm-draw-card" id="hm-draw-card"></div>
+            <div class="hm-label" data-i18n="home2.draw_pick">入れ替えるカードを選んでください（1日1回）</div>
+            <div class="hm-wcards" id="hm-draw-week"></div>
+            <div class="hm-card-sub hm-draw-preview" id="hm-draw-preview"></div>
+            <button class="hm-start" id="hm-draw-swap" onclick="decideDraw(true)" data-i18n="home2.draw_swap">入れ替える</button>
+            <button class="hm-draw-keep" onclick="decideDraw(false)" data-i18n="home2.draw_no">入れ替えない</button>
         </div>
     </div>
 
@@ -639,9 +655,9 @@
         <p data-i18n="engine.load_failed">読み込みに失敗しました。通信環境を確認して、もう一度お試しください。</p>
         <button onclick="location.reload()" data-i18n="engine.retry" style="padding:10px 24px;">再読み込み</button>
     </div>
-    <script src="/static/game_api.js?v=25"></script>
+    <script src="/static/game_api.js?v=26"></script>
     <script src="/static/v2/stats.js?v=2"></script>
-    <script src="/static/v2/script.js?v=9"></script>
+    <script src="/static/v2/script.js?v=10"></script>
     <script src="/static/v2/panels.js?v=4"></script>
 </body>
 
