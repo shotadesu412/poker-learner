@@ -82,18 +82,22 @@ COACH_MAX_TOKENS = int(os.environ.get("COACH_MAX_TOKENS", "4000"))
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# 2026/11/24〜 全ユーザーが新しい画面（static/v2/。ホーム・ゲーム・振り返り・分析・設定を1ページのタブで切り替え）。
+# / /play /stats はどれも同じページを返し、/stats は分析タブで開く（v2/script.js が pathname を見る）。
+# 以前の画面（static/home.html・index.html・stats.html）は切り戻し用に残している: 戻すときはこの3つのルートを元のファイルに向ける
+V2_PAGE = "static/v2/index.html"
+
 @app.get("/")
 def serve_home():
-    return FileResponse("static/home.html")
+    return FileResponse(V2_PAGE)
 
 @app.get("/v2")
 def serve_v2():
-    # 新しい画面（作業中）。開発者モードのときだけ / /play /stats からここへ移る（static/v2/。2026/11/21〜）
-    return FileResponse("static/v2/index.html")
+    return FileResponse(V2_PAGE)
 
 @app.get("/play")
 def serve_index():
-    return FileResponse("static/index.html")
+    return FileResponse(V2_PAGE)
 
 @app.get("/app-ads.txt", response_class=PlainTextResponse)
 def serve_app_ads_txt():
@@ -279,7 +283,7 @@ def ai_coach(req: AICoachRequest):
 
 @app.get("/stats")
 def serve_stats():
-    return FileResponse("static/stats.html")
+    return FileResponse(V2_PAGE)
 
 
 # ==============================

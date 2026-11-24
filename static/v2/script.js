@@ -1297,8 +1297,7 @@ async function submitDevCode() {
 function setDevMode(on) {
     try { if (on) localStorage.setItem("poker_dev", "1"); else localStorage.removeItem("poker_dev"); } catch (e) { /* 無視 */ }
     renderDevRow(false);
-    // 新しい画面（/v2）は開発者モード用。オフにしたら今の画面へ戻る
-    if (!on) location.href = "/";
+    // 2026/11/24〜 新しい画面が全員の画面になったので、オフにしても画面は移らない
 }
 
 // --- AIコーチのゲート（広告/プレミアム選択） ---
