@@ -1575,7 +1575,7 @@ async function renderHomeStats() {
     if (typeof StatsStore === 'undefined' || typeof StatsCalc === 'undefined') return;
     let sum, data;
     try { data = await StatsStore.loadAll(); sum = StatsCalc.getHomeSummary(data); } catch (e) { return; }
-    renderWeek(StatsCalc.getWeekActivity(data));
+    renderWeek(StatsCalc.getWeekCards(data, currentUserId));
     const num = el('hm-score-num'), diff = el('hm-score-diff'), sub = el('hm-score-sub');
     if (sum.n7 === 0) {
         num.textContent = '—';
@@ -1616,20 +1616,28 @@ async function renderHomeStats() {
     }
 }
 
-// 週の記録: 直近7日の1日ごとの棒（高さはハンド数）・曜日・ハンド数・連続日数
+// 今週のカード: もらったカードは表、今日はあと何ハンドか、過ぎた日は空き、先の日は裏向き
 function renderWeek(w) {
-    const bars = el('hm-week-bars');
-    if (!bars) return;
-    const max = Math.max(1, ...w.days);
-    const names = t('home2.days').split(',');
-    const today = new Date().getDay();
-    bars.innerHTML = w.days.map((n, i) => {
-        const h = n === 0 ? 0 : Math.max(12, Math.round(n / max * 100));
-        const dow = names[(today - 6 + i + 7) % 7];
-        return '<div class="hm-wk' + (i === 6 ? ' today' : '') + '"><div class="hm-wk-track"><div class="hm-wk-fill" style="height:' + h + '%"></div></div><span>' + dow + '</span></div>';
+    const box = el('hm-wcards');
+    if (!box) return;
+    const names = t('home2.days_mon').split(',');
+    box.innerHTML = w.days.map((d, i) => {
+        let face;
+        if (d.status === 'got') {
+            const c = parseCardStr(d.card);
+            face = '<div class="hm-wc got ' + c.color + '"><b>' + c.rank + '</b><i>' + c.symbol + '</i></div>';
+        } else if (d.status === 'today') {
+            face = '<div class="hm-wc today"><b>' + d.hands + '</b><i>/' + w.need + '</i></div>';
+        } else {
+            face = '<div class="hm-wc ' + d.status + '"></div>';
+        }
+        return '<div class="hm-wd' + (i === w.todayIdx ? ' is-today' : '') + '">' + face + '<span>' + names[i] + '</span></div>';
     }).join('');
-    el('hm-week-text').textContent = t('home2.week_hands', { n: String(w.total) });
-    el('hm-week-streak').textContent = w.streak >= 2 ? t('home2.week_streak', { n: String(w.streak) }) : '';
+    el('hm-week-best').textContent = w.best ? t('home2.rank.' + w.best) : '';
+    const today = w.days[w.todayIdx];
+    el('hm-week-text').textContent = today.status === 'got'
+        ? t('home2.cards_done', { n: String(w.count) })
+        : t('home2.cards_need', { n: String(w.need - today.hands) });
 }
 
 function openSpotSheet() {

@@ -223,9 +223,68 @@
     };
   }
 
-  // ホームの「直近7日の練習量」（2026/11/23）: 端末の日付で1日ごとのハンド数（古い順、最後が今日）と連続日数。
-  // 連続日数は今日まだ打っていなければ昨日から数える（朝に開いて0日と出さないため）
-  function getWeekActivity(data, nowMs = Date.now()) {
+  // ホームの「今週のカード」（2026/11/24 shota 案）: 1日に DAILY_CARD_HANDS ハンド打つとカードが1枚もらえ、
+  // 月曜〜日曜の7枚で役を作る。カードは「端末の ID + 週の初日」で決まる並びから曜日の順に配るので、
+  // 開き直しても変わらず、同じ週で重複しない。打たなかった日の分は無し（その日のカードは配られない）
+  const DAILY_CARD_HANDS = 10;
+  const CARD_RANKS = '23456789TJQKA', CARD_SUITS = 'shdc';
+
+  function seededDeck(seedText) {
+    let h = 2166136261;   // FNV-1a → mulberry32
+    for (let i = 0; i < seedText.length; i++) { h ^= seedText.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let st = h >>> 0;
+    const rnd = () => {
+      st = (st + 0x6D2B79F5) >>> 0;
+      let t = st;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const deck = [];
+    for (const r of CARD_RANKS) for (const su of CARD_SUITS) deck.push(r + su);
+    for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    return deck;
+  }
+
+  // 0〜7枚から作れるいちばん強い役の名前（キー）。5枚未満ならペア系だけ
+  function bestHandCategory(cards) {
+    if (!cards.length) return null;
+    const rv = (c) => CARD_RANKS.indexOf(c[0]);
+    const cnt = new Map(), bySuit = new Map();
+    for (const c of cards) {
+      cnt.set(rv(c), (cnt.get(rv(c)) || 0) + 1);
+      if (!bySuit.has(c[1])) bySuit.set(c[1], []);
+      bySuit.get(c[1]).push(rv(c));
+    }
+    const straightHigh = (vals) => {
+      const set = new Set(vals);
+      if (set.has(12)) set.add(-1);   // A は 1 としても使う
+      for (let hi = 12; hi >= 3; hi--) {
+        let ok = true;
+        for (let k = 0; k < 5; k++) if (!set.has(hi - k)) { ok = false; break; }
+        if (ok) return hi;
+      }
+      return -2;
+    };
+    for (const vals of bySuit.values()) {
+      if (vals.length >= 5) {
+        const hi = straightHigh(vals);
+        if (hi === 12) return 'royal';
+        if (hi >= 3) return 'straight_flush';
+      }
+    }
+    const counts = [...cnt.values()].sort((x, y) => y - x);
+    if (counts[0] >= 4) return 'quads';
+    if (counts[0] >= 3 && counts[1] >= 2) return 'full_house';
+    if ([...bySuit.values()].some((v) => v.length >= 5)) return 'flush';
+    if (straightHigh([...cnt.keys()]) >= 3) return 'straight';
+    if (counts[0] >= 3) return 'trips';
+    if (counts[0] >= 2 && counts[1] >= 2) return 'two_pair';
+    if (counts[0] >= 2) return 'pair';
+    return 'high_card';
+  }
+
+  function getWeekCards(data, userId, nowMs = Date.now()) {
     const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
     const perDay = new Map();
     for (const s of data.sessions || []) {
@@ -234,14 +293,21 @@
       const k = dayKey(ms);
       perDay.set(k, (perDay.get(k) || 0) + 1);
     }
-    // 日付は正午を基準に1日ずつ戻す（夏時間の切り替わりでずれないように）
+    // 週の初日（月曜）。日付は正午を基準に動かす（夏時間の切り替わりでずれないように）
     const noon = new Date(nowMs); noon.setHours(12, 0, 0, 0);
-    const back = (i) => { const d = new Date(noon); d.setDate(d.getDate() - i); return d.getTime(); };
+    const monday = new Date(noon); monday.setDate(monday.getDate() - ((noon.getDay() + 6) % 7));
+    const todayIdx = (noon.getDay() + 6) % 7;
+    const deck = seededDeck(String(userId || '') + ':' + dayKey(monday.getTime()));
     const days = [];
-    for (let i = 6; i >= 0; i--) days.push(perDay.get(dayKey(back(i))) || 0);
-    let streak = 0;
-    for (let i = perDay.get(dayKey(back(0))) ? 0 : 1; perDay.get(dayKey(back(i))); i++) streak++;
-    return { days, total: days.reduce((a, b) => a + b, 0), streak };
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(d.getDate() + i);
+      const hands = perDay.get(dayKey(d.getTime())) || 0;
+      const got = hands >= DAILY_CARD_HANDS && i <= todayIdx;
+      const status = got ? 'got' : i < todayIdx ? 'missed' : i === todayIdx ? 'today' : 'future';
+      days.push({ status, hands, card: got ? deck[i] : null });
+    }
+    const cards = days.filter((x) => x.card).map((x) => x.card);
+    return { days, todayIdx, need: DAILY_CARD_HANDS, count: cards.length, best: bestHandCategory(cards) };
   }
 
   function getSavedHands(data) {
@@ -379,7 +445,7 @@
   const StatsCalc = {
     formatIso, parseIso, nowIso, sqlAvg,
     getOverview, getPositionStats, getStreetEvalDist, getLeaks,
-    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary, getWeekActivity,
+    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary, getWeekCards, bestHandCategory,
   };
   root.StatsCalc = StatsCalc;
   if (typeof module !== 'undefined') module.exports = StatsCalc;
