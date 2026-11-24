@@ -157,11 +157,16 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     align-self: center;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: clamp(8px, 1.7vh, 16px);
     flex: 1 0 auto;
 }
 
-.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
+.hm-body.dense { gap: 8px; }
+.hm-body.dense .hm-page-title { margin-bottom: 0; }
+.hm-body.dense .hm-practice { gap: 10px; padding: 0; }
+.hm-body.dense .hm-sec-sub { margin-bottom: 5px; }
+.hm-body.dense .hm-wcards { margin: 6px 0 4px; }
+.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0 0 clamp(0px, 0.8vh, 8px); }
 
 .hm-card {
     position: relative;
@@ -240,21 +245,51 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 
 /* 今週のカード: 曜日ごとの小さいカード7枚 */
+.hm-week { cursor: pointer; }
 .hm-week-head { display: flex; align-items: center; gap: 8px; }
 .hm-week-best { margin-left: auto; font-size: 0.8rem; color: #fbbf24; font-weight: 800; }
-.hm-wcards { display: flex; gap: 6px; margin: 6px 0 4px; }
-.hm-wd { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.64rem; color: var(--text-muted); }
+.hm-week-more { font-size: 0.7rem; color: var(--text-muted); }
+.hm-wcards { display: flex; gap: 6px; margin: 8px 0 6px; }
+.hm-wd { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.66rem; color: var(--text-muted); }
 .hm-wd.is-today span { color: var(--text-main); font-weight: 700; }
-.hm-wc { width: 100%; max-width: 31px; aspect-ratio: 5 / 7; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
-.hm-wc b { font-size: 0.8rem; }
-.hm-wc i { font-style: normal; font-size: 0.72rem; }
+.hm-wc { width: 100%; aspect-ratio: 5 / 7; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+.hm-wc b { font-size: 1.15rem; }
+.hm-wc i { font-style: normal; font-size: 1.05rem; }
 .hm-wc.got { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
 .hm-wc.got.red { color: #e53e3e; }
 .hm-wc.got.black { color: #1a202c; }
 .hm-wc.today { border: 1.5px dashed #34d399; color: #34d399; }
-.hm-wc.today i { font-size: 0.62rem; }
+.hm-wc.today i { font-size: 0.7rem; }
 .hm-wc.missed { border: 1px solid rgba(255, 255, 255, 0.08); }
 .hm-wc.future { background: repeating-linear-gradient(45deg, #2d4a3e, #2d4a3e 3px, #24392f 3px, #24392f 6px); border: 1px solid rgba(255, 255, 255, 0.08); }
+/* 今日の1枚（めくる前）: 裏向きで光る */
+.hm-wc.ready {
+    background: repeating-linear-gradient(45deg, #7c3aed, #7c3aed 3px, #5b21b6 3px, #5b21b6 6px);
+    border: 1.5px solid #fbbf24;
+    animation: hm-glow 1.4s ease-in-out infinite;
+    cursor: pointer;
+}
+.hm-wc-tap { font-size: 0.6rem; font-weight: 800; color: #fff; background: rgba(0, 0, 0, 0.45); border-radius: 3px; padding: 1px 3px; }
+@keyframes hm-glow { 0%, 100% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); } 50% { box-shadow: 0 0 12px rgba(251, 191, 36, 0.8); } }
+/* めくる動き */
+.hm-flip { width: 100%; aspect-ratio: 5 / 7; perspective: 400px; }
+.hm-flip-in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s ease; }
+.hm-flip.on .hm-flip-in { transform: rotateY(180deg); }
+.hm-flip-in > .hm-wc { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; animation: none; }
+.hm-flip-front { transform: rotateY(180deg); }
+
+/* 役のコレクション */
+.hm-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+.hm-col-item { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); font-size: 0.8rem; color: var(--text-muted); }
+.hm-col-item.has { color: var(--text-main); }
+.hm-col-item.has b { color: #fbbf24; }
+.hm-col-weeks { display: flex; flex-direction: column; gap: 12px; }
+.hm-col-week-head { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+.hm-col-week-head b { color: #fbbf24; }
+.hm-col-cards { display: flex; gap: 5px; }
+.hm-col-cards .hm-wc { flex: 1; min-width: 0; max-width: 36px; }
+.hm-col-cards .hm-wc b { font-size: 0.85rem; }
+.hm-col-cards .hm-wc i { font-size: 0.75rem; }
 
 /* 練習の入口: 見出し・説明・ボタン。画面の下側に寄せて空きを埋める */
 .hm-practice { flex: 1; justify-content: center; padding: 2px 0; display: flex; flex-direction: column; gap: 14px; }

@@ -1614,18 +1614,34 @@ async function renderHomeStats() {
     } else {
         task.classList.add('hidden');
     }
+    // 今日の課題が出るとカードが4枚になるので、間を詰めて1画面に収める
+    const body = document.querySelector('#view-home .hm-body');
+    if (body) body.classList.toggle('dense', !!sum.leak);
 }
 
-// 今週のカード: もらったカードは表、今日はあと何ハンドか、過ぎた日は空き、先の日は裏向き
+// 今週のカード: もらったカードは表。今日の1枚は10ハンド打つと裏向きで置かれ、タップでめくる（めくった日は端末に保存）。
+// 今日はまだならあと何ハンドか、過ぎた日は空き、先の日は裏向きの模様
+const WC_REVEALED_KEY = 'poker_wc_revealed';
+let _weekCards = null;
+
+function weekCardFace(card) {
+    const c = parseCardStr(card);
+    return '<div class="hm-wc got ' + c.color + '"><b>' + c.rank + '</b><i>' + c.symbol + '</i></div>';
+}
+
 function renderWeek(w) {
     const box = el('hm-wcards');
     if (!box) return;
+    _weekCards = w;
     const names = t('home2.days_mon').split(',');
+    const today = w.days[w.todayIdx];
+    const waiting = today.status === 'got' && localStorage.getItem(WC_REVEALED_KEY) !== String(today.key);
     box.innerHTML = w.days.map((d, i) => {
         let face;
-        if (d.status === 'got') {
-            const c = parseCardStr(d.card);
-            face = '<div class="hm-wc got ' + c.color + '"><b>' + c.rank + '</b><i>' + c.symbol + '</i></div>';
+        if (i === w.todayIdx && waiting) {
+            face = '<div class="hm-wc ready" onclick="event.stopPropagation(); revealTodayCard(this)"><span class="hm-wc-tap">TAP</span></div>';
+        } else if (d.status === 'got') {
+            face = weekCardFace(d.card);
         } else if (d.status === 'today') {
             face = '<div class="hm-wc today"><b>' + d.hands + '</b><i>/' + w.need + '</i></div>';
         } else {
@@ -1633,25 +1649,60 @@ function renderWeek(w) {
         }
         return '<div class="hm-wd' + (i === w.todayIdx ? ' is-today' : '') + '">' + face + '<span>' + names[i] + '</span></div>';
     }).join('');
-    el('hm-week-best').textContent = w.best ? t('home2.rank.' + w.best) : '';
-    const today = w.days[w.todayIdx];
-    el('hm-week-text').textContent = today.status === 'got'
-        ? t('home2.cards_done', { n: String(w.count) })
+    const best = waiting ? w.bestBeforeToday : w.best;
+    el('hm-week-best').textContent = best ? t('home2.rank.' + best) : '';
+    el('hm-week-text').textContent = waiting ? t('home2.cards_ready')
+        : today.status === 'got' ? t('home2.cards_done')
         : t('home2.cards_need', { n: String(w.need - today.hands) });
 }
 
-function openSpotSheet() {
-    const sh = el('spot-sheet');
+// 今日の1枚をめくる（裏 → 表の回転）
+function revealTodayCard(node) {
+    const w = _weekCards;
+    if (!w) return;
+    const today = w.days[w.todayIdx];
+    localStorage.setItem(WC_REVEALED_KEY, String(today.key));
+    const flip = document.createElement('div');
+    flip.className = 'hm-flip';
+    flip.innerHTML = '<div class="hm-flip-in"><div class="hm-wc ready hm-flip-back"></div>' + weekCardFace(today.card).replace('hm-wc got', 'hm-wc got hm-flip-front') + '</div>';
+    node.replaceWith(flip);
+    requestAnimationFrame(() => requestAnimationFrame(() => flip.classList.add('on')));
+    setTimeout(() => renderWeek(w), 750);
+}
+
+// ===== 下から出るシート（スポット練習の設定・役のコレクション） =====
+function openSheet(id) {
+    const sh = el(id);
     if (!sh) return;
     sh.classList.remove('hidden');
     requestAnimationFrame(() => sh.classList.add('open'));
 }
 
-function closeSpotSheet() {
-    const sh = el('spot-sheet');
+function closeSheet(id) {
+    const sh = el(id);
     if (!sh) return;
     sh.classList.remove('open');
     setTimeout(() => sh.classList.add('hidden'), 200);
+}
+
+function openSpotSheet() { openSheet('spot-sheet'); }
+function closeSpotSheet() { closeSheet('spot-sheet'); }
+
+// 役のコレクション: 役ごとの回数と、終わった週ごとの7枚
+async function openCollection() {
+    let col;
+    try { col = StatsCalc.getCardCollection(await StatsStore.loadAll(), currentUserId); } catch (e) { return; }
+    el('hm-col-grid').innerHTML = col.categories.map((c) => {
+        const n = col.counts[c];
+        return '<div class="hm-col-item' + (n ? ' has' : '') + '"><span>' + t('home2.rank.' + c) + '</span><b>' + (n ? '×' + n : '—') + '</b></div>';
+    }).join('');
+    el('hm-col-weeks').innerHTML = col.weeks.length ? col.weeks.map((wk) => {
+        const k = String(wk.start);
+        const date = t('home2.collection_week', { m: String(+k.slice(4, 6)), d: String(+k.slice(6, 8)) });
+        const cards = wk.cards.map((c) => (c ? weekCardFace(c) : '<div class="hm-wc missed"></div>')).join('');
+        return '<div class="hm-col-week"><div class="hm-col-week-head"><span>' + date + '</span><b>' + t('home2.rank.' + wk.best) + '</b></div><div class="hm-col-cards">' + cards + '</div></div>';
+    }).join('') : '<div class="hm-card-sub">' + t('home2.collection_empty') + '</div>';
+    openSheet('collection-sheet');
 }
 
 function setSpotPosition(pos) {

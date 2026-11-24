@@ -284,30 +284,74 @@
     return 'high_card';
   }
 
-  function getWeekCards(data, userId, nowMs = Date.now()) {
-    const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+  const dayKeyOf = (ms) => { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+
+  function handsPerDay(data) {
     const perDay = new Map();
     for (const s of data.sessions || []) {
       const ms = Date.parse(s.started_at);
       if (!Number.isFinite(ms)) continue;
-      const k = dayKey(ms);
+      const k = dayKeyOf(ms);
       perDay.set(k, (perDay.get(k) || 0) + 1);
     }
-    // 週の初日（月曜）。日付は正午を基準に動かす（夏時間の切り替わりでずれないように）
-    const noon = new Date(nowMs); noon.setHours(12, 0, 0, 0);
+    return perDay;
+  }
+
+  // 週の初日（月曜の正午）。日付は正午を基準に動かす（夏時間の切り替わりでずれないように）
+  function mondayNoon(ms) {
+    const noon = new Date(ms); noon.setHours(12, 0, 0, 0);
     const monday = new Date(noon); monday.setDate(monday.getDate() - ((noon.getDay() + 6) % 7));
-    const todayIdx = (noon.getDay() + 6) % 7;
-    const deck = seededDeck(String(userId || '') + ':' + dayKey(monday.getTime()));
+    return monday;
+  }
+
+  // 1週間分のカード。upToIdx より後の曜日はまだ来ていない（今週だけ。過ぎた週は 6）
+  function weekCards(perDay, userId, monday, upToIdx) {
+    const deck = seededDeck(String(userId || '') + ':' + dayKeyOf(monday.getTime()));
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday); d.setDate(d.getDate() + i);
-      const hands = perDay.get(dayKey(d.getTime())) || 0;
-      const got = hands >= DAILY_CARD_HANDS && i <= todayIdx;
-      const status = got ? 'got' : i < todayIdx ? 'missed' : i === todayIdx ? 'today' : 'future';
-      days.push({ status, hands, card: got ? deck[i] : null });
+      const key = dayKeyOf(d.getTime());
+      const hands = perDay.get(key) || 0;
+      const got = hands >= DAILY_CARD_HANDS && i <= upToIdx;
+      const status = got ? 'got' : i < upToIdx ? 'missed' : i === upToIdx ? 'today' : 'future';
+      days.push({ status, hands, key, card: got ? deck[i] : null });
     }
+    return days;
+  }
+
+  // 今週。best は今日の分も含めた役、bestBeforeToday は今日の1枚を除いた役（めくる前に見せる用）
+  function getWeekCards(data, userId, nowMs = Date.now()) {
+    const monday = mondayNoon(nowMs);
+    const todayIdx = Math.round((new Date(nowMs).setHours(12, 0, 0, 0) - monday.getTime()) / 86400000);
+    const days = weekCards(handsPerDay(data), userId, monday, todayIdx);
     const cards = days.filter((x) => x.card).map((x) => x.card);
-    return { days, todayIdx, need: DAILY_CARD_HANDS, count: cards.length, best: bestHandCategory(cards) };
+    const before = days.filter((x, i) => x.card && i !== todayIdx).map((x) => x.card);
+    return {
+      days, todayIdx, need: DAILY_CARD_HANDS, count: cards.length,
+      best: bestHandCategory(cards), bestBeforeToday: bestHandCategory(before),
+    };
+  }
+
+  // 役のコレクション（2026/11/24）: 終わった週ごとの7枚と役（新しい順）、役ごとの回数。1枚ももらえなかった週は入れない
+  const HAND_CATEGORIES = ['royal', 'straight_flush', 'quads', 'full_house', 'flush', 'straight', 'trips', 'two_pair', 'pair', 'high_card'];
+  function getCardCollection(data, userId, nowMs = Date.now()) {
+    const perDay = handsPerDay(data);
+    const counts = Object.fromEntries(HAND_CATEGORIES.map((c) => [c, 0]));
+    const weeks = [];
+    let first = Infinity;
+    for (const s of data.sessions || []) { const ms = Date.parse(s.started_at); if (ms < first) first = ms; }
+    if (!Number.isFinite(first)) return { weeks, counts, categories: HAND_CATEGORIES };
+    const thisMonday = mondayNoon(nowMs);
+    for (const m = mondayNoon(first); m < thisMonday; m.setDate(m.getDate() + 7)) {
+      const days = weekCards(perDay, userId, new Date(m), 6);
+      const cards = days.filter((x) => x.card).map((x) => x.card);
+      if (!cards.length) continue;
+      const best = bestHandCategory(cards);
+      counts[best]++;
+      weeks.push({ start: days[0].key, cards: days.map((x) => x.card), best });
+    }
+    weeks.reverse();
+    return { weeks, counts, categories: HAND_CATEGORIES };
   }
 
   function getSavedHands(data) {
@@ -445,7 +489,7 @@
   const StatsCalc = {
     formatIso, parseIso, nowIso, sqlAvg,
     getOverview, getPositionStats, getStreetEvalDist, getLeaks,
-    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary, getWeekCards, bestHandCategory,
+    getSavedHands, getHandHistory, getPersonalRangeStats, getPlayStyle, getHomeSummary, getWeekCards, getCardCollection, bestHandCategory,
   };
   root.StatsCalc = StatsCalc;
   if (typeof module !== 'undefined') module.exports = StatsCalc;

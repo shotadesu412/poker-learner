@@ -8,8 +8,8 @@
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/style.css?v=17">
     <link rel="stylesheet" href="/static/v2/stats.css?v=1">
-    <link rel="stylesheet" href="/static/v2/tabs.css?v=8">
-    <script src="/static/i18n.js?v=19"></script>
+    <link rel="stylesheet" href="/static/v2/tabs.css?v=9">
+    <script src="/static/i18n.js?v=20"></script>
 </head>
 
 <body data-page="app">
@@ -49,10 +49,11 @@
             </button>
 
             <!-- 今週のカード（1日10ハンドで1枚、月〜日の7枚で役を作る） -->
-            <div class="hm-card hm-week" id="hm-week">
+            <div class="hm-card hm-week" id="hm-week" onclick="openCollection()">
                 <div class="hm-week-head">
                     <span class="hm-card-label" data-i18n="home2.cards_label">今週のカード</span>
                     <span class="hm-week-best" id="hm-week-best"></span>
+                    <span class="hm-week-more"><span data-i18n="home2.collection_link">コレクション</span> ›</span>
                 </div>
                 <div class="hm-wcards" id="hm-wcards"></div>
                 <div class="hm-card-sub" id="hm-week-text"></div>
@@ -101,6 +102,18 @@
                 <span data-i18n="home2.auto_next">フォールドしたら自動で次のハンドへ</span>
             </label>
             <button class="hm-start" onclick="closeSpotSheet(); startPractice(true)" data-i18n="home2.spot_start">スポット練習をスタート</button>
+        </div>
+    </div>
+
+    <!-- 役のコレクション（今週のカードを押すと出るシート） -->
+    <div class="hm-sheet hidden" id="collection-sheet">
+        <div class="hm-sheet-bg" onclick="closeSheet('collection-sheet')"></div>
+        <div class="hm-sheet-panel">
+            <div class="hm-sheet-grip"></div>
+            <div class="hm-title" data-i18n="home2.collection_title">役のコレクション</div>
+            <div class="hm-col-grid" id="hm-col-grid"></div>
+            <div class="hm-label" data-i18n="home2.collection_weeks">これまでの週</div>
+            <div class="hm-col-weeks" id="hm-col-weeks"></div>
         </div>
     </div>
 
@@ -626,9 +639,9 @@
         <p data-i18n="engine.load_failed">読み込みに失敗しました。通信環境を確認して、もう一度お試しください。</p>
         <button onclick="location.reload()" data-i18n="engine.retry" style="padding:10px 24px;">再読み込み</button>
     </div>
-    <script src="/static/game_api.js?v=24"></script>
+    <script src="/static/game_api.js?v=25"></script>
     <script src="/static/v2/stats.js?v=2"></script>
-    <script src="/static/v2/script.js?v=8"></script>
+    <script src="/static/v2/script.js?v=9"></script>
     <script src="/static/v2/panels.js?v=4"></script>
 </body>
 
