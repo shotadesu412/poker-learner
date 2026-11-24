@@ -682,3 +682,7 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 
 .rv-pager button:disabled { opacity: 0.3; cursor: default; }
+
+/* AIコーチに相談: 灰色だと押せないボタンに見えたので、はっきりした色にする（2026/11/24 shota 指摘） */
+#btn-ai-coach { background: #7c3aed; color: #fff; border: none; font-weight: 700; }
+#btn-ai-coach:disabled { opacity: 0.5; }
