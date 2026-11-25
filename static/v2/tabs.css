@@ -139,72 +139,75 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     cursor: pointer;
 }
 
-/* ===== ホーム（練習タブ）: 成績・今日の課題・スタート・スポット練習（2026/11/23 ダッシュボード型） ===== */
+/* ===== ホーム（2026/11/25 作り直し）: 今週のカード・アクション傾向・スポット練習・練習をスタート。
+   青主体で文字を大きく、枠の代わりに区切り線。色は青（練習）と紫（スポット練習）と黄色（役・Premium）だけ ===== */
+:root {
+    --hm-bg: #11161d;
+    --hm-line: #232c38;
+    --hm-dim: #26303d;
+    --hm-text: #f1f4f8;
+    --hm-muted: #a3adbb;
+    --hm-blue: #3b82f6;
+    --hm-spot: #8b5cf6;
+}
 #view-home.active {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background: var(--bg-color, #1a1d1b);
+    background: var(--hm-bg);
 }
+/* ホームを開いている間は下のタブも同じ色に */
+body:has(#view-home.active) .tab-bar { background: var(--hm-bg); border-top-color: var(--hm-line); }
+body:has(#view-home.active) .tab-btn.active svg { color: var(--hm-blue); }
 
 .hm-body {
-    padding: max(env(safe-area-inset-top, 0px), 12px) 18px 10px;
+    padding: max(env(safe-area-inset-top, 0px), 12px) 18px 14px;
     width: 100%;
     max-width: 480px;
     align-self: center;
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.7vh, 16px);
     flex: 1 0 auto;
+    color: var(--hm-text);
 }
+.hm-page-title { font-size: 1.7rem; font-weight: 800; color: var(--hm-text); margin: 4px 0 clamp(4px, 1.5vh, 14px); }
 
-.hm-page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0 0 clamp(0px, 0.8vh, 8px); }
+.hm-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hm-body .hm-label { font-size: 0.9rem; font-weight: 700; color: var(--hm-muted); margin: 0; display: flex; align-items: center; gap: 8px; }
+.hm-big { display: block; font-size: 1.2rem; font-weight: 800; color: var(--hm-text); margin-top: 4px; }
+.hm-sub { display: block; font-size: 0.92rem; color: var(--hm-muted); margin-top: 4px; }
 
-.hm-card {
-    position: relative;
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: none;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-main);
-    font: inherit;
-}
+/* 区切り線で分けた段。押せる段は右に › */
+.hm-sec { position: relative; display: block; width: 100%; text-align: left; padding: clamp(10px, 2vh, 18px) 0; border: none; border-bottom: 1px solid var(--hm-line); background: none; color: inherit; font: inherit; }
+.hm-link { cursor: pointer; padding-right: 30px; }
+.hm-chev { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); font-size: 1.7rem; color: var(--hm-muted); }
+.hm-sec.hm-week { padding-top: 0; }
 
-.hm-card-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
-.hm-card-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+/* スポット練習: 紫の面で通常の練習と分ける */
+.hm-spot { position: relative; display: block; width: 100%; text-align: left; margin: clamp(10px, 2vh, 18px) 0 16px; padding: 14px 40px 14px 16px; border: none; border-radius: 10px; background: color-mix(in srgb, var(--hm-spot) 18%, var(--hm-bg)); color: inherit; font: inherit; }
+.hm-spot .hm-label, .hm-spot .hm-chev { color: color-mix(in srgb, var(--hm-spot) 55%, #fff); }
+.hm-spot .hm-chev { right: 14px; }
+.hm-spot .hm-big { font-size: clamp(0.95rem, 4.7vw, 1.2rem); white-space: nowrap; }
+.hm-spot .hm-sub { color: color-mix(in srgb, var(--hm-spot) 25%, #e5e7eb); }
 
-.hm-task, .hm-style { cursor: pointer; padding-right: 32px; }
-.hm-task-title { font-size: 0.98rem; font-weight: 700; margin-top: 4px; }
-
-.hm-chev {
-    position: absolute; right: 14px; top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.4rem; color: var(--text-muted);
-}
+/* 練習をスタート: 下に寄せる */
+.hm-body > .hm-start { margin-top: auto; }
 
 .hm-start {
     width: 100%;
     padding: 18px;
     margin-top: 8px;
     border: none;
-    border-radius: 8px;
-    background: #10b981;
-    color: #06120c;
-    font-size: 1.1rem;
+    border-radius: 10px;
+    background: var(--hm-blue);
+    color: #fff;
+    font: inherit;
+    font-size: 1.15rem;
     font-weight: 800;
     cursor: pointer;
 }
 .hm-start:active { opacity: 0.85; }
-
-/* スポット練習のボタンは紫 */
-.hm-spot-btn {
-    background: #7c3aed;
-    color: #fff;
-}
 
 .hm-title {
     font-size: 0.95rem;
@@ -216,37 +219,44 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 }
 
 .hm-badge {
-    font-size: 0.62rem;
-    font-weight: 700;
-    color: #d4a72c;
-    letter-spacing: 0.04em;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #f5c542;
 }
+
+/* シートの中の説明 */
+.hm-card-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+
+/* 今日の進み具合（今日の1枚・追加の1枚まで） */
+.hm-prog { margin-top: 12px; }
+.hm-prog .hm-sub { margin: 0; }
+.hm-prog-num { font-size: 0.95rem; font-weight: 800; color: var(--hm-text); white-space: nowrap; }
+.hm-bar { height: 10px; border-radius: 5px; background: var(--hm-dim); margin-top: 8px; overflow: hidden; }
+.hm-bar i { display: block; height: 100%; width: 0; border-radius: 5px; background: var(--hm-blue); transition: width 0.3s; }
 
 /* 今週のカード: 曜日ごとの小さいカード7枚 */
 .hm-week { cursor: pointer; }
-.hm-week-head { display: flex; align-items: center; gap: 8px; }
-.hm-week-best { margin-left: auto; font-size: 0.8rem; color: #fbbf24; font-weight: 800; }
-.hm-week-more { font-size: 0.7rem; color: var(--text-muted); }
-.hm-wcards { display: flex; gap: 6px; margin: 8px 0 6px; }
-.hm-wd { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.66rem; color: var(--text-muted); }
-.hm-wd.is-today span { color: var(--text-main); font-weight: 700; }
-.hm-wc { width: 100%; aspect-ratio: 5 / 7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+.hm-week-best { font-size: 1rem; color: #f5c542; font-weight: 800; }
+.hm-wcards { display: flex; gap: 6px; margin: 12px 0 0; }
+.hm-wd { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--hm-muted); }
+.hm-wd.is-today span { color: var(--hm-text); font-weight: 800; }
+.hm-wc { width: 100%; aspect-ratio: 5 / 7; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
 .hm-wc b { font-size: 1.15rem; }
 .hm-wc i { font-style: normal; font-size: 1.05rem; }
 .hm-wc.got { background: #fff; }
 .hm-wc.got.red { color: #e53e3e; }
 .hm-wc.got.black { color: #1a202c; }
-.hm-wc.today { border: 1px dashed rgba(52, 211, 153, 0.7); color: #34d399; }
-.hm-wc.today i { font-size: 0.7rem; }
-.hm-wc.missed { border: 1px solid rgba(255, 255, 255, 0.08); }
-.hm-wc.future { background: repeating-linear-gradient(45deg, #2d4a3e, #2d4a3e 3px, #24392f 3px, #24392f 6px); border: 1px solid rgba(255, 255, 255, 0.08); }
+.hm-wc.today { border: 2px solid var(--hm-blue); }
+.hm-wc.today b, .hm-wc.today i { display: none; }
+.hm-wc.missed { border: 1.5px solid var(--hm-dim); }
+.hm-wc.future { background: var(--hm-dim); }
 /* 今日の1枚（めくる前）: 裏向きで光る */
 .hm-wc.ready {
-    background: repeating-linear-gradient(45deg, #7c3aed, #7c3aed 3px, #5b21b6 3px, #5b21b6 6px);
+    background: var(--hm-blue);
     animation: hm-bob 1.6s ease-in-out infinite;
     cursor: pointer;
 }
-.hm-wc-tap { font-size: 0.6rem; font-weight: 800; color: #fff; }
+.hm-wc-tap { font-size: 0.75rem; font-weight: 800; color: #fff; }
 @keyframes hm-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 /* めくる動き */
 .hm-flip { width: 100%; aspect-ratio: 5 / 7; perspective: 400px; }
@@ -256,7 +266,7 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-flip-front { transform: rotateY(180deg); }
 
 /* 追加の1枚 */
-.hm-draw-btn { margin-top: 4px; width: 100%; padding: 9px; border: none; border-radius: 6px; background: #f59e0b; color: #1a1205; font-weight: 800; font-size: 0.88rem; cursor: pointer; }
+.hm-draw-btn { margin-top: 12px; width: 100%; padding: 12px; border: none; border-radius: 8px; background: #f5c542; color: #1a1205; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; }
 .hm-wc.swapped { box-shadow: inset 0 -3px 0 #f59e0b; }
 .hm-draw-card { width: 64px; margin: 0 auto 10px; }
 .hm-draw-card .hm-wc-tap { font-size: 0.8rem; }
@@ -289,12 +299,6 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
 .hm-col-cards .hm-wc b { font-size: 0.85rem; }
 .hm-col-cards .hm-wc i { font-size: 0.75rem; }
 
-/* 練習の入口: 見出し・説明・ボタン。画面の下側に寄せて空きを埋める */
-.hm-practice { flex: 1; justify-content: center; padding: 2px 0; display: flex; flex-direction: column; gap: 14px; }
-.hm-sec-title { font-size: 0.95rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-.hm-sec-sub { font-size: 0.74rem; color: var(--text-muted); margin: 1px 0 7px; }
-.hm-practice .hm-start { margin-top: 0; padding: 12px; }
-
 /* スポット練習の設定（下から出るシート。ホームの外に置く: iPhone ではスクロールする枠の中だと下のタブより下に描かれる） */
 .hm-sheet { position: fixed; inset: 0; z-index: 300; }
 .hm-sheet-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.2s; }
@@ -303,7 +307,7 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     max-width: 480px; margin: 0 auto;
     padding: 10px 18px calc(20px + env(safe-area-inset-bottom, 0px));
     border-radius: 12px 12px 0 0;
-    background: #222724;
+    background: #1b232e;
     max-height: 85vh;
     overflow-y: auto;
     transform: translateY(100%);
@@ -333,8 +337,11 @@ body.in-game #view-play .action-area { padding-bottom: max(env(safe-area-inset-b
     cursor: pointer;
 }
 
-.hm-seg button.active { background: #2b332e; border-color: #10b981; color: var(--text-main); }
+.hm-seg button.active { background: #1e2a3a; border-color: var(--hm-blue); color: var(--text-main); }
 .hm-pos button:first-child { flex: 1.6 1 auto; }
+/* スポット練習のシートはホームのスポット練習と同じ紫 */
+#spot-sheet .hm-start { background: var(--hm-spot); }
+#spot-sheet .hm-seg button.active { background: color-mix(in srgb, var(--hm-spot) 20%, #1b232e); border-color: var(--hm-spot); }
 
 .hm-check {
     display: flex;

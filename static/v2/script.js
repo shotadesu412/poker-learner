@@ -1563,38 +1563,25 @@ function setSpotHands(v) {
 // ホームの表示を今の状態に合わせる（進行中のハンドがあれば「続きから」）
 function refreshHome() {
     const start = el('btn-home-start');
-    if (start) start.textContent = (!isSpotMode && currentState && !currentState.finished) ? t('home2.resume') : t('home2.start');
+    if (start) start.textContent = (!isSpotMode && currentState && !currentState.finished) ? t('home2.resume') : t('home2.start_practice');
     const badge = el('hm-spot-badge');
     if (badge) badge.classList.toggle('hidden', !!isPremium);
     renderHomeStats();
 }
 
-// 成績と今日の課題（端末の記録から。読めなければ空のまま）
+// 今週のカードとアクション傾向（端末の記録から。読めなければ空のまま）
 async function renderHomeStats() {
     if (typeof StatsStore === 'undefined' || typeof StatsCalc === 'undefined') return;
-    let sum, data;
-    try { data = await StatsStore.loadAll(); sum = StatsCalc.getHomeSummary(data); } catch (e) { return; }
+    let data;
+    try { data = await StatsStore.loadAll(); } catch (e) { return; }
     renderWeek(StatsCalc.getWeekCards(data, currentUserId, Date.now(), loadWeekSwaps()[String(weekKeyNow())] || {}));
-    // アクション傾向（分析タブの「プレイの傾向」と同じ。全期間）
+    // アクション傾向（分析タブの「プレイの傾向」と同じ。全期間）。ホームではタイプ名だけ（数字は分析タブ）
     try {
         const st = StatsCalc.getPlayStyle(data, 'all');
-        const sign = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(1);
-        if (st.ready) {
-            el('hm-style-name').textContent = t('stats.style.name.' + st.type);
-            el('hm-style-sub').textContent = t('stats.style.diff', { loose: sign(st.loose_diff), aggr: sign(st.aggr_diff) });
-        } else {
-            el('hm-style-name').textContent = '—';
-            el('hm-style-sub').textContent = t('home2.style_need', { n: String(st.need) });
-        }
+        el('hm-style-name').textContent = st.ready ? t('stats.style.name.' + st.type) : '—';
+        el('hm-style-sub').textContent = st.ready ? '' : t('home2.style_need', { n: String(st.need) });
+        el('hm-style-sub').classList.toggle('hidden', !!st.ready);
     } catch (e) { /* 表示だけなので無視 */ }
-    if (sum.leak) {
-        const l = sum.leak;
-        el('hm-task-title').textContent = t('home2.task_title', { pos: l.pos, street: t('street.' + l.street), action: t('home2.act.' + l.action) });
-        el('hm-task-sub').textContent = t('home2.task_sub', { bb: l.avg_ev_loss.toFixed(1), n: l.count });
-    } else {
-        el('hm-task-title').textContent = '—';
-        el('hm-task-sub').textContent = t('home2.task_empty');
-    }
 }
 
 // 今週のカード: もらったカードは表。今日の1枚は10ハンド打つと裏向きで置かれ、タップでめくる（めくった日は端末に保存）。
@@ -1691,14 +1678,19 @@ function renderWeek(w) {
     }).join('');
     const best = waiting ? w.bestBeforeToday : w.best;
     el('hm-week-best').textContent = best ? t('home2.rank.' + best) : '';
-    el('hm-week-text').textContent = waiting ? t('home2.cards_ready')
-        : w.drawReady ? t('home2.draw_ready')
-        : today.status === 'got' && !w.drawDone ? t('home2.draw_need', { n: String(w.drawNeed - today.hands) })
-        : today.status === 'got' ? t('home2.cards_done')
-        : t('home2.cards_need', { n: String(w.need - today.hands) });
+    // 進み具合: 今日の1枚まで（10ハンド）→ 追加の1枚まで（20ハンド）→ 済み
+    let goal = w.need, text;
+    if (waiting) text = t('home2.cards_ready');
+    else if (today.status !== 'got') text = t('home2.cards_need', { n: String(w.need - today.hands) });
+    else if (!w.drawDone && !w.drawReady) { goal = w.drawNeed; text = t('home2.draw_need', { n: String(w.drawNeed - today.hands) }); }
+    else text = t('home2.cards_done');
+    const hands = Math.min(today.hands, goal);
+    el('hm-week-text').textContent = text;
+    el('hm-prog-num').textContent = hands + ' / ' + goal;
+    el('hm-bar-fill').style.width = (hands / goal * 100) + '%';
+    // 追加の1枚を引けるときは、進み具合の代わりにボタン
     el('hm-draw-btn').classList.toggle('hidden', waiting || !w.drawReady);
-    // ボタンが出ている間は説明の行を隠して高さを抑える
-    el('hm-week-text').classList.toggle('hidden', !waiting && w.drawReady);
+    el('hm-prog').classList.toggle('hidden', !waiting && w.drawReady);
 }
 
 // カードをめくる（裏 → 表の回転）。node を回転する要素に置き換え、終わったら done を呼ぶ
