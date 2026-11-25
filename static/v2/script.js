@@ -1727,6 +1727,48 @@ function closeSheet(id) {
     setTimeout(() => sh.classList.add('hidden'), 200);
 }
 
+// 下へスワイプして閉じる（2026/11/25）。中身が一番上までスクロールされているときだけ、下向きの指の動きでシートごと動かす。
+// 指を離したとき、高さの1/4以上か速く下げていれば閉じ、そうでなければ元の位置に戻す
+function setupSheetSwipe(sh) {
+    const panel = sh.querySelector('.hm-sheet-panel');
+    const bg = sh.querySelector('.hm-sheet-bg');
+    if (!panel) return;
+    let y0 = null, t0 = 0, dy = 0, dragging = false;
+    panel.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        y0 = e.touches[0].clientY; t0 = Date.now(); dy = 0; dragging = false;
+    }, { passive: true });
+    panel.addEventListener('touchmove', (e) => {
+        if (y0 === null) return;
+        const d = e.touches[0].clientY - y0;
+        if (!dragging) {
+            // 上向き、または中身がスクロールの途中なら、普通のスクロールに任せる
+            if (d <= 4 || panel.scrollTop > 0) { if (d < -4 || panel.scrollTop > 0) y0 = null; return; }
+            dragging = true;
+            panel.style.transition = 'none';
+            if (bg) bg.style.transition = 'none';
+        }
+        e.preventDefault();
+        dy = Math.max(0, d);
+        panel.style.transform = 'translateY(' + dy + 'px)';
+        if (bg) bg.style.opacity = String(Math.max(0, 1 - dy / panel.offsetHeight));
+    }, { passive: false });
+    const end = () => {
+        if (y0 === null) return;
+        y0 = null;
+        if (!dragging) return;
+        dragging = false;
+        const fast = dy > 30 && dy / Math.max(1, Date.now() - t0) > 0.5;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (bg) { bg.style.transition = ''; bg.style.opacity = ''; }
+        if (dy > panel.offsetHeight / 4 || fast) closeSheet(sh.id);
+    };
+    panel.addEventListener('touchend', end);
+    panel.addEventListener('touchcancel', end);
+}
+document.querySelectorAll('.hm-sheet').forEach(setupSheetSwipe);
+
 function openSpotSheet() { openSheet('spot-sheet'); }
 function closeSpotSheet() { closeSheet('spot-sheet'); }
 
