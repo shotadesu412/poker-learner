@@ -165,7 +165,7 @@ function updateUI() {
         el('restart-area').classList.add('hidden');
 
         // Handle mutually exclusive action buttons cleanly based on whether there's a strict VOLUNTARY bet
-        const hasVoluntaryBet = (currentState.street === "PREFLOP" && currentState.currentBet > 1.0) ||
+        const hasVoluntaryBet = currentState.street === "PREFLOP" ||   // プリフロップはブラインドがあるので、最初のオープンもレイズ
             (currentState.street !== "PREFLOP" && currentState.currentBet > 0);
 
         // 追加で出せる上限。相手がオールイン済み・自分のスタックがコール額以下ならレイズは成立しない
@@ -295,7 +295,7 @@ async function takeAction(actionType, amount = 0) {
         // Show evaluation animation
         // ゲーム状態から正確なアクション表示名を決定（BET/RAISE の誤表記修正）
         const hasActiveBet = currentState && (
-            (currentState.street === "PREFLOP" && currentState.currentBet > 1.0) ||
+            currentState.street === "PREFLOP" ||   // プリフロップはブラインドがあるので、最初のオープンもレイズ
             (currentState.street !== "PREFLOP" && currentState.currentBet > 0)
         );
         let displayAction = actionType;
@@ -427,7 +427,7 @@ function openBetPanel(actionType) {
     el('bet-panel').classList.add('active');
     el('modal-overlay').classList.add('active');
 
-    const hasVoluntaryBet = (currentState.street === "PREFLOP" && currentState.currentBet > 1.0) ||
+    const hasVoluntaryBet = currentState.street === "PREFLOP" ||   // プリフロップはブラインドがあるので、最初のオープンもレイズ
         (currentState.street !== "PREFLOP" && currentState.currentBet > 0);
 
     if (!actionType) actionType = hasVoluntaryBet ? "RAISE" : "BET";
@@ -635,10 +635,7 @@ function addEvaluationToHistory(symbol, action, colorClass, actor, street) {
     // 自動スクロールを末尾に
     history.scrollTop = history.scrollHeight;
 
-    // 最大10件
-    while (history.children.length > 10) {
-        history.removeChild(history.firstChild);
-    }
+    // 件数の上限は設けない（以前は10件で、長いハンドはプリフロップから消えていた。1ハンドを最後まで見返せるように）
 }
 
 // ショーダウン結果を表示
